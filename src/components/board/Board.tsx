@@ -1504,7 +1504,11 @@ export const Board: React.FC<BoardProps> = ({
       {/* 山札の上からN枚確認モーダル */}
       <TopDeckModal
         revealedDeck={gameState.revealedDeckCards}
-        myPlayerId={gameState.revealedDeckCards?.playerId || bottomPlayerId}
+        myPlayerId={
+          isSoloMode
+            ? gameState.revealedDeckCards?.playerId || bottomPlayerId
+            : myPlayerId
+        }
         hasEmptyFrontSlot={hasEmptyFrontSlot}
         hasEmptyEnergySlot={hasEmptyEnergySlot}
         onResolveCard={(cardId, destination) =>
