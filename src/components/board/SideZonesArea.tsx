@@ -21,6 +21,7 @@ import {
 import { GraveyardModal } from '../modals/GraveyardModal';
 import { RemovedModal } from '../modals/RemovedModal';
 import { LifePlacementModal } from '../modals/LifePlacementModal';
+import { DeckPlacementModal } from '../modals/DeckPlacementModal';
 
 interface SideZonesAreaProps {
   player: PlayerState;
@@ -28,10 +29,10 @@ interface SideZonesAreaProps {
   isSoloMode?: boolean;
   onDraw?: () => void;
   onShuffle?: () => void;
-  onCheckLife?: (index?: number) => void;
-  onRecoverLife?: (isFaceDown?: boolean) => void;
-  onTakeLife?: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', index?: number) => void;
-  onFlipLife?: (index?: number) => void;
+  onCheckLife?: (lifeIndex: number) => void;
+  onRecoverLife?: (isFaceUp?: boolean) => void;
+  onTakeLife?: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', lifeIndex?: number) => void;
+  onFlipLife?: (lifeIndex: number) => void;
   onOpenLifeReorder?: () => void;
   onUseAp?: () => void;
   onRecoverAp?: () => void;
@@ -49,10 +50,11 @@ interface SideZonesAreaProps {
   ) => void;
   onMoveFromRemoved?: (
     cardId: string,
-    destination: 'hand' | 'graveyard' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
+    destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
   ) => void;
   onOpenDeckPicker?: () => void;
   onDropToLife?: (from: CardLocation, isFaceDown?: boolean) => void;
+  onDropToDeck?: (from: CardLocation, destination: 'deckTop' | 'deckBottom') => void;
   isCompact?: boolean;
 }
 
@@ -82,6 +84,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   onMoveFromRemoved,
   onOpenDeckPicker,
   onDropToLife,
+  onDropToDeck,
 }) => {
   const [showGraveyardModal, setShowGraveyardModal] = useState(false);
   const [showRemovedModal, setShowRemovedModal] = useState(false);
@@ -90,6 +93,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   const [showLifeMenu, setShowLifeMenu] = useState(false);
   const [selectedMyLifeIndex, setSelectedMyLifeIndex] = useState<number | null>(null);
   const [pendingLifeDrop, setPendingLifeDrop] = useState<CardLocation | null>(null);
+  const [pendingDeckDrop, setPendingDeckDrop] = useState<CardLocation | null>(null);
 
   const hasEmptyFrontSlot = player.frontLine.some((c) => c === null);
   const hasEmptyEnergySlot = player.energyLine.some((c) => c === null);
@@ -483,9 +487,30 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
       </div>
 
       {/* 山札 (Deck) */}
-      <div className={`flex flex-col bg-slate-950/80 rounded-lg border border-indigo-500/30 relative ${
-        isCompact ? 'p-1 gap-0.5' : 'p-2 gap-1.5'
-      }`}>
+      <div
+        onDragOver={(e) => {
+          if (isOpponent && !isSoloMode) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(e) => {
+          if (isOpponent && !isSoloMode) return;
+          e.preventDefault();
+          try {
+            const raw = e.dataTransfer.getData('application/x-union-arena-card');
+            if (!raw) return;
+            const payload = JSON.parse(raw);
+            if (onDropToDeck && payload.from) {
+              setPendingDeckDrop(payload.from);
+            }
+          } catch (err) {
+            console.error('Failed to parse dropped card to deck:', err);
+          }
+        }}
+        className={`flex flex-col bg-slate-950/80 rounded-lg border border-indigo-500/30 relative hover:border-indigo-500/60 transition-colors ${
+          isCompact ? 'p-1 gap-0.5' : 'p-2 gap-1.5'
+        }`}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-bold text-indigo-400">
             <Layers className="w-4 h-4" />
@@ -776,6 +801,18 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
           setPendingLifeDrop(null);
         }}
         onClose={() => setPendingLifeDrop(null)}
+      />
+
+      {/* 山札配置方法選択モーダル */}
+      <DeckPlacementModal
+        isOpen={pendingDeckDrop !== null}
+        onSelect={(destination) => {
+          if (pendingDeckDrop && onDropToDeck) {
+            onDropToDeck(pendingDeckDrop, destination);
+          }
+          setPendingDeckDrop(null);
+        }}
+        onCancel={() => setPendingDeckDrop(null)}
       />
     </div>
   );

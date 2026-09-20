@@ -9,19 +9,19 @@
   }
 }
 
-/* カードレスト用のアニメーション */
+/* カードレスト用のアニメーション（サイズ変更なし・等倍回転） */
 .card-rested {
-  transform: rotate(90deg) scale(0.92);
+  transform: rotate(90deg);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-rested-compact {
-  transform: rotate(90deg) scale(0.85);
+  transform: rotate(90deg);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-active {
-  transform: rotate(0deg) scale(1);
+  transform: rotate(0deg);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

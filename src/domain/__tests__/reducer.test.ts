@@ -379,6 +379,40 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].deck[0].name).toBe('Zero');
   });
 
+  it('should support searching deck card directly to removed, life, and frontLine', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].deck = [
+      createDummyCard('c-1', 'Card 1'),
+      createDummyCard('c-2', 'Card 2'),
+      createDummyCard('c-3', 'Card 3'),
+    ];
+
+    // c-1をリムーブへ
+    state = gameReducer(state, {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'c-1', destination: 'removed' },
+    });
+    expect(state.players['p1'].removed).toHaveLength(1);
+    expect(state.players['p1'].removed[0].id).toBe('c-1');
+
+    // c-2をライフ(表向き)へ
+    state = gameReducer(state, {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'c-2', destination: 'lifeFaceUp' },
+    });
+    expect(state.players['p1'].life).toHaveLength(1);
+    expect(state.players['p1'].life[0].isFaceDown).toBe(false);
+
+    // c-3をフロントラインへ（slotIndex未指定で空き枠自動配置）
+    state = gameReducer(state, {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'c-3', destination: 'frontLine' },
+    });
+    expect(state.players['p1'].frontLine[0]?.id).toBe('c-3');
+    expect(state.players['p1'].frontLine[0]?.isRested).toBe(true);
+    expect(state.players['p1'].deck).toHaveLength(0);
+  });
+
   it('should move all underCards to graveyard when a raid card is retired to graveyard', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     const baseCard = createDummyCard('base-1', 'Suzaku');

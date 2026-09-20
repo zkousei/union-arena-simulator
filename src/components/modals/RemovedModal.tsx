@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Ban, Hand, Skull, ArrowDown, ArrowUpRight, X, ShieldAlert } from 'lucide-react';
+import { Ban, Hand, Skull, ArrowUp, ArrowDown, ArrowUpRight, X, ShieldAlert } from 'lucide-react';
 
 interface RemovedModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface RemovedModalProps {
   hasEmptyEnergySlot?: boolean;
   onMoveCard: (
     cardId: string,
-    destination: 'hand' | 'graveyard' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
+    destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
   ) => void;
   onInspectCard: (card: Card) => void;
   onClose: () => void;
@@ -97,14 +97,24 @@ export const RemovedModal: React.FC<RemovedModalProps> = ({
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => onMoveCard(card.id, 'deckBottom')}
-                      className="flex items-center justify-center gap-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-semibold transition-colors"
-                      title="山札の一番下に戻す"
-                    >
-                      <ArrowDown className="w-3 h-3 text-indigo-400" />
-                      山札の一番下へ
-                    </button>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        onClick={() => onMoveCard(card.id, 'deckTop')}
+                        className="flex items-center justify-center gap-0.5 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-semibold transition-colors"
+                        title="山札の一番上に戻す"
+                      >
+                        <ArrowUp className="w-3 h-3 text-indigo-400" />
+                        山札上
+                      </button>
+                      <button
+                        onClick={() => onMoveCard(card.id, 'deckBottom')}
+                        className="flex items-center justify-center gap-0.5 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-semibold transition-colors"
+                        title="山札の一番下に戻す"
+                      >
+                        <ArrowDown className="w-3 h-3 text-indigo-400" />
+                        山札下
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-1">
                       <button

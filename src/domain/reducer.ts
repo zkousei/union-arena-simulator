@@ -374,6 +374,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             `🛡️【ライフ追加】${fromPlayer.name} が「${card.name}」を${fromDesc}からライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
             from.playerId
           );
+        } else if (to.zone === 'deck') {
+          const isTop = to.index === 0;
+          appendLog(
+            draft,
+            `📚 ${fromPlayer.name} が「${card.name}」を山札の${isTop ? '一番上' : '一番下'}へ戻しました。`,
+            from.playerId
+          );
         } else {
           const fromDesc = `${from.zone}${from.slotIndex !== undefined ? `[枠${from.slotIndex + 1}]` : ''}`;
           const toDesc = `${to.zone}${to.slotIndex !== undefined ? `[枠${to.slotIndex + 1}]` : ''}`;
@@ -1066,12 +1073,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } else if (destination === 'graveyard') {
           player.graveyard.push(cleanCard);
           appendLog(draft, `${player.name} は山札から「${card.name}」を場外に送りました。`, playerId);
-        } else if (destination === 'frontLine' && slotIndex !== undefined) {
-          player.frontLine[slotIndex] = { ...cleanCard, isRested: true };
-          appendLog(draft, `${player.name} は山札から「${card.name}」をフロントL枠${slotIndex + 1}に登場させました。`, playerId);
-        } else if (destination === 'energyLine' && slotIndex !== undefined) {
-          player.energyLine[slotIndex] = { ...cleanCard, isRested: true };
-          appendLog(draft, `${player.name} は山札から「${card.name}」をエナジーL枠${slotIndex + 1}に登場させました。`, playerId);
+        } else if (destination === 'removed') {
+          player.removed.push(cleanCard);
+          appendLog(draft, `${player.name} は山札から「${card.name}」を除外（リムーブ）しました。`, playerId);
+        } else if (destination === 'life') {
+          player.life.push({ ...cleanCard, isFaceDown: true });
+          appendLog(draft, `${player.name} は山札から「${card.name}」をライフに裏向きで置きました。`, playerId);
+        } else if (destination === 'lifeFaceUp') {
+          player.life.push({ ...cleanCard, isFaceDown: false });
+          appendLog(draft, `${player.name} は山札から「${card.name}」をライフに表向きで置きました。`, playerId);
+        } else if (destination === 'frontLine') {
+          const emptyIndex = player.frontLine.findIndex((s) => s === null);
+          const targetSlot = slotIndex !== undefined ? slotIndex : (emptyIndex >= 0 ? (emptyIndex as FieldSlotIndex) : null);
+          if (targetSlot !== null) {
+            player.frontLine[targetSlot] = { ...cleanCard, isRested: true };
+            appendLog(draft, `${player.name} は山札から「${card.name}」をフロントL枠${targetSlot + 1}に登場させました。`, playerId);
+          } else {
+            player.hand.push(cleanCard);
+            appendLog(draft, `${player.name} はフロントLに空きがないため「${card.name}」を手札に加えました。`, playerId);
+          }
+        } else if (destination === 'energyLine') {
+          const emptyIndex = player.energyLine.findIndex((s) => s === null);
+          const targetSlot = slotIndex !== undefined ? slotIndex : (emptyIndex >= 0 ? (emptyIndex as FieldSlotIndex) : null);
+          if (targetSlot !== null) {
+            player.energyLine[targetSlot] = { ...cleanCard, isRested: true };
+            appendLog(draft, `${player.name} は山札から「${card.name}」をエナジーL枠${targetSlot + 1}に登場させました。`, playerId);
+          } else {
+            player.hand.push(cleanCard);
+            appendLog(draft, `${player.name} はエナジーLに空きがないため「${card.name}」を手札に加えました。`, playerId);
+          }
         }
         break;
       }

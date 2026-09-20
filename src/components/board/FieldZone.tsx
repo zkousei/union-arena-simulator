@@ -31,6 +31,7 @@ interface FieldZoneProps {
       | 'lifeFaceUp'
   ) => void;
   onInspect?: (card: Card) => void;
+  onHoverCard?: (card: Card | null) => void;
   onDropCard?: (from: CardLocation, targetZone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => void;
   onDeclareAttack?: (slotIndex: FieldSlotIndex) => void;
   onOpenUnderCards?: (slotIndex: FieldSlotIndex, card: Card) => void;
@@ -53,6 +54,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   onAddMarker,
   onMoveTo,
   onInspect,
+  onHoverCard,
   onDropCard,
   onDeclareAttack,
   onOpenUnderCards,
@@ -146,6 +148,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
                   onAddMarker={(from) => onAddMarker && onAddMarker(slotIdx, from)}
                   onMoveTo={(dest) => onMoveTo && onMoveTo(slotIdx, dest)}
                   onInspect={onInspect}
+                  onHoverCard={onHoverCard}
                   onDeclareAttack={() => onDeclareAttack && onDeclareAttack(slotIdx)}
                   onOpenUnderCards={() => onOpenUnderCards && onOpenUnderCards(slotIdx, card)}
                 />

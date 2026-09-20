@@ -284,7 +284,14 @@ export type GameAction =
       payload: {
         playerId: string;
         cardId: string;
-        destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine';
+        destination:
+          | 'hand'
+          | 'graveyard'
+          | 'frontLine'
+          | 'energyLine'
+          | 'removed'
+          | 'life'
+          | 'lifeFaceUp';
         slotIndex?: FieldSlotIndex;
       };
     }

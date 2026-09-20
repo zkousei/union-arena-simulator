@@ -16,9 +16,10 @@ interface HandAreaProps {
   onSelectCard?: (card: Card) => void;
   onMoveTo?: (
     cardIndex: number,
-    dest: 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp'
+    dest: 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine'
   ) => void;
   onInspect?: (card: Card) => void;
+  onHoverCard?: (card: Card | null) => void;
   onDropToHand?: (from: CardLocation) => void;
   onDiscardRandom?: () => void;
   onDiscardHandIndex?: (index: number) => void;
@@ -38,6 +39,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   onSelectCard,
   onMoveTo,
   onInspect,
+  onHoverCard,
   onDropToHand,
   onDiscardRandom,
   onDiscardHandIndex,
@@ -268,8 +270,9 @@ export const HandArea: React.FC<HandAreaProps> = ({
                   isCompact={isCompact}
                   onClick={() => onSelectCard && onSelectCard(card)}
                   onInspect={onInspect}
+                  onHoverCard={onHoverCard}
                   onMoveTo={(dest) => {
-                    if (onMoveTo && (dest === 'graveyard' || dest === 'removed' || dest === 'deckTop' || dest === 'deckBottom' || dest === 'life' || dest === 'lifeFaceUp')) {
+                    if (onMoveTo && dest !== 'hand') {
                       onMoveTo(idx, dest);
                     }
                   }}

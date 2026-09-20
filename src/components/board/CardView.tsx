@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
-import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye } from 'lucide-react';
+import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn } from 'lucide-react';
 
 interface CardViewProps {
   card: Card;
@@ -26,6 +26,7 @@ interface CardViewProps {
       | 'lifeFaceUp'
   ) => void;
   onInspect?: (card: Card) => void;
+  onHoverCard?: (card: Card | null) => void;
   onClick?: () => void;
   onDeclareAttack?: () => void;
   onOpenUnderCards?: () => void;
@@ -63,6 +64,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onAddMarker,
   onMoveTo,
   onInspect,
+  onHoverCard,
   onClick,
   onDeclareAttack,
   onOpenUnderCards,
@@ -115,20 +117,14 @@ export const CardView: React.FC<CardViewProps> = ({
   }
 
   const currentBp = (card.bp ?? 0) + card.bpModifier;
-  const colorClass = COLOR_BORDER_MAP[card.color] || COLOR_BORDER_MAP.COLORLESS;
-  const canDrag = !isOpponent && !!location;
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
+  const underCount = card.underCards?.length ?? 0;
+  const isRaid = underCount > 0 && !!card.underCards?.[0];
+  const secondUnderCard = underCount >= 2 ? card.underCards?.[underCount - 2] : null;
+  const firstUnderCard = underCount >= 1 ? card.underCards?.[underCount - 1] : null;
+  const colorClass = COLOR_BORDER_MAP[card.color] || COLOR_BORDER_MAP.COLORLESS;
+  const canDrag = !isOpponent && !showMenu;
   const hasValidImage = !!card.imageUrl && !imgError;
-
-  const underCards = card.underCards || [];
-  const underCount = underCards.length;
-  const isRaid = !!(
-    card.triggers?.includes('RAID') ||
-    card.effectText?.includes('【レイド】') ||
-    card.effectText?.includes('[レイド]')
-  );
-  const topUnderCard = underCount > 0 ? underCards[underCount - 1] : null;
-  const secondUnderCard = underCount >= 2 ? underCards[underCount - 2] : null;
 
   const handleDragStart = (e: React.DragEvent) => {
     if (!canDrag || !location) return;
@@ -162,6 +158,12 @@ export const CardView: React.FC<CardViewProps> = ({
             ? (isCompact ? 'card-rested-compact shadow-amber-500/20' : 'card-rested shadow-amber-500/20')
             : 'card-active hover:-translate-y-0.5'
         }`}
+        onMouseEnter={() => {
+          if (onHoverCard) onHoverCard(card);
+        }}
+        onMouseLeave={() => {
+          if (onHoverCard) onHoverCard(null);
+        }}
       >
         {/* レイド / マーカーの重なり視覚効果 (underCards > 0 の時、背後にずらして立体表示) */}
         {underCount >= 2 && (
@@ -185,27 +187,14 @@ export const CardView: React.FC<CardViewProps> = ({
         {underCount >= 1 && (
           <div
             className={`absolute inset-0 rounded-lg border-2 shadow-md pointer-events-none transition-all duration-200 translate-x-1 translate-y-1 group-hover/card:translate-x-2 group-hover/card:translate-y-2 ${
-              topUnderCard?.isFaceDown
-                ? 'border-slate-600 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-black/70'
+              firstUnderCard?.isFaceDown
+                ? 'border-slate-700 bg-slate-950/90 shadow-black/70'
                 : isRaid
-                ? 'border-purple-400/90 bg-gradient-to-br from-slate-900 via-purple-950 to-slate-950 shadow-purple-900/60'
-                : 'border-amber-400/90 bg-gradient-to-br from-slate-900 via-amber-950 to-slate-950 shadow-amber-900/60'
+                ? 'border-purple-400 bg-purple-900/90 shadow-purple-900/70'
+                : 'border-amber-400 bg-amber-900/90 shadow-amber-900/70'
             }`}
             style={{ zIndex: 1 }}
-          >
-            {/* 2段目カードの角アクセント */}
-            <div className="absolute top-1 right-1 px-1 rounded-[3px] border border-white/20 bg-black/70 flex items-center justify-center">
-              <span className="text-[7px] font-black text-white/90 leading-tight">1</span>
-            </div>
-            {/* 下敷きカード名のチラ見せ */}
-            {topUnderCard && (
-              <div className="absolute bottom-1 right-1 text-[7px] font-bold text-slate-300/80 bg-black/60 px-1 rounded max-w-[80%] truncate">
-                {topUnderCard.isFaceDown
-                  ? (!isOpponent ? `🔒 ${topUnderCard.name}` : '🔒 マーカー')
-                  : topUnderCard.name}
-              </div>
-            )}
-          </div>
+          />
         )}
 
         {/* 最前面メインカード本体 */}
@@ -216,6 +205,10 @@ export const CardView: React.FC<CardViewProps> = ({
           onDragEnd={handleDragEnd}
           onContextMenu={handleContextMenu}
           onClick={onClick}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (onInspect) onInspect(card);
+          }}
           style={{ zIndex: 2 }}
           className={`relative w-full h-full rounded-lg border-2 shadow-lg flex flex-col justify-between overflow-hidden transition-all ${colorClass} ${
             card.isParallel ? 'ring-2 ring-amber-400/70 shadow-amber-400/20' : ''
@@ -223,6 +216,21 @@ export const CardView: React.FC<CardViewProps> = ({
             isDragging ? 'opacity-40 scale-95 border-dashed border-amber-400' : ''
           }`}
         >
+          {/* クイック拡大確認ボタン (ホバー時に薄く表示) */}
+          {onInspect && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onInspect(card);
+              }}
+              title="ダブルクリックまたはクリックで詳細拡大表示"
+              className="absolute top-1 right-1 z-30 p-0.5 rounded bg-black/75 hover:bg-indigo-600 text-slate-300 hover:text-white opacity-0 group-hover/card:opacity-100 transition-opacity border border-white/20 shadow"
+            >
+              <ZoomIn className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+            </button>
+          )}
+
           {/* 公式カード画像背景 (存在する場合) */}
           {hasValidImage ? (
             <>
@@ -490,6 +498,30 @@ export const CardView: React.FC<CardViewProps> = ({
 
           {onMoveTo && (
             <>
+              {location?.zone === 'hand' && !isOpponent && (
+                <>
+                  <button
+                    onClick={() => {
+                      onMoveTo('frontLine');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-indigo-950/70 rounded flex items-center gap-2 text-indigo-300 font-bold"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
+                    フロントLに登場
+                  </button>
+                  <button
+                    onClick={() => {
+                      onMoveTo('energyLine');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-emerald-950/70 rounded flex items-center gap-2 text-emerald-300 font-bold"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
+                    エナジーLに登場
+                  </button>
+                </>
+              )}
               {location?.zone !== 'hand' && (
                 <button
                   onClick={() => {

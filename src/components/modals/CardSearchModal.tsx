@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Search, Hand, Trash2, Shuffle, X } from 'lucide-react';
+import { Search, Hand, Trash2, Shuffle, X, ArrowUpRight, Ban, ShieldAlert } from 'lucide-react';
 
 interface CardSearchModalProps {
   isOpen: boolean;
   cards: Card[];
   title?: string;
-  onSelectCard: (cardId: string, destination: 'hand' | 'graveyard') => void;
+  hasEmptyFrontSlot?: boolean;
+  hasEmptyEnergySlot?: boolean;
+  onSelectCard: (
+    cardId: string,
+    destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
+  ) => void;
+  onInspectCard?: (card: Card) => void;
   onClose: (shuffleDeck?: boolean) => void;
 }
 
@@ -15,7 +21,10 @@ export const CardSearchModal: React.FC<CardSearchModalProps> = ({
   isOpen,
   cards,
   title = '山札からカードを探す',
+  hasEmptyFrontSlot = true,
+  hasEmptyEnergySlot = true,
   onSelectCard,
+  onInspectCard,
   onClose,
 }) => {
   const [query, setQuery] = useState('');
@@ -78,24 +87,70 @@ export const CardSearchModal: React.FC<CardSearchModalProps> = ({
                 key={card.id}
                 className="flex flex-col items-center gap-2 bg-slate-950/80 p-2 rounded-xl border border-slate-800 shadow hover:border-indigo-500/60 transition"
               >
-                <CardView card={card} />
-                <div className="flex items-center gap-1.5 w-full text-[10px]">
-                  <button
-                    onClick={() => onSelectCard(card.id, 'hand')}
-                    className="flex-1 flex items-center justify-center gap-1 py-1 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold"
-                    title="手札に加える"
-                  >
-                    <Hand className="w-3 h-3" />
-                    手札へ
-                  </button>
-                  <button
-                    onClick={() => onSelectCard(card.id, 'graveyard')}
-                    className="flex-1 flex items-center justify-center gap-1 py-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold"
-                    title="場外に置く"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    場外へ
-                  </button>
+                <CardView card={card} onInspect={onInspectCard} />
+                <div className="flex flex-col gap-1 w-full text-[10px]">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onSelectCard(card.id, 'hand')}
+                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold"
+                      title="手札に加える"
+                    >
+                      <Hand className="w-3 h-3" />
+                      手札へ
+                    </button>
+                    <button
+                      onClick={() => onSelectCard(card.id, 'graveyard')}
+                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold"
+                      title="場外に置く"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      場外へ
+                    </button>
+                  </div>
+
+                  {card.cardType === 'CHARACTER' && (hasEmptyFrontSlot || hasEmptyEnergySlot) && (
+                    <div className="flex items-center gap-1">
+                      {hasEmptyFrontSlot && (
+                        <button
+                          onClick={() => onSelectCard(card.id, 'frontLine')}
+                          className="flex-1 flex items-center justify-center gap-0.5 py-0.5 bg-indigo-700 hover:bg-indigo-600 rounded text-white font-semibold text-[9px]"
+                          title="フロントLに直接登場"
+                        >
+                          <ArrowUpRight className="w-2.5 h-2.5" />
+                          フロントL
+                        </button>
+                      )}
+                      {hasEmptyEnergySlot && (
+                        <button
+                          onClick={() => onSelectCard(card.id, 'energyLine')}
+                          className="flex-1 flex items-center justify-center gap-0.5 py-0.5 bg-emerald-700 hover:bg-emerald-600 rounded text-white font-semibold text-[9px]"
+                          title="エナジーLに直接登場"
+                        >
+                          <ArrowUpRight className="w-2.5 h-2.5" />
+                          エナジーL
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onSelectCard(card.id, 'removed')}
+                      className="flex-1 flex items-center justify-center gap-0.5 py-0.5 bg-purple-900/80 hover:bg-purple-800 rounded text-purple-200 font-semibold text-[9px]"
+                      title="除外（リムーブ）へ送る"
+                    >
+                      <Ban className="w-2.5 h-2.5" />
+                      除外へ
+                    </button>
+                    <button
+                      onClick={() => onSelectCard(card.id, 'life')}
+                      className="flex-1 flex items-center justify-center gap-0.5 py-0.5 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/40 rounded text-amber-300 font-semibold text-[9px]"
+                      title="ライフに置く"
+                    >
+                      <ShieldAlert className="w-2.5 h-2.5" />
+                      ライフへ
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
