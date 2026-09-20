@@ -40,7 +40,9 @@ test('opens and closes the top-deck viewer without changing deck count', async (
   await setPresetDeck(page, 'あなた');
 
   await page.getByRole('button', { name: '上を見る' }).last().click();
-  await page.getByRole('button', { name: '上から 3 枚' }).click();
+  const topDeckMenu = page.getByRole('dialog', { name: '上から確認メニュー' });
+  await expect(topDeckMenu).toBeVisible();
+  await topDeckMenu.getByRole('button', { name: '3枚', exact: true }).click();
   await expect(page.getByRole('heading', { name: '山札の上から確認中 (3 枚)' })).toBeVisible();
   await page.getByRole('button', { name: '完了（そのまま閉じる）' }).click();
 

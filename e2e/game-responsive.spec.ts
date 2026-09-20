@@ -167,7 +167,9 @@ test('keeps the main game dialogs reachable on mobile', async ({ page }) => {
   await cardDialog.getByRole('button', { name: /閉じる/ }).first().click();
 
   await page.getByRole('button', { name: '上を見る' }).last().click();
-  await page.getByRole('button', { name: '上から 3 枚' }).click();
+  const topDeckMenu = page.getByRole('dialog', { name: '上から確認メニュー' });
+  await expect(topDeckMenu).toBeVisible();
+  await topDeckMenu.getByRole('button', { name: '3枚', exact: true }).click();
   const topDeckDialog = page.getByRole('dialog', { name: /山札の上から確認中/ });
   await expect(topDeckDialog).toBeVisible();
   await expectDialogWithinViewport(page, topDeckDialog);
