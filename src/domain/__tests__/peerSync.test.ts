@@ -61,6 +61,23 @@ describe('authoritative P2P synchronization', () => {
     expect(isNewerSnapshot(snapshot, 9)).toBe(false);
   });
 
+  it.each([
+    null,
+    {},
+    { revision: 9 },
+    { revision: 9, state: {} },
+    {
+      revision: 9,
+      state: {
+        ...createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1'),
+        activePlayerId: 'missing-player',
+      },
+    },
+    { revision: Number.NaN, state: createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1') },
+  ])('rejects malformed state snapshots', (snapshot) => {
+    expect(isNewerSnapshot(snapshot, 8)).toBe(false);
+  });
+
   it('shares the host-selected random discard without guest recomputation', () => {
     const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
     state.players.p2.hand = Array.from({ length: 5 }, (_, index) => createCard(index));

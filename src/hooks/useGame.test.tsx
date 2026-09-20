@@ -265,4 +265,121 @@ describe('useGame P2P resynchronization', () => {
       })
     );
   });
+
+  it('ignores malformed guest action requests without changing or broadcasting state', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.createRoom.mockImplementation(async (handler) => {
+      onMessage = handler;
+      return 'host-room';
+    });
+
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => {
+      await result.current.createRoom();
+    });
+    peerMock.role = 'host';
+    peerMock.status = 'connected';
+    rerender();
+    peerMock.sendMessage.mockClear();
+    const stateBefore = result.current.gameState;
+
+    expect(() => {
+      act(() => {
+        onMessage?.({
+          type: 'ACTION_REQUEST',
+          senderId: 'player-2',
+          requestId: 'malformed-action',
+          timestamp: Date.now(),
+          payload: { type: 'MOVE_CARD', payload: {} },
+        });
+      });
+    }).not.toThrow();
+
+    expect(result.current.gameState).toBe(stateBefore);
+    expect(peerMock.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('keeps guest interaction locked when a malformed sync response arrives', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {
+      onMessage = handler;
+    });
+
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => {
+      await result.current.joinRoom('host-room');
+    });
+    peerMock.role = 'guest';
+    peerMock.status = 'connected';
+    rerender();
+
+    act(() => {
+      onMessage?.({
+        type: 'SYNC_RESPONSE',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: {}, revision: 2 },
+      });
+    });
+
+    expect(result.current.isSynchronizing).toBe(true);
+    expect(result.current.isInteractionLocked).toBe(true);
+    expect(result.current.gameState.players['player-1']).toBeDefined();
+  });
+
+  it('uses a new request ID namespace after joining a room again', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {
+      onMessage = handler;
+    });
+    const synchronizedState = createInitialGameState(
+      'player-1',
+      'Host',
+      'player-2',
+      'Guest',
+      'player-1'
+    );
+    const { result, rerender } = renderHook(() => useGame());
+
+    await act(async () => {
+      await result.current.joinRoom('host-room');
+    });
+    peerMock.role = 'guest';
+    peerMock.status = 'connected';
+    rerender();
+    act(() => {
+      onMessage?.({
+        type: 'SYNC_RESPONSE',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: synchronizedState, revision: 0 },
+      });
+    });
+    peerMock.sendMessage.mockClear();
+    act(() => {
+      result.current.dispatchAction({ type: 'ADD_LOG', payload: { message: 'first' } });
+    });
+    const firstRequest = (peerMock.sendMessage.mock.calls as unknown as Array<[PeerMessage]>)[0][0];
+
+    await act(async () => {
+      await result.current.joinRoom('host-room');
+    });
+    act(() => {
+      onMessage?.({
+        type: 'SYNC_RESPONSE',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: synchronizedState, revision: 0 },
+      });
+    });
+    peerMock.sendMessage.mockClear();
+    act(() => {
+      result.current.dispatchAction({ type: 'ADD_LOG', payload: { message: 'second' } });
+    });
+    const secondRequest = (peerMock.sendMessage.mock.calls as unknown as Array<[PeerMessage]>)[0][0];
+
+    expect(firstRequest.requestId).toBeDefined();
+    expect(secondRequest.requestId).toBeDefined();
+    expect(secondRequest.requestId).not.toBe(firstRequest.requestId);
+  });
 });

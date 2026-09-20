@@ -3,11 +3,22 @@ import { GameAction } from '../types/actions';
 import { GameState } from '../types/game';
 import { PeerMessage, PeerStateSnapshot } from '../types/peer';
 import { createInitialGameState } from '../domain/initialState';
-import { createAuthoritativeTransition, isNewerSnapshot } from '../domain/peerSync';
+import {
+  createAuthoritativeTransition,
+  isNewerSnapshot,
+  isValidPeerStateSnapshot,
+} from '../domain/peerSync';
 import { usePeer } from './usePeer';
 import { sound } from '../utils/audio';
 
 type NetworkRole = 'solo' | 'host' | 'guest';
+
+let requestSessionCounter = 0;
+
+function createRequestSessionId(): string {
+  requestSessionCounter += 1;
+  return `${Date.now().toString(36)}-${requestSessionCounter.toString(36)}`;
+}
 
 export function useGame() {
   const [myPlayerId, setMyPlayerId] = useState<string>('player-1');
@@ -30,6 +41,7 @@ export function useGame() {
   const isSynchronizingRef = useRef(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSequenceRef = useRef(0);
+  const requestSessionIdRef = useRef(createRequestSessionId());
   const processedRequestIdsRef = useRef(new Set<string>());
 
   const peer = usePeer();
@@ -207,9 +219,10 @@ export function useGame() {
 
   const hasProcessedRequest = useCallback((msg: PeerMessage) => {
     if (!msg.requestId) return false;
-    if (processedRequestIdsRef.current.has(msg.requestId)) return true;
+    const requestKey = `${msg.senderId}:${msg.requestId}`;
+    if (processedRequestIdsRef.current.has(requestKey)) return true;
 
-    processedRequestIdsRef.current.add(msg.requestId);
+    processedRequestIdsRef.current.add(requestKey);
     if (processedRequestIdsRef.current.size > 200) {
       const oldestRequestId = processedRequestIdsRef.current.values().next().value;
       if (oldestRequestId) processedRequestIdsRef.current.delete(oldestRequestId);
@@ -222,7 +235,11 @@ export function useGame() {
     if (msg.type === 'ACTION_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
       if (hasProcessedRequest(msg)) return;
-      applyAuthoritativeAction(msg.payload as GameAction);
+      try {
+        applyAuthoritativeAction(msg.payload as GameAction);
+      } catch {
+        return;
+      }
     } else if (msg.type === 'UNDO_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
       if (hasProcessedRequest(msg)) return;
@@ -243,12 +260,11 @@ export function useGame() {
       });
     } else if (msg.type === 'SYNC_RESPONSE') {
       if (networkRoleRef.current !== 'guest') return;
-      const snapshot = msg.payload as PeerStateSnapshot;
+      if (!isValidPeerStateSnapshot(msg.payload)) return;
+      const snapshot = msg.payload;
       const previousRevision = lastAppliedRevisionRef.current;
       applyRemoteSnapshot(snapshot, false);
       if (
-        snapshot?.state &&
-        typeof snapshot.revision === 'number' &&
         snapshot.revision >= previousRevision
       ) {
         clearSyncTimeout();
@@ -281,6 +297,7 @@ export function useGame() {
     myPlayerIdRef.current = 'player-2';
     lastAppliedRevisionRef.current = -1;
     requestSequenceRef.current = 0;
+    requestSessionIdRef.current = createRequestSessionId();
     setSynchronizationState(true);
     setSyncError(null);
     setMyPlayerId('player-2');
@@ -304,7 +321,7 @@ export function useGame() {
       sendMessageRef.current({
         type: 'ACTION_REQUEST',
         senderId: myPlayerIdRef.current,
-        requestId: `${myPlayerIdRef.current}-${requestSequenceRef.current}`,
+        requestId: `${myPlayerIdRef.current}-${requestSessionIdRef.current}-${requestSequenceRef.current}`,
         timestamp: Date.now(),
         payload: action,
       });
@@ -323,7 +340,7 @@ export function useGame() {
       sendMessageRef.current({
         type: 'UNDO_REQUEST',
         senderId: myPlayerIdRef.current,
-        requestId: `${myPlayerIdRef.current}-${requestSequenceRef.current}`,
+        requestId: `${myPlayerIdRef.current}-${requestSessionIdRef.current}-${requestSequenceRef.current}`,
         timestamp: Date.now(),
       });
       return;

@@ -256,7 +256,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'PLACE_INITIAL_LIFE': {
         const { playerId, count = 7 } = action.payload;
         const player = draft.players[playerId];
-        if (!player || !player.isHandKept || player.life.length > 0 || player.deck.length < count) return;
+        if (
+          !player ||
+          !Number.isInteger(count) ||
+          count <= 0 ||
+          !player.isHandKept ||
+          player.life.length > 0 ||
+          player.deck.length < count
+        ) return;
 
         // 公式ルール P3: マリガン終了後、山札の上から7枚を裏向きでライフエリアへ配置
         const { life, deck } = placeInitialLife(player.deck, count);
@@ -644,7 +651,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'RECOVER_LIFE': {
         const { playerId, count = 1, isFaceDown = true } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.deck.length === 0) return;
+        if (!player || !Number.isInteger(count) || count <= 0 || player.deck.length === 0) return;
 
         const addCount = Math.min(count, player.deck.length);
         for (let i = 0; i < addCount; i++) {
@@ -662,10 +669,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'TAKE_LIFE': {
         const { playerId, destination, lifeIndex = 0 } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.life.length === 0) return;
+        if (
+          !player ||
+          !Number.isInteger(lifeIndex) ||
+          lifeIndex < 0 ||
+          lifeIndex >= player.life.length
+        ) return;
 
-        const idx = Math.min(lifeIndex, player.life.length - 1);
-        const card = player.life.splice(idx, 1)[0];
+        const card = player.life.splice(lifeIndex, 1)[0];
         const restored = resetCardState(card);
 
         if (destination === 'hand') {
@@ -841,7 +852,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'DRAW_CARD': {
         const { playerId, count = 1 } = action.payload;
         const player = draft.players[playerId];
-        if (!player) return;
+        if (!player || !Number.isInteger(count) || count <= 0 || player.deck.length === 0) return;
 
         let drawnCount = 0;
         for (let i = 0; i < count; i++) {
@@ -926,10 +937,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'USE_AP': {
         const { playerId, amount = 1 } = action.payload;
         const player = draft.players[playerId];
-        if (!player) return;
+        if (!player || !Number.isInteger(amount) || amount <= 0 || amount > player.apCurrent) return;
 
         const prev = player.apCurrent;
-        player.apCurrent = Math.max(0, player.apCurrent - amount);
+        player.apCurrent -= amount;
         appendLog(draft, `${player.name} が AP を ${amount} 消費しました (${prev} → ${player.apCurrent})。`, playerId);
         break;
       }
@@ -937,7 +948,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'RECOVER_AP': {
         const { playerId, amount } = action.payload;
         const player = draft.players[playerId];
-        if (!player) return;
+        if (!player || (amount !== undefined && (!Number.isInteger(amount) || amount <= 0))) return;
 
         const prev = player.apCurrent;
         if (amount !== undefined) {
@@ -989,6 +1000,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       case 'PASS_TURN': {
         const { playerId } = action.payload;
+        if (playerId !== draft.activePlayerId || !draft.players[playerId]) return;
         const playerIds = Object.keys(draft.players);
         const nextPlayerId = playerIds.find((id) => id !== playerId) || playerId;
         const prevPlayer = draft.players[playerId] || draft.players[draft.activePlayerId];
@@ -1054,7 +1066,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'LOOK_AT_TOP_DECK': {
         const { playerId, count } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.deck.length === 0) return;
+        if (
+          !player ||
+          !Number.isInteger(count) ||
+          count <= 0 ||
+          player.deck.length === 0 ||
+          draft.revealedDeckCards
+        ) return;
 
         const actualCount = Math.min(count, player.deck.length);
         const cards = player.deck.splice(0, actualCount);
@@ -1069,7 +1087,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       case 'RESOLVE_TOP_DECK_CARD': {
         const { playerId, cardId, destination } = action.payload;
-        if (!draft.revealedDeckCards) return;
+        if (!draft.revealedDeckCards || draft.revealedDeckCards.playerId !== playerId) return;
 
         const player = draft.players[playerId];
         if (!player) return;
@@ -1128,7 +1146,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       case 'CLOSE_TOP_DECK': {
         const { playerId, shuffleRemaining } = action.payload;
-        if (!draft.revealedDeckCards) return;
+        if (!draft.revealedDeckCards || draft.revealedDeckCards.playerId !== playerId) return;
 
         const player = draft.players[playerId];
         if (player && draft.revealedDeckCards.cards.length > 0) {

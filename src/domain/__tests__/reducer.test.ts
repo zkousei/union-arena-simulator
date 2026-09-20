@@ -288,6 +288,64 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].hand.length).toBe(1);
   });
 
+  it('should reject invalid AP consumption and recovery amounts', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].apCurrent = 1;
+    state.players['p1'].apMax = 3;
+
+    const beforeInsufficientUse = state;
+    state = gameReducer(state, { type: 'USE_AP', payload: { playerId: 'p1', amount: 2 } });
+    expect(state).toBe(beforeInsufficientUse);
+
+    const beforeZeroUse = state;
+    state = gameReducer(state, { type: 'USE_AP', payload: { playerId: 'p1', amount: 0 } });
+    expect(state).toBe(beforeZeroUse);
+
+    const beforeNegativeRecovery = state;
+    state = gameReducer(state, { type: 'RECOVER_AP', payload: { playerId: 'p1', amount: -1 } });
+    expect(state).toBe(beforeNegativeRecovery);
+
+    state = gameReducer(state, { type: 'USE_AP', payload: { playerId: 'p1', amount: 1 } });
+    expect(state.players['p1'].apCurrent).toBe(0);
+    state = gameReducer(state, { type: 'RECOVER_AP', payload: { playerId: 'p1', amount: 2 } });
+    expect(state.players['p1'].apCurrent).toBe(2);
+  });
+
+  it('should keep drawing from an empty deck as a safe no-op', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+
+    const nextState = gameReducer(state, { type: 'DRAW_CARD', payload: { playerId: 'p1', count: 1 } });
+
+    expect(nextState).toBe(state);
+  });
+
+  it('should reject passing a turn for a player who is not active', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+
+    const nextState = gameReducer(state, { type: 'PASS_TURN', payload: { playerId: 'p2' } });
+
+    expect(nextState).toBe(state);
+    expect(nextState.turn).toBe(1);
+    expect(nextState.activePlayerId).toBe('p1');
+  });
+
+  it('should reject an out-of-range life index instead of taking another card', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].life = [createDummyCard('life-1', 'Life 1')];
+
+    const negativeResult = gameReducer(state, {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'hand', lifeIndex: -1 },
+    });
+    const overflowResult = gameReducer(state, {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'hand', lifeIndex: 2 },
+    });
+
+    expect(negativeResult).toBe(state);
+    expect(overflowResult).toBe(state);
+  });
+
   it('should reroll all rested field cards when entering END phase (Ver 1.1 official rule)', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].frontLine[0] = { ...createDummyCard('c1', 'C1'), isRested: true };

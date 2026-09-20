@@ -183,4 +183,39 @@ describe('game state integrity', () => {
     expect(nextState).toBe(state);
     expect(nextState.players.p1.frontLine[0]?.id).toBe(cardId);
   });
+
+  it('does not replace an unresolved top-deck inspection with another inspection', () => {
+    let state = createPreparedState();
+    const expectedCardIds = new Set(collectOwnedCards(state).map((card) => card.id));
+    state = gameReducer(state, { type: 'LOOK_AT_TOP_DECK', payload: { playerId: 'p1', count: 3 } });
+
+    const nextState = gameReducer(state, {
+      type: 'LOOK_AT_TOP_DECK',
+      payload: { playerId: 'p1', count: 2 },
+    });
+
+    expect(nextState).toBe(state);
+    expectGameStateIntegrity(nextState, expectedCardIds);
+  });
+
+  it('does not let another player resolve or close a top-deck inspection', () => {
+    let state = createPreparedState();
+    const expectedCardIds = new Set(collectOwnedCards(state).map((card) => card.id));
+    state = gameReducer(state, { type: 'LOOK_AT_TOP_DECK', payload: { playerId: 'p1', count: 3 } });
+    const revealedCardId = state.revealedDeckCards?.cards[0].id;
+    expect(revealedCardId).toBeDefined();
+
+    const resolvedByOpponent = gameReducer(state, {
+      type: 'RESOLVE_TOP_DECK_CARD',
+      payload: { playerId: 'p2', cardId: revealedCardId!, destination: 'hand' },
+    });
+    const closedByOpponent = gameReducer(state, {
+      type: 'CLOSE_TOP_DECK',
+      payload: { playerId: 'p2', shuffleRemaining: false },
+    });
+
+    expect(resolvedByOpponent).toBe(state);
+    expect(closedByOpponent).toBe(state);
+    expectGameStateIntegrity(state, expectedCardIds);
+  });
 });
