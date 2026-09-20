@@ -263,18 +263,25 @@ export const Board: React.FC<BoardProps> = ({
     setAttackingState({ attackerPlayerId, zone, slotIndex });
   };
 
-  // プレイヤーへのアタック解決 (通常攻撃 -> 防御側のブロック選択へ移行)
-  const handleAttackPlayer = (targetPlayerId: string) => {
-    if (attackingState === null) return;
-    const { attackerPlayerId, zone, slotIndex } = attackingState;
-    if (attackerPlayerId === targetPlayerId) return; // 自分の本体への攻撃は不可
-
+  // プレイヤーへのアタック共通実行処理 (アタッカーレスト化 ➔ ログ出力 ➔ ブロック選択状態へ)
+  const executeAttackPlayer = (
+    attackerPlayerId: string,
+    zone: 'frontLine' | 'energyLine',
+    slotIndex: FieldSlotIndex,
+    targetPlayerId: string
+  ) => {
     const attackerPlayer = gameState.players[attackerPlayerId];
     const targetPlayer = gameState.players[targetPlayerId];
     if (!attackerPlayer || !targetPlayer) return;
 
     const attacker = attackerPlayer[zone][slotIndex];
-    if (!attacker) return;
+    if (!attacker || attacker.isRested) return;
+
+    // 公式ルール P10: 先攻第1ターンはアタックできない
+    if (gameState.turn === 1 && attackerPlayer.isFirst) {
+      alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
+      return;
+    }
 
     // アタッカーをレストに
     dispatchAction({
@@ -303,6 +310,25 @@ export const Board: React.FC<BoardProps> = ({
     });
 
     setAttackingState(null);
+  };
+
+  // 1クリックで相手プレイヤーへ直接アタック宣言
+  const handleDirectAttack = (
+    attackerPlayerId: string,
+    zone: 'frontLine' | 'energyLine',
+    slotIndex: FieldSlotIndex
+  ) => {
+    const targetPlayerId = Object.keys(gameState.players).find((id) => id !== attackerPlayerId);
+    if (!targetPlayerId) return;
+    executeAttackPlayer(attackerPlayerId, zone, slotIndex, targetPlayerId);
+  };
+
+  // プレイヤーへのアタック解決 (通常攻撃 -> 防御側のブロック選択へ移行)
+  const handleAttackPlayer = (targetPlayerId: string) => {
+    if (attackingState === null) return;
+    const { attackerPlayerId, zone, slotIndex } = attackingState;
+    if (attackerPlayerId === targetPlayerId) return; // 自分の本体への攻撃は不可
+    executeAttackPlayer(attackerPlayerId, zone, slotIndex, targetPlayerId);
   };
 
   // キャラへのアタック（【狙い撃ち】バトル）解決
@@ -1312,6 +1338,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'frontLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(topPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
           />
         </div>
@@ -1388,6 +1415,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'frontLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(bottomPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
           />
           <FieldZone

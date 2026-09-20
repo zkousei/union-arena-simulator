@@ -30,6 +30,7 @@ interface CardViewProps {
   onHoverCard?: (card: Card | null) => void;
   onClick?: () => void;
   onDeclareAttack?: () => void;
+  onDirectAttack?: () => void;
   onOpenUnderCards?: () => void;
   isCompact?: boolean;
 }
@@ -68,6 +69,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onHoverCard,
   onClick,
   onDeclareAttack,
+  onDirectAttack,
   onOpenUnderCards,
   isCompact = false,
 }) => {
@@ -227,8 +229,21 @@ export const CardView: React.FC<CardViewProps> = ({
             isDragging ? 'opacity-40 scale-95 border-dashed border-amber-400' : ''
           }`}
         >
-          {/* クイック操作ボタン (レスト切替 / 拡大確認) */}
+          {/* クイック操作ボタン (レスト切替 / 攻撃 / 拡大確認) */}
           <div className="absolute top-1 right-1 z-30 flex items-center gap-0.5">
+            {!isOpponent && !card.isRested && onDirectAttack && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDirectAttack();
+                }}
+                title="アタック（1クリックで相手プレイヤーへ攻撃宣言）"
+                className="p-0.5 rounded transition-all border shadow bg-rose-950/90 text-rose-300 border-rose-500/60 hover:bg-rose-600 hover:text-white opacity-85 group-hover/card:opacity-100 animate-in fade-in"
+              >
+                <Swords className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+              </button>
+            )}
             {onToggleRest && (
               <button
                 type="button"
@@ -426,16 +441,29 @@ export const CardView: React.FC<CardViewProps> = ({
             {isOpponent ? `[相手] ${card.name}` : card.name}
           </div>
 
+          {!isOpponent && !card.isRested && onDirectAttack && (
+            <button
+              onClick={() => {
+                onDirectAttack();
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-2 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded flex items-center gap-2 mb-1"
+            >
+              <Swords className="w-3.5 h-3.5 text-rose-400" />
+              アタック（相手プレイヤーへ攻撃）
+            </button>
+          )}
+
           {!isOpponent && !card.isRested && onDeclareAttack && (
             <button
               onClick={() => {
                 onDeclareAttack();
                 setShowMenu(false);
               }}
-              className="w-full text-left px-2 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded flex items-center gap-2 mb-1"
+              className="w-full text-left px-2 py-1.5 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold rounded flex items-center gap-2 mb-1"
             >
-              <Swords className="w-3.5 h-3.5 text-rose-400" />
-              アタック宣言（攻撃）
+              <Swords className="w-3.5 h-3.5 text-amber-400" />
+              アタック対象を選択（狙い撃ち）
             </button>
           )}
 

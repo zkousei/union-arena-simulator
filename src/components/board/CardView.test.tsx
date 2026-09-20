@@ -153,4 +153,20 @@ describe('CardView', () => {
     render(<CardView card={{ ...dummyCard, bp: null }} />);
     expect(screen.getByText('2500')).toBeTruthy();
   });
+
+  it('calls onDirectAttack when quick attack sword button is clicked', () => {
+    const handleDirectAttack = vi.fn();
+    render(
+      <CardView
+        card={{ ...dummyCard, isRested: false }}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent={false}
+        onDirectAttack={handleDirectAttack}
+      />
+    );
+
+    const attackBtn = screen.getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    fireEvent.click(attackBtn);
+    expect(handleDirectAttack).toHaveBeenCalledTimes(1);
+  });
 });

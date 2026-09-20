@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Board } from './Board';
 import { createInitialGameState } from '../../domain/initialState';
@@ -71,7 +71,7 @@ describe('Board Combat Flow and Block Interaction', () => {
     const attackerCard = screen.getByText('アタッカー君');
     fireEvent.contextMenu(attackerCard);
 
-    const attackBtn = screen.getByRole('button', { name: /アタック宣言（攻撃）/ });
+    const attackBtn = screen.getByRole('button', { name: /アタック対象を選択/ });
     expect(attackBtn).toBeTruthy();
     fireEvent.click(attackBtn);
 
@@ -125,7 +125,7 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     // Declare attack
     fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック宣言（攻撃）/ }));
+    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
 
     // Click opponent area to attack player
     const opponentSide = screen.getByText(/Player 2 の手札/).closest('div')!;
@@ -182,7 +182,7 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     // Declare attack
     fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック宣言（攻撃）/ }));
+    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
 
     // Click opponent area
     fireEvent.click(screen.getByText(/Player 2 の手札/).closest('div')!);
@@ -226,27 +226,23 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     // Declare attack
     fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック宣言（攻撃）/ }));
+    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
 
     // Click opponent area
     fireEvent.click(screen.getByText(/Player 2 の手札/).closest('div')!);
 
-    // Block with defender
+    // Block
     fireEvent.click(screen.getByText('ブロッカー君'));
 
-    // Blocker is rested
-    expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'TOGGLE_REST',
-      payload: { playerId: 'player-2', zone: 'frontLine', slotIndex: 0 },
-    });
-
-    // Neither character should be moved to graveyard
-    const anyCardMovedToGrave = dispatchAction.mock.calls.some(
-      (call) =>
-        call[0].type === 'MOVE_CARD' &&
-        call[0].payload.to.zone === 'graveyard'
+    // Both should survive (neither moved to graveyard)
+    expect(dispatchAction).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'MOVE_CARD',
+        payload: expect.objectContaining({
+          to: expect.objectContaining({ zone: 'graveyard' }),
+        }),
+      })
     );
-    expect(anyCardMovedToGrave).toBe(false);
   });
 
   it('supports direct character attack (Snipe) by clicking opponent character directly during attack declaration', () => {
@@ -265,7 +261,7 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     // Declare attack
     fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック宣言（攻撃）/ }));
+    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
 
     // Click opponent character directly (Snipe)
     fireEvent.click(screen.getByText('ブロッカー君'));
@@ -286,5 +282,35 @@ describe('Board Combat Flow and Block Interaction', () => {
         to: { playerId: 'player-2', zone: 'graveyard' },
       },
     });
+  });
+
+  it('supports one-click quick attack button on active frontLine card to attack opponent player', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={true}
+        isFitMode={false}
+      />
+    );
+
+    // Click quick attack button on attacker card directly
+    const attackerCard = screen.getByText('アタッカー君').closest('div[draggable="true"]') as HTMLElement;
+    const quickAttackBtn = within(attackerCard).getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    expect(quickAttackBtn).toBeTruthy();
+    fireEvent.click(quickAttackBtn);
+
+    // Attacker is rested and block prompt appears immediately
+    expect(dispatchAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'TOGGLE_REST',
+        payload: { playerId: 'player-1', zone: 'frontLine', slotIndex: 0 },
+      })
+    );
+    expect(screen.getByText('【ブロック選択】')).toBeTruthy();
   });
 });

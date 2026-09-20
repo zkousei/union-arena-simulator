@@ -34,6 +34,7 @@ interface FieldZoneProps {
   onHoverCard?: (card: Card | null) => void;
   onDropCard?: (from: CardLocation, targetZone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => void;
   onDeclareAttack?: (slotIndex: FieldSlotIndex) => void;
+  onDirectAttack?: (slotIndex: FieldSlotIndex) => void;
   onOpenUnderCards?: (slotIndex: FieldSlotIndex, card: Card) => void;
   extraHeaderBadge?: React.ReactNode;
   isCompact?: boolean;
@@ -57,6 +58,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   onHoverCard,
   onDropCard,
   onDeclareAttack,
+  onDirectAttack,
   onOpenUnderCards,
   extraHeaderBadge,
   isCompact = false,
@@ -153,6 +155,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
                   onInspect={onInspect}
                   onHoverCard={onHoverCard}
                   onDeclareAttack={() => onDeclareAttack && onDeclareAttack(slotIdx)}
+                  onDirectAttack={() => onDirectAttack && onDirectAttack(slotIdx)}
                   onOpenUnderCards={() => onOpenUnderCards && onOpenUnderCards(slotIdx, card)}
                 />
               ) : (
