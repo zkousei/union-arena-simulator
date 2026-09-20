@@ -1,0 +1,1031 @@
+import { produce } from 'immer';
+import { GameAction } from '../types/actions';
+import { Card } from '../types/card';
+import { CardLocation, FieldSlotIndex, GameState, PlayerState } from '../types/game';
+import {
+  calculateMaxAp,
+  createDefaultApCards,
+  executeMulligan,
+  placeInitialLife,
+  resetCardState,
+  setupInitialDeck,
+  shuffleCards,
+} from './deck';
+import { createInitialGameState } from './initialState';
+
+/**
+ * 補助関数: プレイヤーの特定ゾーンからカードを取り出す
+ */
+function removeCardFromLocation(player: PlayerState, loc: CardLocation, cardId?: string): Card | null {
+  if (loc.zone === 'frontLine') {
+    const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
+    const card = player.frontLine[slot];
+    player.frontLine[slot] = null;
+    return card;
+  }
+  if (loc.zone === 'energyLine') {
+    const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
+    const card = player.energyLine[slot];
+    player.energyLine[slot] = null;
+    return card;
+  }
+  if (loc.zone === 'hand') {
+    let idx = loc.index;
+    if (idx === undefined && cardId) {
+      idx = player.hand.findIndex((c) => c.id === cardId);
+    }
+    if (idx !== undefined && idx >= 0 && idx < player.hand.length) {
+      return player.hand.splice(idx, 1)[0];
+    }
+  }
+  if (loc.zone === 'deck') {
+    let idx = loc.index;
+    if (idx === undefined && cardId) {
+      idx = player.deck.findIndex((c) => c.id === cardId);
+    }
+    if (idx === undefined) idx = 0;
+    if (idx >= 0 && idx < player.deck.length) {
+      return player.deck.splice(idx, 1)[0];
+    }
+  }
+  if (loc.zone === 'life') {
+    let idx = loc.index;
+    if (idx === undefined && cardId) {
+      idx = player.life.findIndex((c) => c.id === cardId);
+    }
+    if (idx === undefined) idx = 0;
+    if (idx >= 0 && idx < player.life.length) {
+      return player.life.splice(idx, 1)[0];
+    }
+  }
+  if (loc.zone === 'graveyard') {
+    let idx = loc.index;
+    if (idx === undefined && cardId) {
+      idx = player.graveyard.findIndex((c) => c.id === cardId);
+    }
+    if (idx === undefined && loc.index !== undefined) idx = loc.index;
+    if (idx !== undefined && idx >= 0 && idx < player.graveyard.length) {
+      return player.graveyard.splice(idx, 1)[0];
+    }
+  }
+  if (loc.zone === 'removed') {
+    let idx = loc.index;
+    if (idx === undefined && cardId) {
+      idx = player.removed.findIndex((c) => c.id === cardId);
+    }
+    if (idx === undefined && loc.index !== undefined) idx = loc.index;
+    if (idx !== undefined && idx >= 0 && idx < player.removed.length) {
+      return player.removed.splice(idx, 1)[0];
+    }
+  }
+  return null;
+}
+
+/**
+ * 補助関数: プレイヤーの特定ゾーンにカードを追加する
+ */
+function addCardToLocation(player: PlayerState, loc: CardLocation, card: Card): void {
+  if (loc.zone === 'frontLine') {
+    const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
+    player.frontLine[slot] = card;
+  } else if (loc.zone === 'energyLine') {
+    const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
+    player.energyLine[slot] = card;
+  } else if (loc.zone === 'hand') {
+    player.hand.push(resetCardState(card));
+  } else if (loc.zone === 'deck') {
+    if (loc.index !== undefined) {
+      player.deck.splice(loc.index, 0, resetCardState(card));
+    } else {
+      player.deck.push(resetCardState(card));
+    }
+  } else if (loc.zone === 'life') {
+    player.life.push({ ...resetCardState(card), isFaceDown: true });
+  } else if (loc.zone === 'graveyard') {
+    player.graveyard.push(resetCardState(card));
+  } else if (loc.zone === 'removed') {
+    player.removed.push(resetCardState(card));
+  }
+}
+
+/**
+ * 補助関数: ログの追加ヘルパー
+ */
+function appendLog(
+  draft: GameState,
+  message: string,
+  playerId?: string,
+  type: 'action' | 'phase' | 'system' | 'chat' = 'action'
+) {
+  const playerName = playerId ? draft.players[playerId]?.name : undefined;
+  draft.logs.push({
+    id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: Date.now(),
+    playerId,
+    playerName,
+    message,
+    type,
+  });
+}
+
+/**
+ * 公式ルール (Ver 1.1) 準拠ゲームリデューサー
+ */
+export function gameReducer(state: GameState, action: GameAction): GameState {
+  return produce(state, (draft) => {
+    switch (action.type) {
+      case 'INIT_GAME': {
+        const { player1Id, player1Name, player2Id, player2Name, activePlayerId } = action.payload;
+        return createInitialGameState(player1Id, player1Name, player2Id, player2Name, activePlayerId);
+      }
+
+      case 'SET_FIRST_PLAYER': {
+        const { firstPlayerId } = action.payload;
+        draft.firstPlayerId = firstPlayerId;
+        draft.activePlayerId = firstPlayerId;
+
+        Object.values(draft.players).forEach((p) => {
+          p.isFirst = p.id === firstPlayerId;
+          p.apMax = calculateMaxAp(1, p.isFirst);
+          p.apCurrent = p.apMax;
+        });
+
+        const firstPlayerName = draft.players[firstPlayerId]?.name || firstPlayerId;
+        appendLog(draft, `先攻が「${firstPlayerName}」に決定しました。`, firstPlayerId, 'system');
+        break;
+      }
+
+      case 'SETUP_GAME': {
+        const { playerId, deckCards, apCards } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        // 公式ルール P3: デッキ50枚から手札7枚のみをドロー（山札43枚、ライフはマリガン後に配置するため0枚）
+        const { life, hand, deck } = setupInitialDeck(deckCards);
+        player.deck = deck;
+        player.hand = hand;
+        player.life = life;
+        player.apArea = apCards.length > 0 ? apCards : createDefaultApCards(playerId);
+        player.apMax = calculateMaxAp(1, player.isFirst);
+        player.apCurrent = player.apMax;
+        player.frontLine = [null, null, null, null];
+        player.energyLine = [null, null, null, null];
+        player.graveyard = [];
+        player.removed = [];
+        player.hasMulliganed = false;
+        player.isHandKept = false;
+        player.isReady = false;
+
+        appendLog(
+          draft,
+          `${player.name} がデッキをセットアップし、初手7枚をドローしました（山札: ${player.deck.length}枚。先攻から順にマリガン判定を行います）。`,
+          playerId,
+          'system'
+        );
+        break;
+      }
+
+      case 'DRAW_INITIAL_HAND': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.deck.length < 7) return;
+
+        // 手札7枚をドロー
+        const handCards = player.deck.splice(0, 7).map(resetCardState);
+        player.hand = handCards;
+        appendLog(draft, `${player.name} が初手7枚をドローしました（山札残り: ${player.deck.length}枚）。`, playerId, 'system');
+        break;
+      }
+
+      case 'MULLIGAN': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.hasMulliganed || player.isHandKept || player.hand.length === 0) return;
+
+        // 公式ルール P3: 手札7枚を横に置き、山札(43枚)の上から7枚引く。その後横に置いた7枚を山札に戻してシャッフル
+        const { newHand, newDeck } = executeMulligan(player.hand, player.deck);
+        player.hand = newHand;
+        player.deck = newDeck;
+        player.hasMulliganed = true;
+        player.isHandKept = true;
+
+        appendLog(
+          draft,
+          `🔄【マリガン】${player.name} が手札7枚を引き直しました（元の手札は山札に戻してシャッフル。山札: ${player.deck.length}枚）。`,
+          playerId,
+          'action'
+        );
+        break;
+      }
+
+      case 'KEEP_HAND': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.hasMulliganed || player.isHandKept) return;
+
+        player.isHandKept = true;
+        appendLog(draft, `✨【キープ】${player.name} が初手7枚をキープしました。`, playerId, 'action');
+        break;
+      }
+
+      case 'PLACE_INITIAL_LIFE': {
+        const { playerId, count = 7 } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.life.length > 0) return;
+
+        // 公式ルール P3: マリガン終了後、山札の上から7枚を裏向きでライフエリアへ配置
+        const { life, deck } = placeInitialLife(player.deck, count);
+        player.life = life;
+        player.deck = deck;
+
+        appendLog(
+          draft,
+          `🛡️【ライフ配置】${player.name} がマリガン完了に伴い、山札の上からライフ7枚を裏向きで配置しました（山札残り: ${player.deck.length}枚）。`,
+          playerId,
+          'system'
+        );
+        break;
+      }
+
+      case 'SET_READY': {
+        const { playerId, isReady } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+        player.isReady = isReady;
+        appendLog(draft, `${player.name} が準備${isReady ? '完了' : '未完了'}になりました。`, playerId, 'system');
+        break;
+      }
+
+      case 'START_GAME': {
+        draft.status = 'PLAYING';
+        draft.turn = 1;
+        draft.phase = 'START';
+        draft.activePlayerId = draft.firstPlayerId || Object.keys(draft.players)[0];
+
+        // 各プレイヤーのライフ未配置セーフティネット & AP初期化
+        Object.values(draft.players).forEach((p) => {
+          if (p.life.length === 0 && p.deck.length >= 7) {
+            const { life, deck } = placeInitialLife(p.deck, 7);
+            p.life = life;
+            p.deck = deck;
+            appendLog(draft, `🛡️【ライフ自動配置】${p.name} のライフ7枚を配置しました。`, p.id, 'system');
+          }
+          p.apMax = calculateMaxAp(1, p.isFirst);
+          p.apCurrent = p.apMax;
+          p.hasExtraDrawn = false;
+        });
+
+        const activePlayer = draft.players[draft.activePlayerId];
+        appendLog(
+          draft,
+          `⚔️ ゲームが開始されました！ 第1ターン（先攻: ${activePlayer?.name || draft.activePlayerId}）です。\n※公式ルール: 先攻第1ターンは【通常ドローなし】【アタックフェイズなし（アタック不可）】です。`,
+          draft.activePlayerId,
+          'system'
+        );
+        break;
+      }
+
+      case 'MOVE_CARD': {
+        const { from, to, cardId } = action.payload;
+        const fromPlayer = draft.players[from.playerId];
+        const toPlayer = draft.players[to.playerId];
+        if (!fromPlayer || !toPlayer) return;
+
+        const isFromField = from.zone === 'frontLine' || from.zone === 'energyLine';
+        const isToField = to.zone === 'frontLine' || to.zone === 'energyLine';
+
+        // 盤面スロット間の移動で、移動先に既にカードが存在する場合は「位置のスワップ（入れ替え）」を実行
+        if (isFromField && isToField && from.slotIndex !== undefined && to.slotIndex !== undefined) {
+          const fromSlot = from.slotIndex as FieldSlotIndex;
+          const toSlot = to.slotIndex as FieldSlotIndex;
+          const fromCard = from.zone === 'frontLine' ? fromPlayer.frontLine[fromSlot] : fromPlayer.energyLine[fromSlot];
+          const toCard = to.zone === 'frontLine' ? toPlayer.frontLine[toSlot] : toPlayer.energyLine[toSlot];
+
+          if (fromCard && toCard) {
+            // スワップ
+            if (from.zone === 'frontLine') {
+              fromPlayer.frontLine[fromSlot] = toCard;
+            } else {
+              fromPlayer.energyLine[fromSlot] = toCard;
+            }
+
+            if (to.zone === 'frontLine') {
+              toPlayer.frontLine[toSlot] = fromCard;
+            } else {
+              toPlayer.energyLine[toSlot] = fromCard;
+            }
+
+            appendLog(
+              draft,
+              `${fromPlayer.name} が「${fromCard.name}」と「${toCard.name}」の位置を入れ替えました。`,
+              from.playerId
+            );
+            return;
+          }
+        }
+
+        const card = removeCardFromLocation(fromPlayer, from, cardId);
+        if (!card) return;
+
+        const isEnteringField = isToField;
+        const isLeavingField = isFromField && !isEnteringField;
+
+        // レイド下敷きカード群の退場処理
+        const underCards = card.underCards || [];
+
+        let cardToAdd = isLeavingField ? resetCardState(card) : card;
+
+        // 公式ルール P1: キャラクターやフィールドは手札からの「登場時はレスト（横向き）」で置く
+        if (from.zone === 'hand' && isEnteringField) {
+          cardToAdd = { ...cardToAdd, isRested: true };
+        }
+
+        addCardToLocation(toPlayer, to, cardToAdd);
+
+        // 公式ルール P12: レイドキャラがフィールドを離れる時、下敷きのレイド元カードはすべて場外へ送る
+        if (isLeavingField && underCards.length > 0) {
+          underCards.forEach((underCard) => {
+            toPlayer.graveyard.push(resetCardState(underCard));
+          });
+          appendLog(
+            draft,
+            `「${card.name}」の退場に伴い、下敷きのレイド元カード ${underCards.length} 枚（${underCards.map((c) => c.name).join(', ')}）が場外へ移動しました。`,
+            from.playerId,
+            'system'
+          );
+        }
+
+        const fromDesc = `${from.zone}${from.slotIndex !== undefined ? `[枠${from.slotIndex + 1}]` : ''}`;
+        const toDesc = `${to.zone}${to.slotIndex !== undefined ? `[枠${to.slotIndex + 1}]` : ''}`;
+        appendLog(draft, `${fromPlayer.name} が「${card.name}」を ${fromDesc} から ${toDesc} へ移動しました。`, from.playerId);
+        break;
+      }
+
+      case 'SEPARATE_UNDER_CARD': {
+        const { playerId, zone, slotIndex, underCardId, destination, destSlotIndex } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const hostCard = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
+        if (!hostCard || !hostCard.underCards || hostCard.underCards.length === 0) return;
+
+        const underIndex = hostCard.underCards.findIndex((c) => c.id === underCardId);
+        if (underIndex === -1) return;
+
+        const [separated] = hostCard.underCards.splice(underIndex, 1);
+        const restored = resetCardState(separated);
+
+        if (destination === 'hand') {
+          player.hand.push(restored);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を手札に戻しました。`, playerId);
+        } else if (destination === 'graveyard') {
+          player.graveyard.push(restored);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を場外へ送りました。`, playerId);
+        } else if (destination === 'removed') {
+          player.removed.push(restored);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を除外（リムーブエリア）しました。`, playerId);
+        } else if (destination === 'frontLine' || destination === 'energyLine') {
+          const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
+          const targetIndex =
+            destSlotIndex !== undefined ? destSlotIndex : targetSlots.findIndex((c) => c === null);
+
+          if (targetIndex !== -1 && targetSlots[targetIndex] === null) {
+            targetSlots[targetIndex] = { ...restored, isRested: true };
+            appendLog(
+              draft,
+              `${player.name} が「${hostCard.name}」の下から「${restored.name}」を${
+                destination === 'frontLine' ? 'フロント' : 'エナジー'
+              }ライン枠${targetIndex + 1}に登場させました。`,
+              playerId
+            );
+          }
+        }
+        break;
+      }
+
+      case 'SEPARATE_PARENT_CARD': {
+        const { playerId, zone, slotIndex, destination } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const hostCard = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
+        if (!hostCard || !hostCard.underCards || hostCard.underCards.length === 0) return;
+
+        const underCards = [...hostCard.underCards];
+        // 直下にあったカード（末尾の1枚）を新たなフィールド上のカードとして昇格させる
+        const newTopCard = underCards.pop()!;
+        newTopCard.underCards = underCards;
+        newTopCard.isRested = hostCard.isRested; // 状態（レスト/アクティブ）を引き継ぐ
+        newTopCard.isFrozen = hostCard.isFrozen;
+
+        if (zone === 'frontLine') {
+          player.frontLine[slotIndex] = newTopCard;
+        } else {
+          player.energyLine[slotIndex] = newTopCard;
+        }
+
+        // 親カードを分離して指定先へ送る
+        const separatedCard = { ...hostCard, underCards: [] };
+        const restored = resetCardState(separatedCard);
+
+        let destName = '';
+        if (destination === 'hand') {
+          player.hand.push(restored);
+          destName = '手札';
+        } else if (destination === 'graveyard') {
+          player.graveyard.push(restored);
+          destName = '場外';
+        } else if (destination === 'removed') {
+          player.removed.push(restored);
+          destName = 'リムーブエリア（除外）';
+        } else if (destination === 'deckTop') {
+          player.deck.unshift(restored);
+          destName = '山札の上';
+        } else if (destination === 'deckBottom') {
+          player.deck.push(restored);
+          destName = '山札の下';
+        }
+
+        appendLog(
+          draft,
+          `${player.name} が上のカード「${hostCard.name}」を分離して${destName}へ移動しました。下の「${newTopCard.name}」がフィールドに残ります。`,
+          playerId,
+          'action'
+        );
+        break;
+      }
+
+      case 'TOGGLE_REST': {
+        const { playerId, zone, slotIndex } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const card = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
+        if (card) {
+          card.isRested = !card.isRested;
+          const status = card.isRested ? 'レスト' : 'アクティブ';
+          appendLog(draft, `${player.name} が「${card.name}」を${status}にしました。`, playerId);
+        }
+        break;
+      }
+
+      case 'TOGGLE_FREEZE': {
+        const { playerId, zone, slotIndex } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const card = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
+        if (card) {
+          card.isFrozen = !card.isFrozen;
+          const status = card.isFrozen ? 'フリーズ（次回アクティブ不可）' : 'フリーズ解除';
+          appendLog(draft, `${player.name} が「${card.name}」を ${status} に設定しました。`, playerId);
+        }
+        break;
+      }
+
+      case 'SET_ALL_ACTIVE': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        player.frontLine.forEach((card) => {
+          if (card) {
+            if (card.isFrozen) {
+              card.isFrozen = false; // フリーズ解除されるが、アクティブにはならない
+              appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
+            } else {
+              card.isRested = false;
+            }
+          }
+        });
+        player.energyLine.forEach((card) => {
+          if (card) {
+            if (card.isFrozen) {
+              card.isFrozen = false;
+              appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
+            } else {
+              card.isRested = false;
+            }
+          }
+        });
+        player.apArea.forEach((card) => {
+          card.isRested = false;
+        });
+
+        appendLog(draft, `${player.name} が自陣のすべてのカードをアクティブにしました。`, playerId);
+        break;
+      }
+
+      case 'ADD_MARKER': {
+        const { playerId, targetZone, targetSlotIndex, from, isFaceDown = true } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const hostCard = targetZone === 'frontLine' ? player.frontLine[targetSlotIndex] : player.energyLine[targetSlotIndex];
+        if (!hostCard) return;
+
+        let markerCard: Card | null = null;
+        if (from === 'topDeck') {
+          if (player.deck.length > 0) {
+            markerCard = player.deck.shift()!;
+          }
+        } else if (typeof from === 'object' && from.zone === 'hand') {
+          if (from.index >= 0 && from.index < player.hand.length) {
+            markerCard = player.hand.splice(from.index, 1)[0];
+          }
+        }
+
+        if (markerCard) {
+          if (!hostCard.underCards) hostCard.underCards = [];
+          hostCard.underCards.push({
+            ...resetCardState(markerCard),
+            isFaceDown,
+          });
+          appendLog(
+            draft,
+            `${player.name} が「${hostCard.name}」の下にカードを1枚マーカーとして置きました（現在 ${hostCard.underCards.length} 枚）。`,
+            playerId
+          );
+        }
+        break;
+      }
+
+      case 'RECOVER_LIFE': {
+        const { playerId, count = 1 } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.deck.length === 0) return;
+
+        const addCount = Math.min(count, player.deck.length);
+        for (let i = 0; i < addCount; i++) {
+          const card = player.deck.shift()!;
+          player.life.unshift({ ...resetCardState(card), isFaceDown: true });
+        }
+        appendLog(draft, `${player.name} がライフを ${addCount} 回復しました（現在ライフ: ${player.life.length}）。`, playerId);
+        break;
+      }
+
+      case 'TAKE_LIFE': {
+        const { playerId, destination, lifeIndex = 0 } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.life.length === 0) return;
+
+        const idx = Math.min(lifeIndex, player.life.length - 1);
+        const card = player.life.splice(idx, 1)[0];
+        const restored = resetCardState(card);
+
+        if (destination === 'hand') {
+          player.hand.push(restored);
+          appendLog(draft, `${player.name} がライフから「${restored.name}」を手札に加えました（現在ライフ: ${player.life.length}）。`, playerId);
+        } else if (destination === 'graveyard') {
+          player.graveyard.push(restored);
+          appendLog(draft, `${player.name} がライフから「${restored.name}」を場外へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
+        }
+        break;
+      }
+
+      case 'FLIP_LIFE': {
+        const { playerId } = action.payload;
+        const lifeIndex = action.payload.lifeIndex ?? (action.payload as { index?: number }).index ?? 0;
+        const player = draft.players[playerId];
+        if (!player || player.life.length === 0) return;
+
+        const idx = Math.min(Math.max(0, lifeIndex), player.life.length - 1);
+        const targetLife = player.life[idx];
+        const currentFaceDown = targetLife.isFaceDown !== false; // デフォルトは裏向き
+        targetLife.isFaceDown = !currentFaceDown;
+        const stateStr = targetLife.isFaceDown ? '裏向き' : '表向き';
+        appendLog(
+          draft,
+          `${player.name} がライフのカード（${targetLife.isFaceDown ? '非公開' : targetLife.name}）を${stateStr}にしました。`,
+          playerId
+        );
+        break;
+      }
+
+      case 'DISCARD_ALL_HAND': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.hand.length === 0) return;
+
+        const count = player.hand.length;
+        const discarded = player.hand.splice(0, count);
+        discarded.forEach((c) => player.graveyard.push(resetCardState(c)));
+        appendLog(draft, `${player.name} が手札すべて（${count}枚）を場外に置きました。`, playerId);
+        break;
+      }
+
+      case 'DISCARD_HAND_CARD': {
+        const { playerId, index } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.hand.length === 0) return;
+
+        const targetIdx = index !== undefined ? index : Math.floor(Math.random() * player.hand.length);
+        if (targetIdx < 0 || targetIdx >= player.hand.length) return;
+
+        const discarded = player.hand.splice(targetIdx, 1)[0];
+        player.graveyard.push(resetCardState(discarded));
+        appendLog(
+          draft,
+          `${player.name} の手札から「${discarded.name}」が場外に置かれました（残り手札: ${player.hand.length}枚）。`,
+          playerId
+        );
+        break;
+      }
+
+      case 'REVEAL_TOP_DECK_CARD': {
+        const { playerId, reveal } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.deck.length === 0) return;
+
+        const shouldReveal = reveal !== undefined ? reveal : !player.revealedTopDeckCard;
+        if (shouldReveal) {
+          player.revealedTopDeckCard = { ...resetCardState(player.deck[0]), isFaceDown: false };
+          appendLog(draft, `${player.name} の山札の一番上「${player.deck[0].name}」が表向きになりました。`, playerId);
+        } else {
+          player.revealedTopDeckCard = null;
+          appendLog(draft, `${player.name} の山札の一番上が裏向きに戻りました。`, playerId);
+        }
+        break;
+      }
+
+      case 'BOTTOM_DECK_ACTION': {
+        const { playerId, action: bottomAction } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.deck.length === 0) return;
+
+        if (bottomAction === 'view') {
+          const bottomCard = player.deck[player.deck.length - 1];
+          draft.revealedCard = {
+            card: { ...resetCardState(bottomCard), isFaceDown: false },
+            source: '山札の下（確認）',
+            fromPlayerId: playerId,
+          };
+          appendLog(draft, `${player.name} が山札の一番下のカード「${bottomCard.name}」を確認・公開しました。`, playerId);
+        } else if (bottomAction === 'mill') {
+          const bottomCard = player.deck.pop()!;
+          player.graveyard.push(resetCardState(bottomCard));
+          appendLog(draft, `${player.name} が山札の一番下のカード「${bottomCard.name}」を場外に置きました。`, playerId);
+        } else if (bottomAction === 'toHand') {
+          const bottomCard = player.deck.pop()!;
+          player.hand.push(resetCardState(bottomCard));
+          appendLog(draft, `${player.name} が山札の一番下のカード「${bottomCard.name}」を手札に加えました。`, playerId);
+        }
+        break;
+      }
+
+      case 'MODIFY_BP': {
+        const { playerId, zone, slotIndex, delta } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const card = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
+        if (card) {
+          card.bpModifier = (card.bpModifier || 0) + delta;
+          const sign = delta >= 0 ? `+${delta}` : `${delta}`;
+          appendLog(draft, `${player.name} が「${card.name}」のBPを ${sign} しました（現在BP: ${(card.bp || 0) + card.bpModifier}）。`, playerId);
+        }
+        break;
+      }
+
+      case 'RAID_CARD': {
+        const { playerId, targetZone, targetSlotIndex, raidCard, fromLocation, moveToFront } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const targetCard = targetZone === 'frontLine' ? player.frontLine[targetSlotIndex] : player.energyLine[targetSlotIndex];
+        if (!targetCard) return;
+
+        // レイド元から引っこ抜く
+        removeCardFromLocation(draft.players[fromLocation.playerId], fromLocation);
+
+        // 公式ルール P12: 「レストの場合、アクティブにする」「エナジーLにある場合、フロントLへ移動できる」
+        const newRaidCard: Card = {
+          ...raidCard,
+          isRested: false, // レイド登場時は強制アクティブ化！
+          underCards: [...(targetCard.underCards || []), targetCard],
+        };
+
+        if (targetZone === 'energyLine' && moveToFront) {
+          // エナジーLからフロントLの空き枠へ移動
+          const emptyFrontIndex = player.frontLine.findIndex((c) => c === null);
+          if (emptyFrontIndex !== -1) {
+            player.energyLine[targetSlotIndex] = null;
+            player.frontLine[emptyFrontIndex] = newRaidCard;
+            appendLog(draft, `${player.name} が「${targetCard.name}」の上に「${raidCard.name}」をレイドし、アクティブ状態でフロントL枠${emptyFrontIndex + 1}へ移動させました！`, playerId);
+            return;
+          }
+        }
+
+        if (targetZone === 'frontLine') {
+          player.frontLine[targetSlotIndex] = newRaidCard;
+        } else {
+          player.energyLine[targetSlotIndex] = newRaidCard;
+        }
+
+        appendLog(draft, `${player.name} が「${targetCard.name}」の上に「${raidCard.name}」を【レイド】しました！（アクティブ状態）`, playerId);
+        break;
+      }
+
+      case 'DRAW_CARD': {
+        const { playerId, count = 1 } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        let drawnCount = 0;
+        for (let i = 0; i < count; i++) {
+          if (player.deck.length > 0) {
+            const card = player.deck.shift()!;
+            player.hand.push(resetCardState(card));
+            drawnCount++;
+          }
+        }
+        player.revealedTopDeckCard = null;
+
+        appendLog(draft, `${player.name} が山札から ${drawnCount} 枚引きました（手札: ${player.hand.length}枚、山札: ${player.deck.length}枚）。`, playerId);
+        break;
+      }
+
+      case 'EXTRA_DRAW': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.apCurrent < 1 || player.hasExtraDrawn || player.deck.length === 0) return;
+
+        player.apCurrent -= 1;
+        player.hasExtraDrawn = true;
+        const card = player.deck.shift()!;
+        player.hand.push(resetCardState(card));
+
+        appendLog(draft, `${player.name} が1APを支払い、エクストラドローを行いました（手札: ${player.hand.length}枚、残りAP: ${player.apCurrent}）。`, playerId, 'action');
+        break;
+      }
+
+      case 'CHECK_LIFE_TRIGGER': {
+        const { playerId, lifeIndex } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.life.length === 0) return;
+
+        const idx = Math.min(Math.max(0, lifeIndex ?? 0), player.life.length - 1);
+        const [selectedLife] = player.life.splice(idx, 1);
+        selectedLife.isFaceDown = false;
+        draft.revealedCard = {
+          card: selectedLife,
+          source: `ライフ${idx + 1}枚目（トリガーチェック）`,
+          fromPlayerId: playerId,
+        };
+
+        const triggerStr = selectedLife.triggers.length > 0 ? `【トリガー: ${selectedLife.triggers.join(', ')}】` : '（トリガーなし）';
+        appendLog(draft, `${player.name} がライフ（${idx + 1}枚目）から「${selectedLife.name}」をトリガーチェックしました！ ${triggerStr}`, playerId, 'system');
+        break;
+      }
+
+      case 'DISMISS_REVEALED_CARD': {
+        const { destination } = action.payload;
+        if (!draft.revealedCard) return;
+
+        const { card, fromPlayerId } = draft.revealedCard;
+        const player = draft.players[fromPlayerId];
+
+        if (player) {
+          if (destination === 'graveyard') {
+            // 公式ルール P12: トリガー処理後は原則「場外」
+            player.graveyard.push(resetCardState(card));
+            appendLog(draft, `${player.name} はトリガーカードを場外へ送りました。`, fromPlayerId);
+          } else if (destination === 'hand') {
+            // ゲットトリガー等による手札回収
+            player.hand.push(resetCardState(card));
+            appendLog(draft, `${player.name} はカードを手札に加えました。`, fromPlayerId);
+          } else if (destination === 'life') {
+            player.life.unshift({ ...card, isFaceDown: true });
+            appendLog(draft, `${player.name} はカードをライフトップに戻しました。`, fromPlayerId);
+          }
+        }
+
+        draft.revealedCard = null;
+        break;
+      }
+
+      case 'USE_AP': {
+        const { playerId, amount = 1 } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const prev = player.apCurrent;
+        player.apCurrent = Math.max(0, player.apCurrent - amount);
+        appendLog(draft, `${player.name} が AP を ${amount} 消費しました (${prev} → ${player.apCurrent})。`, playerId);
+        break;
+      }
+
+      case 'RECOVER_AP': {
+        const { playerId, amount } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const prev = player.apCurrent;
+        if (amount !== undefined) {
+          player.apCurrent = Math.min(player.apMax, player.apCurrent + amount);
+        } else {
+          player.apCurrent = player.apMax;
+        }
+        appendLog(draft, `${player.name} が AP を回復しました (${prev} → ${player.apCurrent})。`, playerId);
+        break;
+      }
+
+      case 'SHUFFLE_DECK': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        player.deck = shuffleCards(player.deck);
+        player.revealedTopDeckCard = null;
+        appendLog(draft, `${player.name} が山札をシャッフルしました。`, playerId);
+        break;
+      }
+
+      case 'SET_PHASE': {
+        const { phase } = action.payload;
+        draft.phase = phase;
+
+        // 公式ルール P13: エンドフェイズ突入時、自陣の全カード（キャラ・フィールド）をアクティブ化する
+        if (phase === 'END') {
+          const activePlayer = draft.players[draft.activePlayerId];
+          if (activePlayer) {
+            activePlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
+            activePlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+          }
+        }
+
+        appendLog(draft, `フェイズが「${phase}」に移行しました。`, draft.activePlayerId, 'phase');
+        break;
+      }
+
+      case 'PASS_TURN': {
+        const { playerId } = action.payload;
+        const playerIds = Object.keys(draft.players);
+        const nextPlayerId = playerIds.find((id) => id !== playerId) || playerId;
+        const nextPlayer = draft.players[nextPlayerId];
+
+        draft.turn += 1;
+        draft.activePlayerId = nextPlayerId;
+        draft.phase = 'START';
+
+        if (nextPlayer) {
+          // ラウンド数の計算 (turn 1,2 = round 1; turn 3,4 = round 2; turn 5+ = round 3+)
+          const roundNumber = Math.ceil(draft.turn / 2);
+          nextPlayer.apMax = calculateMaxAp(roundNumber, nextPlayer.isFirst);
+          nextPlayer.apCurrent = nextPlayer.apMax;
+          nextPlayer.hasExtraDrawn = false;
+
+          // リロール: 全カードアクティブ化
+          nextPlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
+          nextPlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+          nextPlayer.apArea.forEach((c) => { c.isRested = false; });
+
+          // 公式ルール P10: スタートフェイズのドロー（※先攻の1ターン目はドローなし）
+          const isFirstTurnForFirstPlayer = draft.turn === 1 && nextPlayer.isFirst;
+          if (!isFirstTurnForFirstPlayer && nextPlayer.deck.length > 0) {
+            const card = nextPlayer.deck.shift()!;
+            nextPlayer.hand.push(resetCardState(card));
+          }
+        }
+
+        appendLog(
+          draft,
+          `ターン ${draft.turn} 開始: ${nextPlayer?.name || nextPlayerId} のターン（リロール・AP${nextPlayer?.apMax}セット完了）。`,
+          nextPlayerId,
+          'phase'
+        );
+        break;
+      }
+
+      case 'LOOK_AT_TOP_DECK': {
+        const { playerId, count } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || player.deck.length === 0) return;
+
+        const actualCount = Math.min(count, player.deck.length);
+        const cards = player.deck.splice(0, actualCount);
+        draft.revealedDeckCards = {
+          playerId,
+          cards,
+        };
+
+        appendLog(draft, `${player.name} が山札の上から ${actualCount} 枚を確認しています。`, playerId, 'action');
+        break;
+      }
+
+      case 'RESOLVE_TOP_DECK_CARD': {
+        const { playerId, cardId, destination } = action.payload;
+        if (!draft.revealedDeckCards) return;
+
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const cardIndex = draft.revealedDeckCards.cards.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) return;
+
+        const card = draft.revealedDeckCards.cards.splice(cardIndex, 1)[0];
+        const cleanCard = resetCardState(card);
+
+        if (destination === 'hand') {
+          player.hand.push(cleanCard);
+          appendLog(draft, `${player.name} は確認した「${card.name}」を手札に加えました。`, playerId);
+        } else if (destination === 'graveyard') {
+          player.graveyard.push(cleanCard);
+          appendLog(draft, `${player.name} は確認した「${card.name}」を場外に置きました。`, playerId);
+        } else if (destination === 'top') {
+          player.deck.unshift(cleanCard);
+          appendLog(draft, `${player.name} は確認した「${card.name}」を山札の上に戻しました。`, playerId);
+        } else if (destination === 'bottom') {
+          player.deck.push(cleanCard);
+          appendLog(draft, `${player.name} は確認した「${card.name}」を山札の下に置きました。`, playerId);
+        }
+
+        // 全て処理し終えたらモーダルを閉じる
+        if (draft.revealedDeckCards.cards.length === 0) {
+          draft.revealedDeckCards = null;
+        }
+        break;
+      }
+
+      case 'CLOSE_TOP_DECK': {
+        const { playerId, shuffleRemaining } = action.payload;
+        if (!draft.revealedDeckCards) return;
+
+        const player = draft.players[playerId];
+        if (player && draft.revealedDeckCards.cards.length > 0) {
+          // 残りのカードを山札の上に戻す
+          draft.revealedDeckCards.cards.forEach((card) => {
+            player.deck.unshift(resetCardState(card));
+          });
+          if (shuffleRemaining) {
+            player.deck = shuffleCards(player.deck);
+            appendLog(draft, `${player.name} が山札をシャッフルしました。`, playerId);
+          }
+        }
+        draft.revealedDeckCards = null;
+        break;
+      }
+
+      case 'SEARCH_DECK_CARD': {
+        const { playerId, cardId, destination, slotIndex } = action.payload;
+        const player = draft.players[playerId];
+        if (!player) return;
+
+        const cardIdx = player.deck.findIndex((c) => c.id === cardId);
+        if (cardIdx === -1) return;
+
+        const card = player.deck.splice(cardIdx, 1)[0];
+        const cleanCard = resetCardState(card);
+
+        if (destination === 'hand') {
+          player.hand.push(cleanCard);
+          appendLog(draft, `${player.name} は山札から「${card.name}」を手札に加えました。`, playerId);
+        } else if (destination === 'graveyard') {
+          player.graveyard.push(cleanCard);
+          appendLog(draft, `${player.name} は山札から「${card.name}」を場外に送りました。`, playerId);
+        } else if (destination === 'frontLine' && slotIndex !== undefined) {
+          player.frontLine[slotIndex] = { ...cleanCard, isRested: true };
+          appendLog(draft, `${player.name} は山札から「${card.name}」をフロントL枠${slotIndex + 1}に登場させました。`, playerId);
+        } else if (destination === 'energyLine' && slotIndex !== undefined) {
+          player.energyLine[slotIndex] = { ...cleanCard, isRested: true };
+          appendLog(draft, `${player.name} は山札から「${card.name}」をエナジーL枠${slotIndex + 1}に登場させました。`, playerId);
+        }
+        break;
+      }
+
+      case 'ROLL_DICE': {
+        const { playerId } = action.payload;
+        const player = draft.players[playerId];
+        const val = Math.floor(Math.random() * 6) + 1;
+        appendLog(draft, `🎲 ${player?.name || playerId} がダイスを振りました: 【 ${val} 】`, playerId, 'system');
+        break;
+      }
+
+      case 'ADD_LOG': {
+        const { message, playerId, type } = action.payload;
+        appendLog(draft, message, playerId, type);
+        break;
+      }
+
+      case 'CHAT_MESSAGE': {
+        const { senderId, senderName, text } = action.payload;
+        draft.logs.push({
+          id: `chat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          timestamp: Date.now(),
+          playerId: senderId,
+          playerName: senderName,
+          message: text,
+          type: 'chat',
+        });
+        break;
+      }
+
+      case 'SYNC_STATE': {
+        return action.payload.state;
+      }
+
+      default:
+        break;
+    }
+  });
+}

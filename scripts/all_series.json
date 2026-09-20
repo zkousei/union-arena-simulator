@@ -1,0 +1,470 @@
+[
+  {
+    "seriesId": "570001",
+    "name": "コードギアス 反逆のルルーシュ 【UA01ST】"
+  },
+  {
+    "seriesId": "570101",
+    "name": "コードギアス 反逆のルルーシュ 【UA01BT】"
+  },
+  {
+    "seriesId": "570202",
+    "name": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+  },
+  {
+    "seriesId": "570002",
+    "name": "呪術廻戦 【UA02ST】"
+  },
+  {
+    "seriesId": "570102",
+    "name": "呪術廻戦 【UA02BT】"
+  },
+  {
+    "seriesId": "570204",
+    "name": "呪術廻戦 Vol.2 【EX04BT】"
+  },
+  {
+    "seriesId": "570702",
+    "name": "NEW CARD SELECTION 呪術廻戦"
+  },
+  {
+    "seriesId": "570003",
+    "name": "HUNTER×HUNTER 【UA03ST】"
+  },
+  {
+    "seriesId": "570103",
+    "name": "HUNTER×HUNTER 【UA03BT】"
+  },
+  {
+    "seriesId": "570201",
+    "name": "HUNTER×HUNTER Vol.2 【EX01BT】"
+  },
+  {
+    "seriesId": "570004",
+    "name": "アイドルマスター シャイニーカラーズ 【UA04ST】"
+  },
+  {
+    "seriesId": "570104",
+    "name": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+  },
+  {
+    "seriesId": "570203",
+    "name": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】"
+  },
+  {
+    "seriesId": "570301",
+    "name": "アイドルマスター シャイニーカラーズ 【PC01BT】"
+  },
+  {
+    "seriesId": "570005",
+    "name": "鬼滅の刃 【UA05ST】"
+  },
+  {
+    "seriesId": "570105",
+    "name": "鬼滅の刃 【UA05BT】"
+  },
+  {
+    "seriesId": "570205",
+    "name": "鬼滅の刃 Vol.2 【EX05BT】"
+  },
+  {
+    "seriesId": "570701",
+    "name": "NEW CARD SELECTION 鬼滅の刃"
+  },
+  {
+    "seriesId": "570006",
+    "name": "Tales of ARISE 【UA06ST】"
+  },
+  {
+    "seriesId": "570106",
+    "name": "Tales of ARISE 【UA06BT】"
+  },
+  {
+    "seriesId": "570007",
+    "name": "転生したらスライムだった件 【UA07ST】"
+  },
+  {
+    "seriesId": "570107",
+    "name": "転生したらスライムだった件 【UA07BT】"
+  },
+  {
+    "seriesId": "570209",
+    "name": "転生したらスライムだった件 Vol.2 【EX09BT】"
+  },
+  {
+    "seriesId": "570008",
+    "name": "BLEACH 千年血戦篇 【UA08ST】"
+  },
+  {
+    "seriesId": "570108",
+    "name": "BLEACH 千年血戦篇 【UA08BT】"
+  },
+  {
+    "seriesId": "570207",
+    "name": "BLEACH 千年血戦篇 Vol.2 【EX07BT】"
+  },
+  {
+    "seriesId": "570704",
+    "name": "NEW CARD SELECTION BLEACH 千年血戦篇"
+  },
+  {
+    "seriesId": "570215",
+    "name": "BLEACH 千年血戦篇 Vol.3【EX15BT】"
+  },
+  {
+    "seriesId": "570401",
+    "name": "BLEACH 千年血戦篇【UA01DC】"
+  },
+  {
+    "seriesId": "570009",
+    "name": "僕とロボコ 【UA09ST】"
+  },
+  {
+    "seriesId": "570109",
+    "name": "僕とロボコ 【UA09BT】"
+  },
+  {
+    "seriesId": "570010",
+    "name": "僕のヒーローアカデミア 【UA10ST】"
+  },
+  {
+    "seriesId": "570110",
+    "name": "僕のヒーローアカデミア 【UA10BT】"
+  },
+  {
+    "seriesId": "570206",
+    "name": "僕のヒーローアカデミア Vol.2 【EX06BT】"
+  },
+  {
+    "seriesId": "570011",
+    "name": "銀魂 【UA11ST】"
+  },
+  {
+    "seriesId": "570111",
+    "name": "銀魂 【UA11BT】"
+  },
+  {
+    "seriesId": "570012",
+    "name": "ブルーロック 【UA12ST】"
+  },
+  {
+    "seriesId": "570112",
+    "name": "ブルーロック 【UA12BT】"
+  },
+  {
+    "seriesId": "570703",
+    "name": "NEW CARD SELECTION ブルーロック"
+  },
+  {
+    "seriesId": "570013",
+    "name": "鉄拳7 【UA13ST】"
+  },
+  {
+    "seriesId": "570113",
+    "name": "鉄拳7 【UA13BT】"
+  },
+  {
+    "seriesId": "570014",
+    "name": "Dr.STONE 【UA14ST】"
+  },
+  {
+    "seriesId": "570114",
+    "name": "Dr.STONE 【UA14BT】"
+  },
+  {
+    "seriesId": "570015",
+    "name": "ソードアート・オンライン 【UA15ST】"
+  },
+  {
+    "seriesId": "570115",
+    "name": "ソードアート・オンライン 【UA15BT】"
+  },
+  {
+    "seriesId": "570208",
+    "name": "ソードアート・オンライン Vol.2 【EX08BT】"
+  },
+  {
+    "seriesId": "570016",
+    "name": "SYNDUALITY Noir 【UA16ST】"
+  },
+  {
+    "seriesId": "570116",
+    "name": "SYNDUALITY Noir 【UA16BT】"
+  },
+  {
+    "seriesId": "570017",
+    "name": "トリコ 【UA17ST】"
+  },
+  {
+    "seriesId": "570117",
+    "name": "トリコ 【UA17BT】"
+  },
+  {
+    "seriesId": "570018",
+    "name": "勝利の女神：NIKKE 【UA18ST】"
+  },
+  {
+    "seriesId": "570118",
+    "name": "勝利の女神：NIKKE 【UA18BT】"
+  },
+  {
+    "seriesId": "570302",
+    "name": "勝利の女神：NIKKE【PC02BT】"
+  },
+  {
+    "seriesId": "570019",
+    "name": "ハイキュー‼ 【UA19ST】"
+  },
+  {
+    "seriesId": "570119",
+    "name": "ハイキュー‼ 【UA19BT】"
+  },
+  {
+    "seriesId": "570020",
+    "name": "ブラッククローバー 【UA20ST】"
+  },
+  {
+    "seriesId": "570120",
+    "name": "ブラッククローバー 【UA20BT】"
+  },
+  {
+    "seriesId": "570021",
+    "name": "幽☆遊☆白書 【UA21ST】"
+  },
+  {
+    "seriesId": "570121",
+    "name": "幽☆遊☆白書 【UA21BT】"
+  },
+  {
+    "seriesId": "570122",
+    "name": "GAMERA -Rebirth- 【UA22BT】"
+  },
+  {
+    "seriesId": "570023",
+    "name": "進撃の巨人 【UA23ST】"
+  },
+  {
+    "seriesId": "570123",
+    "name": "進撃の巨人 【UA23BT】"
+  },
+  {
+    "seriesId": "570210",
+    "name": "進撃の巨人 Vol.2 【EX10BT】"
+  },
+  {
+    "seriesId": "570124",
+    "name": "SHY 【UA24BT】"
+  },
+  {
+    "seriesId": "570125",
+    "name": "アンデッドアンラック 【UA25BT】"
+  },
+  {
+    "seriesId": "570126",
+    "name": "君のことが大大大大大好きな100人の彼女 【UA26BT】"
+  },
+  {
+    "seriesId": "570127",
+    "name": "学園アイドルマスター 【UA27BT】"
+  },
+  {
+    "seriesId": "570213",
+    "name": "学園アイドルマスター Vol.2【EX13BT】"
+  },
+  {
+    "seriesId": "570128",
+    "name": "怪獣８号 【UA28BT】"
+  },
+  {
+    "seriesId": "570029",
+    "name": "仮面ライダー 【UA29ST】"
+  },
+  {
+    "seriesId": "570129",
+    "name": "仮面ライダー 【UA29BT】"
+  },
+  {
+    "seriesId": "570212",
+    "name": "仮面ライダー Vol.2 【EX12BT】"
+  },
+  {
+    "seriesId": "570030",
+    "name": "アークナイツ 【UA30ST】"
+  },
+  {
+    "seriesId": "570130",
+    "name": "アークナイツ 【UA30BT】"
+  },
+  {
+    "seriesId": "570211",
+    "name": "アークナイツ Vol.2 【EX11BT】"
+  },
+  {
+    "seriesId": "570031",
+    "name": "魔法少女まどか☆マギカ 【UA31ST】"
+  },
+  {
+    "seriesId": "570131",
+    "name": "魔法少女まどか☆マギカ 【UA31BT】"
+  },
+  {
+    "seriesId": "570216",
+    "name": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】"
+  },
+  {
+    "seriesId": "570132",
+    "name": "シャングリラ・フロンティア 【UA32BT】"
+  },
+  {
+    "seriesId": "570133",
+    "name": "2.5次元の誘惑 【UA33BT】"
+  },
+  {
+    "seriesId": "570134",
+    "name": "コードギアス 奪還のロゼ 【UA34BT】"
+  },
+  {
+    "seriesId": "570035",
+    "name": "ワンパンマン 【UA35ST】"
+  },
+  {
+    "seriesId": "570135",
+    "name": "ワンパンマン 【UA35BT】"
+  },
+  {
+    "seriesId": "570036",
+    "name": "「マクロス」シリーズ 【UA36ST】"
+  },
+  {
+    "seriesId": "570136",
+    "name": "「マクロス」シリーズ 【UA36BT】"
+  },
+  {
+    "seriesId": "570214",
+    "name": "｢マクロス｣シリーズ Vol.2【EX14BT】"
+  },
+  {
+    "seriesId": "570037",
+    "name": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37ST】"
+  },
+  {
+    "seriesId": "570137",
+    "name": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+  },
+  {
+    "seriesId": "570138",
+    "name": "WIND BREAKER 【UA38BT】"
+  },
+  {
+    "seriesId": "570501",
+    "name": "PREMIUM CARD SET WIND BREAKER"
+  },
+  {
+    "seriesId": "570139",
+    "name": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+  },
+  {
+    "seriesId": "570040",
+    "name": "Re:ゼロから始める異世界生活 【UA40ST】"
+  },
+  {
+    "seriesId": "570140",
+    "name": "Re:ゼロから始める異世界生活 【UA40BT】"
+  },
+  {
+    "seriesId": "570041",
+    "name": "るろうに剣心 －明治剣客浪漫譚－ 【UA41ST】"
+  },
+  {
+    "seriesId": "570141",
+    "name": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+  },
+  {
+    "seriesId": "570042",
+    "name": "〈物語〉シリーズ 【UA42ST】"
+  },
+  {
+    "seriesId": "570142",
+    "name": "〈物語〉シリーズ 【UA42BT】"
+  },
+  {
+    "seriesId": "570143",
+    "name": "SAKAMOTO DAYS【UA43BT】"
+  },
+  {
+    "seriesId": "570044",
+    "name": "ヱヴァンゲリヲン新劇場版【UA44ST】"
+  },
+  {
+    "seriesId": "570144",
+    "name": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+  },
+  {
+    "seriesId": "570145",
+    "name": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+  },
+  {
+    "seriesId": "570146",
+    "name": "カグラバチ【UA46BT】"
+  },
+  {
+    "seriesId": "570047",
+    "name": "東京喰種トーキョーグール【UA47ST】"
+  },
+  {
+    "seriesId": "570147",
+    "name": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+  },
+  {
+    "seriesId": "570048",
+    "name": "キングダム【UA48ST】"
+  },
+  {
+    "seriesId": "570148",
+    "name": "キングダム【UA48BT】"
+  },
+  {
+    "seriesId": "570149",
+    "name": "魔都精兵のスレイブ【UA49BT】"
+  },
+  {
+    "seriesId": "570150",
+    "name": "犬夜叉【UA50BT】"
+  },
+  {
+    "seriesId": "570151",
+    "name": "俺だけレベルアップな件【UA51BT】"
+  },
+  {
+    "seriesId": "570152",
+    "name": "陰の実力者になりたくて！【UA52BT】"
+  },
+  {
+    "seriesId": "570153",
+    "name": "チェンソーマン【UA53BT】"
+  },
+  {
+    "seriesId": "570154",
+    "name": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+  },
+  {
+    "seriesId": "570055",
+    "name": "アイドルマスター シンデレラガールズ【UA55ST】"
+  },
+  {
+    "seriesId": "570155",
+    "name": "アイドルマスター シンデレラガールズ【UA55BT】"
+  },
+  {
+    "seriesId": "570156",
+    "name": "天元突破グレンラガン【UA56BT】"
+  },
+  {
+    "seriesId": "570901",
+    "name": "プロモーションカード"
+  },
+  {
+    "seriesId": "570801",
+    "name": "限定商品収録カード"
+  }
+]

@@ -1,0 +1,100 @@
+import { UserDeck } from '../domain/deckValidation';
+import { CARD_DATABASE } from '../data/cardDatabase';
+
+const STORAGE_KEY = 'union_arena_saved_decks';
+
+// デフォルトのサンプルデッキ生成
+export function createDefaultSampleDeck(): UserDeck {
+  const cgh = CARD_DATABASE.filter((c) => c.titleCode === 'CGH');
+  return {
+    id: 'default-cgh-deck',
+    name: 'コードギアス 紫ギアス構築',
+    titleCode: 'CGH',
+    items: [
+      { card: cgh[0], count: 4 }, // ルルーシュ (0エナ)
+      { card: cgh[1], count: 4 }, // ナナリー (1エナ)
+      { card: cgh[2], count: 4 }, // シャーリー (1エナ)
+      { card: cgh[3], count: 4 }, // C.C. (2エナ)
+      { card: cgh[4], count: 4 }, // 紅蓮 (3エナ)
+      { card: cgh[5], count: 4 }, // ゼロ (レイド)
+      { card: cgh[6], count: 4 }, // ガウェイン (5エナ)
+      { card: cgh[7], count: 4 }, // スペシャル (4枚)
+      { card: cgh[8], count: 4 }, // ファイナル (4枚)
+      { card: cgh[9], count: 4 }, // 生徒会室 (フィールド)
+      // 残り10枚を0〜2エナジー帯に配分して計50枚
+      // 注: 同名上限4枚なので、別のカード番号が必要。
+      // 現状のDBの範囲で50枚にするため、各カードの枚数配分
+    ],
+    updatedAt: Date.now(),
+  };
+}
+
+// 保存済みデッキ一覧の読み込み
+export function loadSavedDecks(): UserDeck[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const defaultDeck = createDefaultSampleDeck();
+      saveDeck(defaultDeck);
+      return [defaultDeck];
+    }
+    const decks = JSON.parse(raw) as UserDeck[];
+    return decks;
+  } catch (e) {
+    console.error('Failed to load decks from localStorage:', e);
+    return [];
+  }
+}
+
+// デッキの保存または更新
+export function saveDeck(deck: UserDeck): void {
+  try {
+    const existing = loadSavedDecks();
+    const index = existing.findIndex((d) => d.id === deck.id);
+    if (index >= 0) {
+      existing[index] = { ...deck, updatedAt: Date.now() };
+    } else {
+      existing.unshift({ ...deck, updatedAt: Date.now() });
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to save deck:', e);
+  }
+}
+
+// デッキの削除
+export function deleteDeck(deckId: string): void {
+  try {
+    const existing = loadSavedDecks().filter((d) => d.id !== deckId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to delete deck:', e);
+  }
+}
+
+// JSONエクスポート (ダウンロード用文字列)
+export function exportDeckToJson(deck: UserDeck): string {
+  return JSON.stringify(deck, null, 2);
+}
+
+// JSONインポート
+export function importDeckFromJson(jsonStr: string): UserDeck {
+  const parsed = JSON.parse(jsonStr);
+  if (!parsed.name || !Array.isArray(parsed.items)) {
+    throw new Error('無効なデッキJSONフォーマットです');
+  }
+  return {
+    ...parsed,
+    id: `imported-${Date.now()}`,
+    updatedAt: Date.now(),
+  };
+}
+
+// テキスト形式エクスポート (例: 4x ルルーシュ・ランペルージ)
+export function exportDeckToText(deck: UserDeck): string {
+  const lines: string[] = [`【${deck.name}】`];
+  deck.items.forEach((item) => {
+    lines.push(`${item.count}x ${item.card.name} (${item.card.code})`);
+  });
+  return lines.join('\n');
+}
