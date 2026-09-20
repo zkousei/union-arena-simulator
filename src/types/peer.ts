@@ -47,4 +47,12 @@ export interface PeerChatMessage extends PeerMessage {
   };
 }
 
-export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'waiting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error';
+
+export type PeerRole = 'host' | 'guest' | null;

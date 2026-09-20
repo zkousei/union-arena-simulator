@@ -17,6 +17,8 @@ export function useGame() {
 
   // 巻き戻し用Undoスタック (最大30件)
   const [history, setHistory] = useState<GameState[]>([]);
+  const [isSynchronizing, setIsSynchronizing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // 通信イベントは接続開始時に登録されるため、常に最新値をRefから読む。
   const gameStateRef = useRef<GameState>(gameState);
@@ -25,9 +27,18 @@ export function useGame() {
   const networkRoleRef = useRef<NetworkRole>('solo');
   const hostRevisionRef = useRef(0);
   const lastAppliedRevisionRef = useRef(-1);
+  const isSynchronizingRef = useRef(false);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const peer = usePeer();
-  const { sendMessage, status: peerStatus, createRoom, joinRoom } = peer;
+  const {
+    sendMessage,
+    status: peerStatus,
+    role: peerRole,
+    createRoom,
+    joinRoom,
+    reconnect,
+  } = peer;
   const sendMessageRef = useRef(sendMessage);
   const peerStatusRef = useRef(peerStatus);
 
@@ -35,6 +46,55 @@ export function useGame() {
     sendMessageRef.current = sendMessage;
     peerStatusRef.current = peerStatus;
   }, [peerStatus, sendMessage]);
+
+  const clearSyncTimeout = useCallback(() => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = null;
+    }
+  }, []);
+
+  const setSynchronizationState = useCallback((synchronizing: boolean) => {
+    isSynchronizingRef.current = synchronizing;
+    setIsSynchronizing(synchronizing);
+  }, []);
+
+  const requestSynchronization = useCallback(() => {
+    clearSyncTimeout();
+    setSynchronizationState(true);
+    setSyncError(null);
+
+    const sent = sendMessageRef.current({
+      type: 'SYNC_REQUEST',
+      senderId: myPlayerIdRef.current,
+      timestamp: Date.now(),
+    });
+    if (!sent) return;
+
+    syncTimeoutRef.current = setTimeout(() => {
+      setSyncError('盤面の再同期がタイムアウトしました。再試行してください。');
+    }, 7_000);
+  }, [clearSyncTimeout, setSynchronizationState]);
+
+  useEffect(() => {
+    if (peerRole === 'host') networkRoleRef.current = 'host';
+    if (peerRole === 'guest') networkRoleRef.current = 'guest';
+
+    if (peerRole === null) {
+      networkRoleRef.current = 'solo';
+      clearSyncTimeout();
+      setSynchronizationState(false);
+      setSyncError(null);
+      return;
+    }
+
+    if (peerRole === 'guest') {
+      if (peerStatus === 'connected') requestSynchronization();
+      else setSynchronizationState(true);
+    }
+  }, [clearSyncTimeout, peerRole, peerStatus, requestSynchronization, setSynchronizationState]);
+
+  useEffect(() => clearSyncTimeout, [clearSyncTimeout]);
 
   // サウンド効果の再生
   const triggerActionSound = useCallback((action: GameAction) => {
@@ -167,9 +227,26 @@ export function useGame() {
       });
     } else if (msg.type === 'SYNC_RESPONSE') {
       if (networkRoleRef.current !== 'guest') return;
-      applyRemoteSnapshot(msg.payload as PeerStateSnapshot, false);
+      const snapshot = msg.payload as PeerStateSnapshot;
+      const previousRevision = lastAppliedRevisionRef.current;
+      applyRemoteSnapshot(snapshot, false);
+      if (
+        snapshot?.state &&
+        typeof snapshot.revision === 'number' &&
+        snapshot.revision >= previousRevision
+      ) {
+        clearSyncTimeout();
+        setSynchronizationState(false);
+        setSyncError(null);
+      }
     }
-  }, [applyAuthoritativeAction, applyRemoteSnapshot, performAuthoritativeUndo]);
+  }, [
+    applyAuthoritativeAction,
+    applyRemoteSnapshot,
+    clearSyncTimeout,
+    performAuthoritativeUndo,
+    setSynchronizationState,
+  ]);
 
   // ホストとして部屋作成
   const handleCreateRoom = useCallback(async () => {
@@ -185,21 +262,25 @@ export function useGame() {
     networkRoleRef.current = 'guest';
     myPlayerIdRef.current = 'player-2';
     lastAppliedRevisionRef.current = -1;
+    setSynchronizationState(true);
+    setSyncError(null);
     setMyPlayerId('player-2');
     await joinRoom(roomId, handlePeerMessage);
+  }, [handlePeerMessage, joinRoom, setSynchronizationState]);
 
-    setTimeout(() => {
-      sendMessageRef.current({
-        type: 'SYNC_REQUEST',
-        senderId: 'player-2',
-        timestamp: Date.now(),
-      });
-    }, 500);
-  }, [joinRoom, handlePeerMessage]);
+  const canDispatchNetworkAction = useCallback(() => {
+    if (networkRoleRef.current === 'solo') return true;
+    if (networkRoleRef.current === 'guest') {
+      return peerStatusRef.current === 'connected' && !isSynchronizingRef.current;
+    }
+    return peerStatusRef.current === 'connected' || peerStatusRef.current === 'waiting';
+  }, []);
 
   // アクション発行関数。接続中のゲストはホストへ実行要求だけを送る。
   const dispatchAction = useCallback((action: GameAction) => {
-    if (peerStatusRef.current === 'connected' && networkRoleRef.current === 'guest') {
+    if (!canDispatchNetworkAction()) return;
+
+    if (networkRoleRef.current === 'guest') {
       sendMessageRef.current({
         type: 'ACTION_REQUEST',
         senderId: myPlayerIdRef.current,
@@ -210,11 +291,13 @@ export function useGame() {
     }
 
     applyAuthoritativeAction(action);
-  }, [applyAuthoritativeAction]);
+  }, [applyAuthoritativeAction, canDispatchNetworkAction]);
 
   // Undo (1手巻き戻し)
   const undo = useCallback(() => {
-    if (peerStatusRef.current === 'connected' && networkRoleRef.current === 'guest') {
+    if (!canDispatchNetworkAction()) return;
+
+    if (networkRoleRef.current === 'guest') {
       sendMessageRef.current({
         type: 'UNDO_REQUEST',
         senderId: myPlayerIdRef.current,
@@ -224,7 +307,23 @@ export function useGame() {
     }
 
     performAuthoritativeUndo();
-  }, [performAuthoritativeUndo]);
+  }, [canDispatchNetworkAction, performAuthoritativeUndo]);
+
+  const retrySynchronization = useCallback(async () => {
+    if (networkRoleRef.current !== 'guest') return;
+    if (peerStatusRef.current === 'connected') {
+      requestSynchronization();
+      return;
+    }
+    await reconnect();
+  }, [reconnect, requestSynchronization]);
+
+  const isInteractionLocked =
+    peerRole === 'guest'
+      ? peerStatus !== 'connected' || isSynchronizing
+      : peerRole === 'host'
+        ? peerStatus === 'connecting' || peerStatus === 'reconnecting' || peerStatus === 'error'
+        : false;
 
   return {
     gameState,
@@ -233,6 +332,10 @@ export function useGame() {
     dispatchAction,
     undo,
     canUndo: history.length > 0,
+    isSynchronizing,
+    isInteractionLocked,
+    syncError,
+    retrySynchronization,
     peer,
     createRoom: handleCreateRoom,
     joinRoom: handleJoinRoom,

@@ -82,10 +82,15 @@ ordered, deterministic contract and add migration tests first.
 
 ### Hidden information
 
-- Treat hands, face-down life, and unrevealed deck order as private information.
-- Do not add new UI paths that expose an opponent's private cards.
-- A future public/private state split must keep the authoritative P2P rules
-  above and should be introduced behind dedicated synchronization tests.
+- The current P2P model trusts connected clients and synchronizes the complete
+  game state, matching the approach used by `shadowverse-evolve-app`.
+- Hide hands, face-down life, and unrevealed deck contents in the normal UI even
+  though their data exists on both peers.
+- Do not add accidental UI paths that reveal an opponent's private cards. An
+  explicit reveal or inspection mode must be clearly labeled and intentional.
+- Do not describe this model as secure against developer tools or a modified
+  client. If adversarial secrecy becomes a requirement, introduce a dedicated
+  per-recipient public/private state design and tests before changing transport.
 
 ## UNION ARENA Rule Changes
 

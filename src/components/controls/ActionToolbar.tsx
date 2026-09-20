@@ -152,7 +152,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             className={`w-2 h-2 rounded-full ${
               peerStatus === 'connected'
                 ? 'bg-emerald-400'
-                : peerStatus === 'connecting'
+                : peerStatus === 'connecting' || peerStatus === 'reconnecting'
                 ? 'bg-amber-400 animate-pulse'
                 : 'bg-slate-500'
             }`}
@@ -162,6 +162,12 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
               ? `P2P接続中 (${isHost ? 'ホスト' : 'ゲスト'})`
               : peerStatus === 'connecting'
               ? '接続試行中...'
+              : peerStatus === 'waiting'
+              ? '対戦相手を待機中...'
+              : peerStatus === 'reconnecting'
+              ? '再接続中...'
+              : peerStatus === 'error'
+              ? '接続エラー'
               : 'オフライン（ソロ）'}
           </span>
         </div>

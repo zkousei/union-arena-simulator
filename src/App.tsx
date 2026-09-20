@@ -29,6 +29,7 @@ import {
   LogOut,
   LogIn,
   Radio,
+  RefreshCw,
 } from 'lucide-react';
 import { sound } from './utils/audio';
 
@@ -63,6 +64,7 @@ function AppNavigation({
   activePlayerName,
 }: AppNavigationProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === '/';
   const isDeckBuilder = location.pathname === '/deck-builder';
   const isGame = location.pathname === '/game';
@@ -114,6 +116,11 @@ function AppNavigation({
     }
     setIsPlayMenuOpen(false);
     onJoinGame(roomId);
+  };
+
+  const handleDisconnect = () => {
+    peer.disconnect();
+    navigate('/game?mode=solo', { replace: true });
   };
 
   const handleCopyInviteUrl = () => {
@@ -281,7 +288,7 @@ function AppNavigation({
                   <span>P2P接続中 ({isHost ? 'ホスト' : 'ゲスト'})</span>
                 </div>
                 <button
-                  onClick={() => peer.disconnect()}
+                  onClick={handleDisconnect}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 text-rose-300 text-[11px] font-bold transition"
                   title="P2P接続を切断してソロへ戻る"
                 >
@@ -294,7 +301,9 @@ function AppNavigation({
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/50 border border-amber-700/50 text-amber-300 text-[11px] font-semibold animate-pulse">
                   <Radio className="w-3 h-3" />
-                  <span className="hidden sm:inline">相手待機中</span>
+                  <span className="hidden sm:inline">
+                    {peer.status === 'reconnecting' ? '再接続待機中' : '相手待機中'}
+                  </span>
                 </div>
                 <button
                   onClick={handleCopyInviteUrl}
@@ -305,6 +314,14 @@ function AppNavigation({
                   <span>{copied ? 'コピー済' : 'URL招待'}</span>
                 </button>
               </div>
+            ) : peer.role === 'guest' ? (
+              <button
+                onClick={onOpenPeerModal}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[11px] font-bold"
+              >
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span>再接続中</span>
+              </button>
             ) : (
               /* ソロプレイ中 */
               <div className="flex items-center gap-2">
@@ -378,8 +395,6 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   const mode = searchParams.get('mode');
   const hostParam = searchParams.get('host');
   const roomParam = searchParams.get('room');
-  const isHost = hostParam === 'true';
-
   const {
     gameState,
     myPlayerId,
@@ -389,7 +404,12 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     peer,
     createRoom,
     joinRoom,
+    isSynchronizing,
+    isInteractionLocked,
+    syncError,
+    retrySynchronization,
   } = game;
+  const isHost = hostParam === 'true' || peer.role === 'host';
 
   const navigate = useNavigate();
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
@@ -411,20 +431,20 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   // URLにゲスト用roomがある場合、自動的に部屋参加を試行
   useEffect(() => {
     if (roomParam && !isHost && peer.status === 'disconnected' && !peer.error) {
-      joinRoom(roomParam);
+      void joinRoom(roomParam).catch(() => undefined);
     }
   }, [roomParam, isHost, peer.status, peer.error, joinRoom]);
 
   // URLにホスト用roomがあるがPeer未作成の場合、作成を試行
   useEffect(() => {
     if (isHost && peer.status === 'disconnected' && !peer.peerId && !peer.error) {
-      createRoom();
+      void createRoom().catch(() => undefined);
     }
   }, [isHost, peer.status, peer.peerId, peer.error, createRoom]);
 
   // mode=solo の場合でPeerが繋がっていれば切断
   useEffect(() => {
-    if (mode === 'solo' && peer.status === 'connected') {
+    if (mode === 'solo' && peer.role !== null) {
       peer.disconnect();
     }
   }, [mode, peer]);
@@ -447,7 +467,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     sound.playPlace();
   };
 
-  const isSoloMode = !peer.status || peer.status === 'disconnected';
+  const isSoloMode = peer.role === null;
   const toolbarTargetPlayerId = isSoloMode ? gameState.activePlayerId : myPlayerId;
 
   const handleSetAllActive = () => {
@@ -543,10 +563,15 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleEndPeerSession = () => {
+    peer.disconnect();
+    navigate('/game?mode=solo', { replace: true });
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
       {/* P2Pホストで相手待機中の目立つ案内バナー */}
-      {isHost && peer.status !== 'connected' && (
+      {isHost && peer.status === 'waiting' && (
         <div className="bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border-b border-amber-600/40 px-4 py-2 flex items-center justify-between gap-3 text-xs z-20">
           <div className="flex items-center gap-2 text-amber-300 font-semibold">
             <Radio className="w-4 h-4 animate-pulse text-amber-400" />
@@ -607,7 +632,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
             myPlayerId={myPlayerId}
             dispatchAction={dispatchAction}
             onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
-            isSoloMode={!peer.status || peer.status === 'disconnected'}
+            isSoloMode={isSoloMode}
             isFitMode={isFitMode}
           />
         </div>
@@ -652,13 +677,50 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
         </div>
       </main>
 
+      {isInteractionLocked && peer.role !== null && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-amber-600/50 bg-slate-900 p-5 text-center shadow-2xl">
+            <RefreshCw className="mx-auto mb-3 h-8 w-8 animate-spin text-amber-400" />
+            <h2 className="text-base font-bold text-white">
+              {isSynchronizing ? '盤面を再同期しています' : '対戦相手との接続を復旧しています'}
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">
+              同期が完了するまでゲーム操作を一時停止します。画面を閉じずにお待ちください。
+            </p>
+            {(peer.error || syncError) && (
+              <p className="mt-3 rounded-lg border border-rose-800/60 bg-rose-950/50 p-2 text-xs text-rose-300">
+                {syncError || peer.error}
+              </p>
+            )}
+            <div className="mt-4 flex justify-center gap-2">
+              {peer.role === 'guest' && (
+                <button
+                  type="button"
+                  onClick={() => void retrySynchronization()}
+                  className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-500"
+                >
+                  再試行
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleEndPeerSession}
+                className="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
+              >
+                対戦を終了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* デッキ選択モーダル（保存済みマイデッキ & 公式プリセット） */}
       <SavedDeckPickerModal
         isOpen={isDeckPickerOpen}
         onClose={() => setIsDeckPickerOpen(false)}
         onSelectDeck={handleSelectDeck}
         myPlayerId={myPlayerId}
-        isSoloMode={!peer.status || peer.status === 'disconnected'}
+        isSoloMode={isSoloMode}
         player1Name={gameState.players['player-1']?.name || 'Player 1'}
         player2Name={gameState.players['player-2']?.name || 'Player 2'}
         onNavigateToDeckBuilder={() => navigate('/deck-builder')}
@@ -802,6 +864,12 @@ export function App() {
         onClose={() => setIsPeerModalOpen(false)}
         onCreateRoom={createRoom}
         onJoinRoom={joinRoom}
+        onDisconnect={() => {
+          peer.disconnect();
+          if (location.pathname === '/game') {
+            navigate('/game?mode=solo', { replace: true });
+          }
+        }}
       />
 
       {/* 使い方ヘルプモーダル */}
