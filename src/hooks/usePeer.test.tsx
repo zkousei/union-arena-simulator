@@ -209,4 +209,40 @@ describe('usePeer connection lifecycle', () => {
     expect(result.current.status).toBe('error');
     expect(result.current.error).toBe('Peerサーバーへの接続がタイムアウトしました。');
   });
+
+  it('retries an initial guest connection failure and clears the error after connecting', async () => {
+    const { result } = renderHook(() => usePeer());
+
+    let joinPromise!: Promise<void>;
+    act(() => {
+      joinPromise = result.current.joinRoom('host-room', vi.fn());
+    });
+
+    const firstPeer = FakePeer.instances[0];
+    const connectionError = Object.assign(new Error('signaling failed'), {
+      type: 'network',
+    });
+    act(() => firstPeer.emit('error', connectionError));
+    await expect(joinPromise).rejects.toThrow('signaling failed');
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toContain('signaling failed');
+
+    let reconnectPromise!: Promise<void>;
+    act(() => {
+      reconnectPromise = result.current.reconnect();
+    });
+    expect(FakePeer.instances).toHaveLength(2);
+
+    const secondPeer = FakePeer.instances[1];
+    act(() => secondPeer.emit('open', 'guest-retry'));
+    const secondConnection = secondPeer.connections[0];
+    act(() => {
+      secondConnection.open = true;
+      secondConnection.emit('open');
+    });
+    await reconnectPromise;
+
+    expect(result.current.status).toBe('connected');
+    expect(result.current.error).toBeNull();
+  });
 });

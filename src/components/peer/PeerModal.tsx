@@ -55,12 +55,19 @@ export const PeerModal: React.FC<PeerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4 text-xs">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="peer-modal-title"
+        className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4 text-xs"
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-sky-400" />
-            <h3 className="font-bold text-base text-white">P2P 通信対戦 (PeerJS)</h3>
+            <h3 id="peer-modal-title" className="font-bold text-base text-white">
+              P2P 通信対戦 (PeerJS)
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -109,7 +116,10 @@ export const PeerModal: React.FC<PeerModalProps> = ({
         </div>
 
         {peer.error && (
-          <div className="space-y-2 bg-rose-950/50 border border-rose-800 text-rose-300 p-2.5 rounded-lg">
+          <div
+            role="alert"
+            className="space-y-2 bg-rose-950/50 border border-rose-800 text-rose-300 p-2.5 rounded-lg"
+          >
             <p>{peer.error}</p>
             {peer.role === 'guest' && (
               <button

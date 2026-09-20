@@ -409,6 +409,65 @@ describe('useGame P2P resynchronization', () => {
     expect(result.current.gameState.players['player-1']).toBeDefined();
   });
 
+  it('keeps the guest locked after a sync timeout and retries synchronization', async () => {
+    vi.useFakeTimers();
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {
+      onMessage = handler;
+    });
+
+    try {
+      const { result, rerender } = renderHook(() => useGame());
+      await act(async () => {
+        await result.current.joinRoom('host-room');
+      });
+
+      peerMock.role = 'guest';
+      peerMock.status = 'connected';
+      rerender();
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SYNC_REQUEST' })
+      );
+
+      act(() => vi.advanceTimersByTime(7_000));
+      expect(result.current.syncError).toBe(
+        '盤面の再同期がタイムアウトしました。再試行してください。'
+      );
+      expect(result.current.isInteractionLocked).toBe(true);
+
+      peerMock.sendMessage.mockClear();
+      act(() => {
+        void result.current.retrySynchronization();
+      });
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SYNC_REQUEST' })
+      );
+      expect(result.current.syncError).toBeNull();
+
+      const synchronizedState = createInitialGameState(
+        'player-1',
+        'Host',
+        'player-2',
+        'Guest',
+        'player-1'
+      );
+      act(() => {
+        onMessage?.({
+          type: 'SYNC_RESPONSE',
+          senderId: 'player-1',
+          timestamp: Date.now(),
+          payload: { state: synchronizedState, revision: 2 },
+        });
+      });
+
+      expect(result.current.isInteractionLocked).toBe(false);
+      expect(result.current.syncError).toBeNull();
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
+  });
+
   it('uses a new request ID namespace after joining a room again', async () => {
     let onMessage: ((message: PeerMessage) => void) | null = null;
     peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {
