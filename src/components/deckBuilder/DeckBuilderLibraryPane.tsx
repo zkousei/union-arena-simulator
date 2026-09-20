@@ -96,7 +96,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
           <select
             value={selectedTitle}
             onChange={(e) => setSelectedTitle(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
+            className="w-full min-w-0 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
           >
             {AVAILABLE_TITLES.map((t) => (
               <option key={t.code} value={t.code}>
@@ -108,7 +108,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
           <select
             value={selectedColor}
             onChange={(e) => setSelectedColor(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
+            className="w-full min-w-0 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
           >
             <option value="ALL">すべての色</option>
             <option value="PURPLE">紫</option>
@@ -121,7 +121,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
+            className="w-full min-w-0 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
           >
             <option value="ALL">すべての種類</option>
             <option value="CHARACTER">キャラ</option>

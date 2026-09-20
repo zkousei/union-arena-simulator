@@ -24,6 +24,7 @@ interface DeckBuilderPageProps {
 export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck }) => {
   const [savedDecks, setSavedDecks] = useState<UserDeck[]>([]);
   const [activeDeck, setActiveDeck] = useState<UserDeck | null>(null);
+  const [mobilePane, setMobilePane] = useState<'library' | 'deck'>('library');
 
   // カードプール (公式同梱530枚 + ユーザーが動的インポートしたカード)
   const [cardPool, setCardPool] = useState<CardMaster[]>(() => {
@@ -231,8 +232,10 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
     return <div className="p-8 text-center text-slate-400">読み込み中...</div>;
   }
 
+  const totalCards = activeDeck.items.reduce((sum, item) => sum + item.count, 0);
+
   return (
-    <div className="flex-1 flex overflow-hidden relative">
+    <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
       {/* 保存完了トースト */}
       {saveToast && (
         <div className="absolute top-4 right-4 z-40 bg-emerald-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -240,8 +243,40 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         </div>
       )}
 
+      <div
+        className="md:hidden shrink-0 grid grid-cols-2 gap-1 p-1.5 bg-slate-950 border-b border-slate-800"
+        aria-label="デッキ構築画面の表示切替"
+      >
+        <button
+          type="button"
+          onClick={() => setMobilePane('library')}
+          aria-pressed={mobilePane === 'library'}
+          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
+            mobilePane === 'library'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-900 text-slate-400 hover:text-white'
+          }`}
+        >
+          カード一覧
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobilePane('deck')}
+          aria-pressed={mobilePane === 'deck'}
+          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
+            mobilePane === 'deck'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-900 text-slate-400 hover:text-white'
+          }`}
+        >
+          現在のデッキ ({totalCards}/50)
+        </button>
+      </div>
+
       {/* 左: カードプールライブラリ */}
-      <div className="flex-1 h-full overflow-hidden">
+      <div
+        className={`${mobilePane === 'library' ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 min-h-0 overflow-hidden`}
+      >
         <DeckBuilderLibraryPane
           cards={cardPool}
           deckCardCounts={deckCardCounts}
@@ -260,7 +295,9 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
       </div>
 
       {/* 右: デッキ構築ペイン */}
-      <div className="w-80 sm:w-96 md:w-[420px] h-full border-l border-slate-800 overflow-hidden flex flex-col">
+      <div
+        className={`${mobilePane === 'deck' ? 'flex' : 'hidden'} md:flex w-full md:w-[420px] flex-1 md:flex-none min-h-0 border-l border-slate-800 overflow-hidden flex-col`}
+      >
         <DeckBuilderDeckPane
           deck={activeDeck}
           onUpdateDeckName={handleUpdateName}

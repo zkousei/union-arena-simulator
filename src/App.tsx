@@ -132,8 +132,8 @@ function AppNavigation({
   };
 
   return (
-    <header className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-900 border-b border-slate-800 shadow-md z-40">
-      <div className="flex items-center gap-2 sm:gap-4">
+    <header className="flex items-center justify-between px-2 sm:px-4 py-2 bg-slate-900 border-b border-slate-800 shadow-md z-40">
+      <div className="flex items-center gap-1 sm:gap-4 min-w-0">
         {/* ロゴ / タイトル */}
         <Link
           to="/"
@@ -143,7 +143,7 @@ function AppNavigation({
           <div className="bg-indigo-600 p-1.5 rounded-lg shadow-md shadow-indigo-500/30 group-hover:bg-indigo-500 transition">
             <Swords className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="hidden sm:block">
             <h1 className="font-extrabold text-xs sm:text-sm tracking-wide bg-gradient-to-r from-indigo-300 via-sky-300 to-indigo-100 bg-clip-text text-transparent group-hover:brightness-125 transition">
               UNION ARENA Web Simulator
             </h1>
@@ -155,6 +155,7 @@ function AppNavigation({
         <nav className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
           <Link
             to="/"
+            aria-label="ホーム"
             className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg font-bold transition ${
               isHome
                 ? 'bg-indigo-600 text-white shadow'
@@ -166,6 +167,7 @@ function AppNavigation({
           </Link>
           <Link
             to="/deck-builder"
+            aria-label="デッキ構築"
             className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg font-bold transition ${
               isDeckBuilder
                 ? 'bg-indigo-600 text-white shadow'
@@ -177,6 +179,7 @@ function AppNavigation({
           </Link>
           <Link
             to="/game?mode=solo"
+            aria-label="対戦盤面"
             className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg font-bold transition ${
               isGame
                 ? 'bg-indigo-600 text-white shadow'
@@ -195,10 +198,11 @@ function AppNavigation({
             onClick={() => setIsPlayMenuOpen((prev) => !prev)}
             aria-haspopup="menu"
             aria-expanded={isPlayMenuOpen}
+            aria-label="対戦メニュー"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition"
           >
             <Play className="w-3 h-3 fill-white" />
-            <span>対戦メニュー</span>
+            <span className="hidden sm:inline">対戦メニュー</span>
             <ChevronDown className={`w-3 h-3 transition-transform ${isPlayMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -276,7 +280,7 @@ function AppNavigation({
       </div>
 
       {/* 右側: ゲーム中ステータス & サウンド & ヘルプ */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1 sm:gap-3">
         {/* ゲーム画面ヘッダー要素 */}
         {isGame && (
           <div className="flex items-center gap-2">

@@ -50,7 +50,7 @@ export const DeckBuilderDeckPane: React.FC<DeckBuilderDeckPaneProps> = ({
             value={deck.name}
             onChange={(e) => onUpdateDeckName(e.target.value)}
             placeholder="デッキ名を入力..."
-            className="flex-1 font-bold text-sm bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-100 focus:outline-none focus:border-indigo-500"
+            className="flex-1 min-w-0 font-bold text-sm bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-100 focus:outline-none focus:border-indigo-500"
           />
 
           <div className="flex items-center gap-1">
@@ -130,7 +130,7 @@ export const DeckBuilderDeckPane: React.FC<DeckBuilderDeckPaneProps> = ({
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5 scrollbar-thin">
         {sortedItems.length === 0 ? (
           <div className="text-slate-500 py-20 text-center">
-            左側のカード一覧からカードを追加してください
+            カード一覧からカードを追加してください
           </div>
         ) : (
           sortedItems.map((item) => (
