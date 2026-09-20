@@ -141,6 +141,88 @@ describe('useGame P2P resynchronization', () => {
     expect(result.current.isInteractionLocked).toBe(false);
   });
 
+  it('replaces a stale guest board with the latest host snapshot after reconnecting', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {
+      onMessage = handler;
+    });
+
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => {
+      await result.current.joinRoom('host-room');
+    });
+
+    peerMock.role = 'guest';
+    peerMock.status = 'connected';
+    rerender();
+
+    const initialHostState = createInitialGameState(
+      'player-1',
+      'Host',
+      'player-2',
+      'Guest',
+      'player-1'
+    );
+    initialHostState.phase = 'MAIN';
+    act(() => {
+      onMessage?.({
+        type: 'SYNC_RESPONSE',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: initialHostState, revision: 1 },
+      });
+    });
+    expect(result.current.gameState.phase).toBe('MAIN');
+
+    peerMock.status = 'reconnecting';
+    rerender();
+    expect(result.current.isInteractionLocked).toBe(true);
+
+    const latestHostState = createInitialGameState(
+      'player-1',
+      'Host',
+      'player-2',
+      'Guest',
+      'player-1'
+    );
+    latestHostState.phase = 'END';
+    latestHostState.turn = 4;
+
+    peerMock.status = 'connected';
+    rerender();
+    await waitFor(() => {
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SYNC_REQUEST' })
+      );
+    });
+    act(() => {
+      onMessage?.({
+        type: 'SYNC_RESPONSE',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: latestHostState, revision: 3 },
+      });
+    });
+
+    expect(result.current.gameState.phase).toBe('END');
+    expect(result.current.gameState.turn).toBe(4);
+    expect(result.current.isSynchronizing).toBe(false);
+    expect(result.current.isInteractionLocked).toBe(false);
+
+    const olderHostState = { ...latestHostState, phase: 'ATTACK' as const, turn: 3 };
+    act(() => {
+      onMessage?.({
+        type: 'STATE_COMMIT',
+        senderId: 'player-1',
+        timestamp: Date.now(),
+        payload: { state: olderHostState, revision: 2 },
+      });
+    });
+
+    expect(result.current.gameState.phase).toBe('END');
+    expect(result.current.gameState.turn).toBe(4);
+  });
+
   it('responds to a reconnect request with the latest host state and revision', async () => {
     let onMessage: ((message: PeerMessage) => void) | null = null;
     peerMock.createRoom.mockImplementation(async (handler) => {

@@ -122,11 +122,12 @@ describe('usePeer connection lifecycle', () => {
   });
 
   it('automatically reconnects a guest to its previous room', async () => {
+    const onMessage = vi.fn();
     const { result } = renderHook(() => usePeer());
 
     let joinPromise!: Promise<void>;
     act(() => {
-      joinPromise = result.current.joinRoom('host-room', vi.fn());
+      joinPromise = result.current.joinRoom('host-room', onMessage);
     });
 
     const firstPeer = FakePeer.instances[0];
@@ -158,6 +159,10 @@ describe('usePeer connection lifecycle', () => {
       secondConnection.emit('open');
     });
     expect(result.current.status).toBe('connected');
+
+    const snapshot = { type: 'SYNC_RESPONSE', timestamp: 1 };
+    act(() => secondConnection.emit('data', snapshot));
+    expect(onMessage).toHaveBeenCalledWith(snapshot);
   });
 
   it('cancels automatic reconnection after an explicit disconnect', async () => {
