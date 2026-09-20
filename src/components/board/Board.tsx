@@ -1735,15 +1735,17 @@ export const Board: React.FC<BoardProps> = ({
 
       {/* 手札カード選択中インジケーター */}
       {selectedHandCard && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/95 border-2 border-indigo-500 rounded-xl px-4 py-2 shadow-2xl flex items-center gap-3 text-xs animate-in slide-in-from-bottom-2">
+        <div className="fixed bottom-2 sm:bottom-4 left-2 sm:left-1/2 sm:-translate-x-1/2 z-30 w-[calc(100vw-3.5rem)] sm:w-auto sm:max-w-[calc(100vw-1rem)] bg-slate-950/95 border-2 border-indigo-500 rounded-xl px-3 sm:px-4 py-2 shadow-2xl flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-xs animate-in slide-in-from-bottom-2">
           <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping shrink-0" />
-          <div className="flex items-center gap-1.5 text-slate-200">
-            <span className="text-indigo-300 font-bold">手札選択中:</span>
-            <span className="font-extrabold text-white">「{selectedHandCard.card.name}」</span>
+          <div className="flex min-w-0 flex-col sm:flex-row items-center gap-1 sm:gap-1.5 text-center sm:text-left text-slate-200">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="text-indigo-300 font-bold shrink-0">手札選択中:</span>
+              <span className="font-extrabold text-white truncate">「{selectedHandCard.card.name}」</span>
+            </div>
             <span className="text-slate-400 text-[11px]">
               {selectedHandCard.card.cardType === 'EVENT'
-                ? '➔ スロットをクリックまたはドラッグで使用（場外へ）'
-                : '➔ 配置したいスロットをクリックまたはドラッグ'}
+                ? '➔ 使用する枠をタップ（場外へ）'
+                : '➔ 配置したい枠をタップ'}
             </span>
           </div>
           <button

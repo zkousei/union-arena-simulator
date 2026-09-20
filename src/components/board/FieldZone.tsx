@@ -120,9 +120,18 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
             <div
               key={index}
               id={`slot-${playerId}-${zone}-${index}`}
+              role={selectedCardId && !card ? 'button' : undefined}
+              tabIndex={selectedCardId && !card ? 0 : undefined}
+              aria-label={selectedCardId && !card ? `${title} 枠 ${index + 1}` : undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 onSlotClick?.(slotIdx);
+              }}
+              onKeyDown={(event) => {
+                if (selectedCardId && !card && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault();
+                  onSlotClick?.(slotIdx);
+                }
               }}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={(e) => handleDragLeave(e, index)}

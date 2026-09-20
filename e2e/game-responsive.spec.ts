@@ -81,7 +81,7 @@ test('opens the action log as a drawer on mobile', async ({ page }) => {
   await expect(page.getByTitle('ログを開く')).toBeVisible();
 });
 
-test('starts a solo game and advances the phase on mobile', async ({ page }) => {
+test('plays a card and completes the first turn on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/game?mode=solo');
 
@@ -104,6 +104,33 @@ test('starts a solo game and advances the phase on mobile', async ({ page }) => 
   const advanceButton = page.getByRole('button', { name: /移動へ/ });
   await expect(advanceButton).toBeVisible();
   await advanceButton.click();
-  await expect(page.getByRole('button', { name: /メインへ/ })).toBeVisible();
+  await page.getByRole('button', { name: /メインへ/ }).click();
+
+  const ownHand = page.getByRole('region', { name: 'あなた の手札' });
+  const characterCard = ownHand.getByRole('button', {
+    name: /手札カード: .+ \(キャラクター\)/,
+  }).first();
+  const cardLabel = await characterCard.getAttribute('aria-label');
+  const cardName = cardLabel?.match(/^手札カード: (.+) \(キャラクター\)$/)?.[1];
+  expect(cardName).toBeTruthy();
+
+  await characterCard.click();
+  await expect(page.getByText('手札選択中:')).toBeVisible();
+  await page.getByRole('button', { name: 'あなた: エナジーライン 枠 1' }).click();
+
+  const placedSlot = page.locator('#slot-player-1-energyLine-0');
+  await expect(placedSlot.getByAltText(cardName!)).toBeVisible();
+  const restToggle = placedSlot.getByTitle(/(レスト|アクティブ)にする/);
+  const toggleTitle = await restToggle.getAttribute('title');
+  await restToggle.click();
+  if (toggleTitle?.startsWith('アクティブ')) {
+    await expect(placedSlot.getByText('REST')).toBeHidden();
+  } else {
+    await expect(placedSlot.getByText('REST')).toBeVisible();
+  }
+
+  await page.getByRole('button', { name: /エンドへ/ }).click();
+  await page.getByRole('button', { name: /ターン終了/ }).click();
+  await expect(page.getByText('TURN 2')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });

@@ -33,6 +33,7 @@ interface CardViewProps {
   onDirectAttack?: () => void;
   onOpenUnderCards?: () => void;
   isCompact?: boolean;
+  accessibleLabel?: string;
 }
 
 const COLOR_BORDER_MAP: Record<CardColor, string> = {
@@ -72,6 +73,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onDirectAttack,
   onOpenUnderCards,
   isCompact = false,
+  accessibleLabel,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -97,6 +99,15 @@ export const CardView: React.FC<CardViewProps> = ({
       <div
         className={`${cardDimensions} rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown`}
         onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        aria-label={onClick ? accessibleLabel || card.name : undefined}
+        onKeyDown={(event) => {
+          if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onClick();
+          }
+        }}
       >
         <div className={`${isCompact ? 'w-7 h-10' : 'w-12 h-16'} rounded border border-indigo-500/30 flex items-center justify-center`}>
           <span className={`${isCompact ? 'text-[8px]' : 'text-[10px]'} font-bold text-indigo-400/80 tracking-wider`}>UA</span>
@@ -214,6 +225,15 @@ export const CardView: React.FC<CardViewProps> = ({
           onDragEnd={handleDragEnd}
           onContextMenu={handleContextMenu}
           onClick={onClick}
+          role={onClick ? 'button' : undefined}
+          tabIndex={onClick ? 0 : undefined}
+          aria-label={onClick ? accessibleLabel || card.name : undefined}
+          onKeyDown={(event) => {
+            if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onClick();
+            }
+          }}
           onDoubleClick={(e) => {
             e.stopPropagation();
             if (onToggleRest) {

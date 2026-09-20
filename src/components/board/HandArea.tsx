@@ -159,6 +159,8 @@ export const HandArea: React.FC<HandAreaProps> = ({
 
   return (
     <div
+      role="region"
+      aria-label={title || (isOpponent ? '相手の手札' : '自分の手札')}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -268,6 +270,13 @@ export const HandArea: React.FC<HandAreaProps> = ({
                   card={card}
                   location={{ playerId, zone: 'hand', index: idx }}
                   isCompact={isCompact}
+                  accessibleLabel={`手札カード: ${card.name} (${
+                    card.cardType === 'CHARACTER'
+                      ? 'キャラクター'
+                      : card.cardType === 'EVENT'
+                        ? 'イベント'
+                        : 'フィールド'
+                  })`}
                   onClick={() => onSelectCard && onSelectCard(card)}
                   onInspect={onInspect}
                   onHoverCard={onHoverCard}

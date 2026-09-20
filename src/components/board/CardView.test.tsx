@@ -169,4 +169,23 @@ describe('CardView', () => {
     fireEvent.click(attackBtn);
     expect(handleDirectAttack).toHaveBeenCalledTimes(1);
   });
+
+  it('exposes a custom accessible name and supports keyboard selection', () => {
+    const handleClick = vi.fn();
+    render(
+      <CardView
+        card={dummyCard}
+        accessibleLabel="手札カード: ルルーシュ・ランペルージ (キャラクター)"
+        onClick={handleClick}
+      />
+    );
+
+    const cardButton = screen.getByRole('button', {
+      name: '手札カード: ルルーシュ・ランペルージ (キャラクター)',
+    });
+    fireEvent.keyDown(cardButton, { key: 'Enter' });
+    fireEvent.keyDown(cardButton, { key: ' ' });
+
+    expect(handleClick).toHaveBeenCalledTimes(2);
+  });
 });
