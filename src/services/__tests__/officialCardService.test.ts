@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
+  fetchSeriesCardsViaProxy,
   parseCardFromDetailHtml,
   parseCardListHtml,
   parseDeckListText,
@@ -7,6 +8,11 @@ import {
 import { CARD_DATABASE } from '../../data/cardDatabase';
 
 describe('officialCardService Tests', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('should correctly parse card list HTML', () => {
     const mockListHtml = `
       <ul class="cardListCol">
@@ -135,6 +141,30 @@ describe('officialCardService Tests', () => {
     expect(withParallel[1].isParallel).toBe(true);
   });
 
+  it('parses list images regardless of attribute order, supports src, and removes duplicate card entries', () => {
+    const html = `
+      <a href="/jp/cardlist/detail_iframe.php?card_no=UA01BT/CGH-1-001">
+        <img alt="UA01BT/CGH-1-001 扇 要" src="/jp/images/card-1.png">
+      </a>
+      <a href="./detail_iframe.php?card_no=UA01BT/CGH-1-001">
+        <img data-src="/jp/images/card-1-duplicate.png" alt="UA01BT/CGH-1-001 扇 要">
+      </a>
+      <a href="./detail_iframe.php?card_no=UA01BT/CGH-1-002">
+        <img alt="UA01BT/CGH-1-002 紅月 カレン" data-src="https://example.com/card-2.png">
+      </a>
+    `;
+
+    const cards = parseCardListHtml(html);
+
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toMatchObject({
+      cardNo: 'UA01BT/CGH-1-001',
+      name: '扇 要',
+      imgUrl: 'https://www.unionarena-tcg.com/jp/images/card-1.png',
+    });
+    expect(cards[1].imgUrl).toBe('https://example.com/card-2.png');
+  });
+
   it('should parse deck list text into DeckItems', () => {
     const deckText = `
       UA01BT/CGH-1-001 x4
@@ -164,5 +194,63 @@ describe('officialCardService Tests', () => {
     const card = parseCardFromDetailHtml(mockPlusBpHtml, 'UA01BT/CGH-1-003', 'https://example.com/cgh3.png');
     expect(card.bp).toBe(2000);
     expect(card.hasBpPlus).toBe(true);
+  });
+
+  it('parses action point cards as colorless and reads a relative image with reordered attributes', () => {
+    const html = `
+      <h2 class="cardNameCol">アクションポイント</h2>
+      <dd class="cardDataImgCol"><img alt="APカード" loading="lazy" src="/jp/images/cardlist/card/AP_CARD.png"></dd>
+      <dl class="cardDataCol categoryData"><dd class="cardDataContents">アクションポイント</dd></dl>
+      <dl class="cardDataCol bpData"><dd class="cardDataContents">-</dd></dl>
+    `;
+
+    const card = parseCardFromDetailHtml(html, 'UA01AP/CGH-1-001');
+
+    expect(card.cardType).toBe('ACTION_POINT');
+    expect(card.color).toBe('COLORLESS');
+    expect(card.imageUrl).toBe('https://www.unionarena-tcg.com/jp/images/cardlist/card/AP_CARD.png');
+  });
+
+  it('merges duplicate deck lines and ignores a zero card count', () => {
+    const card = CARD_DATABASE[0];
+    const zeroCountCard = CARD_DATABASE.find((candidate) => candidate.code !== card.code)!;
+    const text = `${card.code} x2\n${card.code} 1\n${zeroCountCard.code} x0`;
+
+    const { items, notFound } = parseDeckListText(text, [card, zeroCountCard]);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].count).toBe(3);
+    expect(notFound).toEqual([]);
+  });
+
+  it('returns structural fallback cards when detail retrieval fails without live network access', async () => {
+    const listHtml = `
+      <ul class="cardListCol">
+        <a href="./detail_iframe.php?card_no=UA01BT/CGH-1-001">
+          <img data-src="/jp/images/card-1.png" alt="UA01BT/CGH-1-001 扇 要">
+        </a>
+      </ul>
+    `;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, text: async () => listHtml })
+      .mockResolvedValue({ ok: false });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const onProgress = vi.fn();
+
+    const cards = await fetchSeriesCardsViaProxy('570101', onProgress);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toMatchObject({
+      code: 'UA01BT/CGH-1-001',
+      name: '扇 要',
+      titleCode: 'CGH',
+      seriesId: '570101',
+      isParallel: false,
+      isUnrevealed: false,
+    });
+    expect(onProgress).toHaveBeenCalledWith(1, 1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

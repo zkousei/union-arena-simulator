@@ -28,6 +28,11 @@ export const OFFICIAL_SERIES_LIST: OfficialSeriesInfo[] = ALL_OFFICIAL_SERIES.ma
   };
 });
 
+function getHtmlAttribute(tag: string, attribute: string): string | undefined {
+  const match = tag.match(new RegExp(`\\b${attribute}\\s*=\\s*(["'])(.*?)\\1`, 'i'));
+  return match?.[2];
+}
+
 /**
  * 公式カード詳細HTMLからCardMasterオブジェクトを抽出・パース
  */
@@ -89,6 +94,9 @@ export function parseCardFromDetailHtml(
       const numMatch = altText.match(/\d+/);
       reqEnergy = numMatch ? parseInt(numMatch[0], 10) : 0;
     }
+  }
+  if (cardType === 'ACTION_POINT') {
+    color = 'COLORLESS';
   }
 
   // 消費AP
@@ -177,12 +185,16 @@ export function parseCardFromDetailHtml(
   }
 
   // 画像URL (例: https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01BT_CGH-1-001.png)
-  const imgMatch = detailHtml.match(/<dd class="cardDataImgCol"><img[^>]*src="([^"]+)"/);
+  const imgColumnMatch = detailHtml.match(
+    /<dd[^>]*class=["'][^"']*cardDataImgCol[^"']*["'][^>]*>([\s\S]*?)<\/dd>/i
+  );
+  const imgTagMatch = imgColumnMatch?.[1].match(/<img\b[^>]*>/i);
+  const detailImageSrc = imgTagMatch ? getHtmlAttribute(imgTagMatch[0], 'src') : undefined;
   let imageUrl = fallbackImgUrl;
-  if (imgMatch) {
-    imageUrl = imgMatch[1].startsWith('http')
-      ? imgMatch[1]
-      : `https://www.unionarena-tcg.com${imgMatch[1]}`;
+  if (detailImageSrc) {
+    imageUrl = detailImageSrc.startsWith('http')
+      ? detailImageSrc
+      : `https://www.unionarena-tcg.com${detailImageSrc.startsWith('/') ? '' : '/'}${detailImageSrc}`;
   } else if (!imageUrl) {
     imageUrl = `https://www.unionarena-tcg.com/jp/images/cardlist/card/${cardNo.replace('/', '_')}.png`;
   }
@@ -253,14 +265,28 @@ export function parseCardListHtml(
   html: string,
   options?: { includeParallel?: boolean }
 ): Array<{ cardNo: string; name: string; imgUrl: string; isParallel: boolean; isUnrevealed: boolean }> {
-  const regex = /href="\.\/detail_iframe\.php\?card_no=([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]+)"[^>]*alt="([^"]+)"/g;
-  let match;
+  const anchorRegex = /<a\b[^>]*>[\s\S]*?<\/a>/gi;
   const cards: Array<{ cardNo: string; name: string; imgUrl: string; isParallel: boolean; isUnrevealed: boolean }> = [];
+  const seenCardNumbers = new Set<string>();
+  let anchorMatch: RegExpExecArray | null;
 
-  while ((match = regex.exec(html)) !== null) {
-    const cardNo = match[1];
-    const rawImg = match[2];
-    const alt = match[3];
+  while ((anchorMatch = anchorRegex.exec(html)) !== null) {
+    const anchorTag = anchorMatch[0].match(/^<a\b[^>]*>/i)?.[0];
+    const href = anchorTag ? getHtmlAttribute(anchorTag, 'href') : undefined;
+    const encodedCardNo = href?.match(/detail_iframe\.php\?[^#"']*\bcard_no=([^&#"']+)/i)?.[1];
+    const imgTag = anchorMatch[0].match(/<img\b[^>]*>/i)?.[0];
+    const rawImg = imgTag
+      ? getHtmlAttribute(imgTag, 'data-src') || getHtmlAttribute(imgTag, 'src')
+      : undefined;
+    const alt = imgTag ? getHtmlAttribute(imgTag, 'alt') : undefined;
+    if (!encodedCardNo || !rawImg || !alt) continue;
+
+    let cardNo = encodedCardNo;
+    try {
+      cardNo = decodeURIComponent(encodedCardNo);
+    } catch {
+      // 不正なURLエンコードの場合は取得できた文字列をそのまま使う
+    }
     const name = alt.replace(cardNo, '').trim();
 
     const isParallel = /_p\d+$/i.test(cardNo);
@@ -272,6 +298,8 @@ export function parseCardListHtml(
     if (options?.includeParallel === false && isParallel) {
       continue;
     }
+    if (seenCardNumbers.has(cardNo)) continue;
+    seenCardNumbers.add(cardNo);
 
     const imgUrl = rawImg.startsWith('http')
       ? rawImg
@@ -316,6 +344,7 @@ export function parseDeckListText(
     // 枚数抽出 (デフォルト4枚、指定があればその数値)
     const countMatch = line.slice(codeMatch.index! + code.length).match(/[\s*x×]+(\d+)/i);
     const count = countMatch ? parseInt(countMatch[1], 10) : 4;
+    if (count <= 0) continue;
 
     const foundCard = cardPool.find(
       (c) => c.code.toUpperCase() === code || c.code.toUpperCase().startsWith(code)
