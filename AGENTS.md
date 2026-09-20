@@ -170,6 +170,12 @@ test owner. Mention that file in the completion summary.
 - Prefer automated DOM assertions; use browser verification for geometry,
   overflow, visual hierarchy, and drag/drop behavior.
 
+### E2E Test Synchronization
+
+- When modifying UI copy, button labels, accessible names, dialog titles, or user interaction flows, inspect `e2e/` specs (`git grep` or targeted search) for selectors (`getByRole`, `getByText`, `getByTitle`) that match the modified elements.
+- Keep `e2e/` test expectations synchronized with production UI changes in the same change so GitHub CI does not break.
+- If running in a sandboxed environment where local Chromium launch is blocked by OS sandbox permissions (`MachPortRendezvous` / `Permission denied`), do not skip inspecting and updating `e2e/*.spec.ts` files statically.
+
 ## Branch Workflow
 
 This repository uses a lightweight, `main`-based workflow. Feature branches are
@@ -328,7 +334,9 @@ Unless the user requests a narrower scope, finish production changes with:
 
 Playwright E2E tests use the repository-owned Chromium installation and start a
 local Vite server. Keep complete user flows under `e2e/` and avoid live network
-dependencies.
+dependencies. When local environment or sandbox constraints prevent headless Chromium
+from launching, perform static selector audits against `e2e/*.spec.ts` for all modified
+UI elements to ensure CI does not fail.
 
 For card-data synchronization, also report whether `npm run sync-cards` was run
 and whether it required live network access.
