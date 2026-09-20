@@ -14,28 +14,50 @@ import {
   ShieldCheck,
   ArrowRight,
   Flame,
+  LogIn,
 } from 'lucide-react';
 import { PRESET_DECKS, PresetDeckInfo } from '../data/sampleDeck';
 import { UserDeck } from '../domain/deckValidation';
 
 interface HomeProps {
-  onStartGame: () => void;
+  onStartSolo: () => void;
+  onHostGame: () => void;
+  onJoinGame: (roomId: string) => void;
   onOpenDeckBuilder: () => void;
-  onOpenPeerModal: () => void;
-  onSelectPresetDeck: (deck: UserDeck) => void;
+  onSelectPresetDeck: (deck: UserDeck, mode: 'solo' | 'p2p') => void;
 }
 
 export const HomePage: React.FC<HomeProps> = ({
-  onStartGame,
+  onStartSolo,
+  onHostGame,
+  onJoinGame,
   onOpenDeckBuilder,
-  onOpenPeerModal,
   onSelectPresetDeck,
 }) => {
   const [activeRuleTab, setActiveRuleTab] = useState<'basics' | 'phases' | 'raid' | 'battle'>('basics');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [joinRoomInput, setJoinRoomInput] = useState('');
 
   const toggleFaq = (index: number) => {
     setExpandedFaq(expandedFaq === index ? null : index);
+  };
+
+  const handleJoinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = joinRoomInput.trim();
+    if (!trimmed) return;
+
+    let roomId = trimmed;
+    if (trimmed.includes('room=')) {
+      try {
+        const url = new URL(trimmed.startsWith('http') ? trimmed : `http://dummy.com/${trimmed}`);
+        roomId = url.searchParams.get('room') || trimmed;
+      } catch {
+        const match = trimmed.match(/room=([^&]+)/);
+        if (match) roomId = decodeURIComponent(match[1]);
+      }
+    }
+    onJoinGame(roomId);
   };
 
   return (
@@ -65,7 +87,7 @@ export const HomePage: React.FC<HomeProps> = ({
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <button
-              onClick={onStartGame}
+              onClick={onStartSolo}
               className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5 active:translate-y-0"
               title="1台のPCでPlayer 1とPlayer 2の両方を操作して一人回し練習"
             >
@@ -74,12 +96,12 @@ export const HomePage: React.FC<HomeProps> = ({
             </button>
 
             <button
-              onClick={onOpenPeerModal}
+              onClick={onHostGame}
               className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-700/30 transition transform hover:-translate-y-0.5"
               title="部屋URLを友達に送ってブラウザ同士でリアルタイム対戦"
             >
               <Users className="w-4 h-4 text-emerald-200" />
-              🌐 P2Pオンライン対戦（2人対戦）
+              🌐 P2P部屋を作成（Host）
             </button>
 
             <button
@@ -93,160 +115,162 @@ export const HomePage: React.FC<HomeProps> = ({
         </div>
       </section>
 
-      {/* 対戦モード選択（ソロプレイ vs P2P通信対戦）の大型ガイダンスカード */}
+      {/* 3大メインアクションカード (shadowverse-evolve-app スタイル) */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <Swords className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-xl font-bold tracking-tight text-white">遊び方を選択してください（対戦モード）</h2>
-          </div>
-          <span className="text-xs text-slate-400">1人で回すか、友達と通信対戦するかを選べます</span>
+        <div className="flex items-center gap-2">
+          <Swords className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-xl font-bold tracking-tight text-white">主な機能を選択</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* モード1: ソロプレイ（一人回し） */}
-          <div className="bg-gradient-to-br from-indigo-950/40 via-slate-900/90 to-slate-950 border-2 border-indigo-500/40 hover:border-indigo-400 rounded-3xl p-6 transition flex flex-col justify-between shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-indigo-600/10 blur-2xl pointer-events-none" />
-            
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1.5">
-                  <Play className="w-3 h-3 fill-indigo-300" />
-                  1人ですぐ遊ぶ・検証用
-                </span>
-                <span className="text-xs text-slate-400 font-semibold">1台2役</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 1. デッキビルダー */}
+          <div className="bg-slate-900/80 border border-slate-800 hover:border-sky-500/50 rounded-2xl p-6 transition flex flex-col justify-between group shadow-lg hover:shadow-sky-500/10">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition">
+                <Layers className="w-6 h-6" />
               </div>
-
-              <div>
-                <h3 className="text-2xl font-black text-white group-hover:text-indigo-300 transition flex items-center gap-2">
-                  <span>🎮 ソロプレイ（一人回し）</span>
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-                  対戦相手がいなくても、1台のPCで<strong>Player 1（先攻）とPlayer 2（後攻）の両方を手動で切り替えながら操作</strong>できます。デッキの回転力、初手事故率、レイドの連携やコンボの練習に最適です。
-                </p>
-              </div>
-
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>相手がいなくてもワンクリックで即座に対戦盤面を開始</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>画面右上の「操作視点」で Player 1 ⇔ Player 2 を自由に切替</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>Undo（巻き戻し）機能で分岐プレイングの検証も自在</span>
-                </div>
-              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-sky-300 transition">
+                デッキビルダー
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                全カードプールからキーワード検索や作品別絞り込みが可能。公式デッキ構築ルール（50枚、同名4枚、各上限判定）をリアルタイム自動検証。
+              </p>
+              <ul className="text-xs text-slate-300 space-y-1 pt-2">
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>ギアス・HxH・呪術廻戦対応</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>50枚公式ルール完全自動判定</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>JSONインポート / エクスポート</span>
+                </li>
+              </ul>
             </div>
-
             <button
-              onClick={onStartGame}
-              className="mt-6 w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 transform group-hover:scale-[1.02]"
+              onClick={onOpenDeckBuilder}
+              className="mt-6 w-full py-3 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/40 text-sky-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
             >
-              <Play className="w-4 h-4 fill-white" />
-              <span>ソロプレイで盤面を開く</span>
-              <ArrowRight className="w-4 h-4" />
+              <Layers className="w-4 h-4" />
+              <span>デッキを作る</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* モード2: P2Pオンライン通信対戦 */}
-          <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900/90 to-slate-950 border-2 border-emerald-500/40 hover:border-emerald-400 rounded-3xl p-6 transition flex flex-col justify-between shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-emerald-600/10 blur-2xl pointer-events-none" />
-
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                  <Users className="w-3 h-3 text-emerald-300" />
-                  友達と対戦・通信同期
-                </span>
-                <span className="text-xs text-slate-400 font-semibold">2人プレイ</span>
+          {/* 2. P2P通信対戦（部屋作成） */}
+          <div className="bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 transition flex flex-col justify-between group shadow-lg hover:shadow-emerald-500/10">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+                <Users className="w-6 h-6" />
               </div>
-
-              <div>
-                <h3 className="text-2xl font-black text-white group-hover:text-emerald-300 transition flex items-center gap-2">
-                  <span>🌐 P2Pオンライン通信対戦</span>
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-                  PeerJSを利用したサーバーレスのリアルタイム対戦モードです。<strong>会員登録やログインは一切不要</strong>。部屋を作成して発行されたURLを友達に送るだけで、ブラウザ同士で直接対戦できます。
-                </p>
-              </div>
-
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>招待URLをDiscordやLINEで送るだけで相手と即合流</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>盤面のカード移動・ライフ・AP・ダイスがリアルタイム完全同期</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>対戦チャット ＆ クイック定型文ピッカー完備</span>
-                </div>
-              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition">
+                P2P部屋を作成（Host）
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                PeerJSによるサーバーレス通信。部屋を作成して発行された招待URLを友達に送るだけで、ブラウザ同士で即座に対戦できます。
+              </p>
+              <ul className="text-xs text-slate-300 space-y-1 pt-2">
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>ログイン不要・招待URLで即合流</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>盤面カード・ライフ・APを完全同期</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>チャット ＆ 定型文ピッカー完備</span>
+                </li>
+              </ul>
             </div>
-
             <button
-              onClick={onOpenPeerModal}
-              className="mt-6 w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 transform group-hover:scale-[1.02]"
+              onClick={onHostGame}
+              className="mt-6 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20"
             >
               <Users className="w-4 h-4" />
-              <span>部屋を作成 / 参加する（P2P）</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>部屋を作成して対戦</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* 3. ソロプレイ（一人回し） */}
+          <div className="bg-gradient-to-br from-indigo-950/40 via-slate-900/90 to-slate-950 border-2 border-indigo-500/50 hover:border-indigo-400 rounded-2xl p-6 transition flex flex-col justify-between group shadow-xl relative overflow-hidden">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition">
+                  <Play className="w-6 h-6 fill-indigo-400" />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300">
+                  おすすめ・一人回し練習
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition">
+                ソロプレイ（一人回し）
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                1台のPCで<strong>Player 1（先攻）とPlayer 2（後攻）を交互に手動切替</strong>しながら操作。初手事故率やレイドコンボの検証に最適です。
+              </p>
+              <ul className="text-xs text-slate-300 space-y-1 pt-2">
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span>相手がいなくてもワンクリックで開始</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span>右上の操作視点で手番を自由切替</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span>Undo巻き戻しで分岐プレイを検証</span>
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={onStartSolo}
+              className="mt-6 w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 transform group-hover:scale-[1.01]"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              <span>ソロプレイを開始</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* デッキビルダー紹介カード */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-sky-400" />
-          <h2 className="text-xl font-bold tracking-tight text-white">デッキビルダー</h2>
-        </div>
-
-        <div className="bg-slate-900/80 border border-slate-800 hover:border-sky-500/50 rounded-2xl p-6 transition flex flex-col sm:flex-row sm:items-center gap-6 group shadow-lg">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition shrink-0">
-                <Layers className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-sky-300 transition">
-                  デッキビルダー &amp; ルール検証
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                  全カードプールからキーワード検索や作品別絞り込みが可能。公式デッキ構築ルール（50枚、同名4枚、SPECIAL/COLOR/FINAL各4枚上限）をリアルタイム判定。
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-300 pl-0 sm:pl-[60px]">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                コードギアス・HUNTER×HUNTER・呪術廻戦対応
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                50枚公式ルール完全リアルタイム自動検証
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                保存 &amp; JSONインポート/エクスポート
-              </span>
-            </div>
+      {/* 部屋に参加する (Join Room) 直接入力カード (shadowverse-evolve-app スタイル) */}
+      <section className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div className="max-w-2xl mx-auto text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400">
+            <LogIn className="w-6 h-6" />
           </div>
-          <button
-            onClick={onOpenDeckBuilder}
-            className="sm:w-auto w-full py-3 px-6 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition flex items-center justify-center gap-2 shrink-0 transform hover:-translate-y-0.5"
-          >
-            <Layers className="w-4 h-4" />
-            <span>デッキを作る</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">友達の部屋に参加する (Join Room)</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              ホストから共有された「ルームID」または「招待URL」を入力して、直接対戦に参加できます。
+            </p>
+          </div>
+
+          <form onSubmit={handleJoinSubmit} className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <input
+              type="text"
+              value={joinRoomInput}
+              onChange={(e) => setJoinRoomInput(e.target.value)}
+              placeholder="ルームID または 招待URLを入力 (例: c7f965d1...)"
+              className="flex-1 px-4 py-3 bg-slate-950/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+            />
+            <button
+              type="submit"
+              disabled={!joinRoomInput.trim()}
+              className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 shrink-0"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>対戦に参加</span>
+            </button>
+          </form>
         </div>
       </section>
 
@@ -301,8 +325,7 @@ export const HomePage: React.FC<HomeProps> = ({
                 <div className="flex items-center gap-1.5 w-full sm:w-auto">
                   <button
                     onClick={() => {
-                      onSelectPresetDeck(preset.deck);
-                      onStartGame();
+                      onSelectPresetDeck(preset.deck, 'solo');
                     }}
                     className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center justify-center gap-1 shadow"
                     title="このデッキを選んでソロプレイ（一人回し）を開始"
@@ -312,11 +335,10 @@ export const HomePage: React.FC<HomeProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      onSelectPresetDeck(preset.deck);
-                      onOpenPeerModal();
+                      onSelectPresetDeck(preset.deck, 'p2p');
                     }}
                     className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition flex items-center justify-center gap-1 shadow"
-                    title="このデッキを選んでP2P通信対戦の部屋作成/参加を開く"
+                    title="このデッキを選んでP2P通信対戦の部屋を作成"
                   >
                     <Users className="w-3 h-3" />
                     P2P対戦
