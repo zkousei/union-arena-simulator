@@ -1219,6 +1219,7 @@ export const Board: React.FC<BoardProps> = ({
         }`}
       >
         <SideZonesArea
+          position="top"
           player={topPlayer}
           isOpponent={!isSoloMode}
           isSoloMode={isSoloMode}
@@ -1456,6 +1457,7 @@ export const Board: React.FC<BoardProps> = ({
         </div>
 
         <SideZonesArea
+          position="bottom"
           player={bottomPlayer}
           isOpponent={false}
           isSoloMode={isSoloMode}

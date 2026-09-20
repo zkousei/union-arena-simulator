@@ -18,6 +18,7 @@ import {
   ArrowUp,
   ArrowDown,
   Target,
+  X,
 } from 'lucide-react';
 import { GraveyardModal } from '../modals/GraveyardModal';
 import { RemovedModal } from '../modals/RemovedModal';
@@ -26,6 +27,7 @@ import { DeckPlacementModal } from '../modals/DeckPlacementModal';
 
 interface SideZonesAreaProps {
   player: PlayerState;
+  position?: 'top' | 'bottom';
   isOpponent?: boolean;
   isSoloMode?: boolean;
   onDraw?: () => void;
@@ -62,6 +64,7 @@ interface SideZonesAreaProps {
 
 export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   player,
+  position,
   isOpponent = false,
   isSoloMode = false,
   isCompact = false,
@@ -89,9 +92,13 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   onDropToLife,
   onDropToDeck,
 }) => {
+  const isTop = position ? position === 'top' : isOpponent;
+  const verticalPopupClass = isTop ? 'top-full mt-1' : 'bottom-full mb-1';
+
   const [showGraveyardModal, setShowGraveyardModal] = useState(false);
   const [showRemovedModal, setShowRemovedModal] = useState(false);
   const [showTopDeckDropdown, setShowTopDeckDropdown] = useState(false);
+  const [customTopDeckCount, setCustomTopDeckCount] = useState<string>('');
   const [showBottomDeckDropdown, setShowBottomDeckDropdown] = useState(false);
   const [showLifeMenu, setShowLifeMenu] = useState(false);
   const [selectedMyLifeIndex, setSelectedMyLifeIndex] = useState<number | null>(null);
@@ -345,90 +352,100 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
 
                     {/* 自分ライフの個別操作ポップアップ */}
                     {!isOpponent && selectedMyLifeIndex === idx && (
-                      <div
-                        className="absolute left-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 text-[10px]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="text-[9px] text-slate-400 font-bold px-1 border-b border-slate-800 pb-0.5 truncate">
-                          ライフ #{idx + 1} {!isFaceDown ? `(${card.name})` : ''}
+                      <>
+                        <div
+                          data-testid="dropdown-backdrop"
+                          className="fixed inset-0 z-20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedMyLifeIndex(null);
+                          }}
+                        />
+                        <div
+                          role="dialog"
+                          aria-label={`ライフ #${idx + 1} 操作メニュー`}
+                          className={`absolute ${idx >= 2 ? 'right-0' : 'left-0'} ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 max-w-[calc(100vw-24px)] max-h-[min(300px,80vh)] overflow-y-auto scrollbar-thin text-[10px] animate-in fade-in zoom-in-95 duration-100`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="text-[9px] text-slate-400 font-bold px-1 border-b border-slate-800 pb-0.5 truncate">
+                            ライフ #${idx + 1} {!isFaceDown ? `(${card.name})` : ''}
+                          </div>
+                          {onInspectCard && !isFaceDown && (
+                            <button
+                              onClick={() => {
+                                onInspectCard(card);
+                                setSelectedMyLifeIndex(null);
+                              }}
+                              className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 font-bold flex items-center gap-1"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              カード詳細を見る
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              onCheckLife?.(idx);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
+                          >
+                            <Eye className="w-2.5 h-2.5" />
+                            チェック
+                          </button>
+                          <button
+                            onClick={() => {
+                              onTakeLife?.('hand', idx);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1"
+                          >
+                            <Hand className="w-2.5 h-2.5" />
+                            手札に回収
+                          </button>
+                          <button
+                            onClick={() => {
+                              onTakeLife?.('graveyard', idx);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
+                          >
+                            <Skull className="w-2.5 h-2.5" />
+                            場外へ送る
+                          </button>
+                          <button
+                            onClick={() => {
+                              onTakeLife?.('deckTop', idx);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
+                          >
+                            <ArrowUp className="w-2.5 h-2.5" />
+                            山札の上へ
+                          </button>
+                          <button
+                            onClick={() => {
+                              onTakeLife?.('deckBottom', idx);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
+                          >
+                            <ArrowDown className="w-2.5 h-2.5" />
+                            山札の下へ
+                          </button>
+                          {onFlipLife && (
+                            <button
+                              onClick={() => {
+                                onFlipLife(idx);
+                                setSelectedMyLifeIndex(null);
+                              }}
+                              className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1 border-t border-slate-800 mt-0.5"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              表/裏切替
+                            </button>
+                          )}
                         </div>
-                        {onInspectCard && !isFaceDown && (
-                          <button
-                            onClick={() => {
-                              onInspectCard(card);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 font-bold flex items-center gap-1"
-                          >
-                            <Eye className="w-2.5 h-2.5" />
-                            カード詳細を見る
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            onCheckLife?.(idx);
-                            setSelectedMyLifeIndex(null);
-                          }}
-                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
-                        >
-                          <Eye className="w-2.5 h-2.5" />
-                          チェック
-                        </button>
-                        <button
-                          onClick={() => {
-                            onTakeLife?.('hand', idx);
-                            setSelectedMyLifeIndex(null);
-                          }}
-                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1"
-                        >
-                          <Hand className="w-2.5 h-2.5" />
-                          手札に回収
-                        </button>
-                        <button
-                          onClick={() => {
-                            onTakeLife?.('graveyard', idx);
-                            setSelectedMyLifeIndex(null);
-                          }}
-                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-400 flex items-center gap-1"
-                        >
-                          <Skull className="w-2.5 h-2.5" />
-                          自傷で場外へ
-                        </button>
-                        <button
-                          onClick={() => {
-                            onTakeLife?.('deckTop', idx);
-                            setSelectedMyLifeIndex(null);
-                          }}
-                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-emerald-300 flex items-center gap-1"
-                          title="山札の一番上に戻す"
-                        >
-                          <ArrowUp className="w-2.5 h-2.5 text-emerald-400" />
-                          山札の上へ戻す
-                        </button>
-                        <button
-                          onClick={() => {
-                            onTakeLife?.('deckBottom', idx);
-                            setSelectedMyLifeIndex(null);
-                          }}
-                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-emerald-400 flex items-center gap-1"
-                          title="仮面ライダーオーズ等の効果"
-                        >
-                          <ArrowDown className="w-2.5 h-2.5 text-emerald-400" />
-                          山札の下へ送る
-                        </button>
-                        {onFlipLife && (
-                          <button
-                            onClick={() => {
-                              onFlipLife(idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1 border-t border-slate-800 mt-0.5"
-                          >
-                            <Eye className="w-2.5 h-2.5" />
-                            表/裏切替
-                          </button>
-                        )}
-                      </div>
+                      </>
                     )}
                   </div>
                 );
@@ -447,14 +464,24 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
           </div>
         )}
 
-        {/* ライフ高度操作 (回復・自傷コスト・手札回収・表向き化) */}
-        {(!isOpponent || isSoloMode) && (
-          <div className="flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px] relative">
+        {/* ライフ操作クイックボタングループ (自分のみ) */}
+        {!isOpponent && (
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px]">
             <button
-              onClick={() => onRecoverLife?.()}
+              onClick={() => onTakeLife && onTakeLife('hand')}
+              disabled={player.life.length === 0}
+              className="flex items-center gap-1 py-1 px-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded text-sky-300 font-semibold transition-colors"
+              title="ライフの一番上を手札に加える"
+            >
+              <Hand className="w-3 h-3" />
+              回収
+            </button>
+
+            <button
+              onClick={() => onRecoverLife && onRecoverLife(true)}
               disabled={player.deck.length === 0}
-              className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-600/30 rounded text-emerald-300 font-semibold transition-colors"
-              title="山札の上から1枚をライフに追加（ライフ回復）"
+              className="flex items-center gap-1 py-1 px-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded text-emerald-300 font-semibold transition-colors"
+              title="山札の上から1枚を裏向きでライフに置く"
             >
               <HeartPulse className="w-3 h-3 text-emerald-400" />
               +1回復
@@ -470,60 +497,69 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
               </button>
 
               {showLifeMenu && (
-                <div
-                  className="absolute right-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-40 text-[11px]"
-                  onClick={() => setShowLifeMenu(false)}
-                >
-                  <button
-                    onClick={() => onTakeLife && onTakeLife('hand')}
-                    disabled={player.life.length === 0}
-                    className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1.5"
-                    title="ライフの一番上を手札に加える（エレン等）"
+                <>
+                  <div
+                    data-testid="dropdown-backdrop"
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowLifeMenu(false)}
+                  />
+                  <div
+                    role="menu"
+                    aria-label="ライフメニュー"
+                    className={`absolute right-0 ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-40 max-w-[calc(100vw-24px)] max-h-[min(300px,80vh)] overflow-y-auto scrollbar-thin text-[11px] animate-in fade-in zoom-in-95 duration-100`}
+                    onClick={() => setShowLifeMenu(false)}
                   >
-                    <Hand className="w-3 h-3" />
-                    手札に回収
-                  </button>
-                  <button
-                    onClick={() => onTakeLife && onTakeLife('graveyard')}
-                    disabled={player.life.length === 0}
-                    className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1.5"
-                    title="ライフを場外へ送る（宿儺の指等の自傷コスト）"
-                  >
-                    <Skull className="w-3 h-3" />
-                    自傷で場外へ
-                  </button>
-                  <button
-                    onClick={() => onRecoverLife && onRecoverLife(false)}
-                    disabled={player.deck.length === 0}
-                    className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1.5"
-                    title="山札の上から1枚を表向きでライフに置く（ランカ・リー、オベリスク等）"
-                  >
-                    <HeartPulse className="w-3 h-3 text-amber-400" />
-                    山札から表向きでライフへ
-                  </button>
-                  {onOpenLifeReorder && (
                     <button
-                      onClick={onOpenLifeReorder}
+                      onClick={() => onTakeLife && onTakeLife('hand')}
                       disabled={player.life.length === 0}
-                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-indigo-300 flex items-center gap-1.5"
-                      title="ライフを全て確認し、望む順序に並び替える（サー・ナイトアイ等）"
+                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1.5"
+                      title="ライフの一番上を手札に加える（エレン等）"
                     >
-                      <Layers className="w-3 h-3 text-indigo-400" />
-                      ライフ確認・並び替え
+                      <Hand className="w-3 h-3" />
+                      手札に回収
                     </button>
-                  )}
-                  {onFlipLife && (
                     <button
-                      onClick={() => onFlipLife(0)}
+                      onClick={() => onTakeLife && onTakeLife('graveyard')}
                       disabled={player.life.length === 0}
-                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1.5 border-t border-slate-800 mt-0.5"
-                      title="ライフの一番上の表向き/裏向きを切り替える（眞霜平助等）"
+                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1.5"
+                      title="ライフを場外へ送る（宿儺の指等の自傷コスト）"
                     >
-                      <Eye className="w-3 h-3" />
-                      一番上を表/裏切替
+                      <Skull className="w-3 h-3" />
+                      自傷で場外へ
                     </button>
-                  )}
-                </div>
+                    <button
+                      onClick={() => onRecoverLife && onRecoverLife(false)}
+                      disabled={player.deck.length === 0}
+                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1.5"
+                      title="山札の上から1枚を表向きでライフに置く（ランカ・リー、オベリスク等）"
+                    >
+                      <HeartPulse className="w-3 h-3 text-amber-400" />
+                      山札から表向きでライフへ
+                    </button>
+                    {onOpenLifeReorder && (
+                      <button
+                        onClick={onOpenLifeReorder}
+                        disabled={player.life.length === 0}
+                        className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-indigo-300 flex items-center gap-1.5"
+                        title="ライフを全て確認し、望む順序に並び替える（サー・ナイトアイ等）"
+                      >
+                        <Layers className="w-3 h-3 text-indigo-400" />
+                        ライフ確認・並び替え
+                      </button>
+                    )}
+                    {onFlipLife && (
+                      <button
+                        onClick={() => onFlipLife(0)}
+                        disabled={player.life.length === 0}
+                        className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1.5 border-t border-slate-800 mt-0.5"
+                        title="ライフの一番上の表向き/裏向きを切り替える（眞霜平助等）"
+                      >
+                        <Eye className="w-3 h-3" />
+                        一番上を表/裏切替
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -637,11 +673,14 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
 
         {/* 山札確認・サーチボタングループ (自分のみ、またはソロモード) */}
         {(!isOpponent || isSoloMode) && (
-          <div className="flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px]">
+          <div className="relative flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px]">
             {/* 上からN枚見るボタン */}
-            <div className="relative flex-1">
+            <div className="flex-1">
               <button
-                onClick={() => setShowTopDeckDropdown(!showTopDeckDropdown)}
+                onClick={() => {
+                  setShowTopDeckDropdown(!showTopDeckDropdown);
+                  setShowBottomDeckDropdown(false);
+                }}
                 disabled={player.deck.length === 0}
                 className="w-full flex items-center justify-center gap-1 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sky-300 font-semibold transition-colors"
                 title="山札の上からカードを確認します"
@@ -649,48 +688,154 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                 <Eye className="w-3 h-3" />
                 上を見る
               </button>
-
-              {showTopDeckDropdown && (
-                <div
-                  className="absolute left-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-32"
-                  onClick={() => setShowTopDeckDropdown(false)}
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => onLookAtTopDeck && onLookAtTopDeck(n)}
-                      className="px-2 py-1 hover:bg-slate-800 rounded text-left text-slate-200 text-xs"
-                    >
-                      上から {n} 枚
-                    </button>
-                  ))}
-                  {onRevealTopDeck && (
-                    <button
-                      onClick={() => onRevealTopDeck()}
-                      className="px-2 py-1 hover:bg-slate-800 rounded text-left text-amber-300 text-xs border-t border-slate-800 mt-0.5"
-                      title="山札の一番上を表向き/裏向きにする（朝倉シン等）"
-                    >
-                      {player.revealedTopDeckCard ? 'トップを裏に戻す' : 'トップを表向きに'}
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* 山札の下から（ガメラ、VF-0D等） */}
-            <div className="relative flex-1">
+            <div className="flex-1">
               <button
-                onClick={() => setShowBottomDeckDropdown(!showBottomDeckDropdown)}
+                onClick={() => {
+                  setShowBottomDeckDropdown(!showBottomDeckDropdown);
+                  setShowTopDeckDropdown(false);
+                }}
                 disabled={player.deck.length === 0}
                 className="w-full flex items-center justify-center gap-1 py-1 bg-slate-800 hover:bg-slate-700 rounded text-amber-300 font-semibold transition-colors"
                 title="山札の一番下のカードに対する操作"
               >
                 下から
               </button>
+            </div>
 
-              {showBottomDeckDropdown && (
+            {/* 山札サーチボタン */}
+            <button
+              onClick={onOpenSearchDeck}
+              disabled={player.deck.length === 0}
+              className="flex-1 flex items-center justify-center gap-1 py-1 bg-slate-800 hover:bg-slate-700 rounded text-indigo-300 font-semibold transition-colors"
+              title="山札全体からカードを探します"
+            >
+              <Search className="w-3 h-3" />
+              探す
+            </button>
+
+            {/* 上から確認ドロップダウン */}
+            {showTopDeckDropdown && (
+              <>
                 <div
-                  className="absolute left-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36"
+                  data-testid="dropdown-backdrop"
+                  className="fixed inset-0 z-20"
+                  onClick={() => setShowTopDeckDropdown(false)}
+                />
+                <div
+                  role="dialog"
+                  aria-label="上から確認メニュー"
+                  className={`absolute right-0 ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 flex flex-col gap-1.5 w-52 max-w-[calc(100vw-24px)] max-h-[min(380px,80vh)] overflow-y-auto scrollbar-thin text-xs animate-in fade-in zoom-in-95 duration-100`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 border-b border-slate-800 pb-1">
+                    <span>上から確認 (残 {player.deck.length}枚)</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTopDeckDropdown(false)}
+                      className="p-0.5 text-slate-400 hover:text-white rounded"
+                      title="閉じる"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* 1〜8枚 クイックボタングリッド */}
+                  <div className="grid grid-cols-4 gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        disabled={player.deck.length < n}
+                        onClick={() => {
+                          onLookAtTopDeck?.(n);
+                          setShowTopDeckDropdown(false);
+                        }}
+                        className="py-1 px-1 bg-slate-800 hover:bg-sky-600 hover:text-white disabled:opacity-30 disabled:hover:bg-slate-800 disabled:hover:text-slate-200 rounded text-center text-slate-200 font-bold transition-colors text-xs"
+                      >
+                        {n}枚
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 10枚 & 任意指定入力 */}
+                  <div className="flex items-center gap-1 pt-1 border-t border-slate-800">
+                    <button
+                      type="button"
+                      disabled={player.deck.length < 10}
+                      onClick={() => {
+                        onLookAtTopDeck?.(10);
+                        setShowTopDeckDropdown(false);
+                      }}
+                      className="py-1 px-1.5 bg-slate-800 hover:bg-sky-600 hover:text-white disabled:opacity-30 disabled:hover:bg-slate-800 disabled:hover:text-slate-200 rounded text-center text-slate-200 font-bold transition-colors text-xs shrink-0"
+                    >
+                      10枚
+                    </button>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const count = parseInt(customTopDeckCount, 10);
+                        if (count > 0) {
+                          onLookAtTopDeck?.(count);
+                          setShowTopDeckDropdown(false);
+                          setCustomTopDeckCount('');
+                        }
+                      }}
+                      className="flex items-center gap-1 flex-1 min-w-0"
+                    >
+                      <input
+                        type="number"
+                        min={1}
+                        max={player.deck.length || 50}
+                        value={customTopDeckCount}
+                        onChange={(e) => setCustomTopDeckCount(e.target.value)}
+                        placeholder="指定"
+                        aria-label="確認する枚数"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-sky-500 rounded px-1.5 py-0.5 text-center text-xs text-white outline-none min-w-0"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!customTopDeckCount || parseInt(customTopDeckCount, 10) <= 0}
+                        className="px-2 py-0.5 bg-sky-700 hover:bg-sky-600 disabled:opacity-40 rounded text-white font-bold text-xs shrink-0 transition-colors"
+                      >
+                        見る
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* トップ表向き/裏向き切り替え */}
+                  {onRevealTopDeck && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onRevealTopDeck();
+                        setShowTopDeckDropdown(false);
+                      }}
+                      className="px-2 py-1 hover:bg-slate-800 rounded text-left text-amber-300 text-[11px] border-t border-slate-800 mt-0.5 flex items-center gap-1.5"
+                      title="山札の一番上を表向き/裏向きにする（朝倉シン等）"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>{player.revealedTopDeckCard ? 'トップを裏に戻す' : 'トップを表向きに'}</span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* 下から操作ドロップダウン */}
+            {showBottomDeckDropdown && (
+              <>
+                <div
+                  data-testid="dropdown-backdrop"
+                  className="fixed inset-0 z-20"
+                  onClick={() => setShowBottomDeckDropdown(false)}
+                />
+                <div
+                  role="menu"
+                  aria-label="山札の下からメニュー"
+                  className={`absolute right-0 ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 max-w-[calc(100vw-24px)] max-h-[min(300px,80vh)] overflow-y-auto scrollbar-thin text-xs animate-in fade-in zoom-in-95 duration-100`}
                   onClick={() => setShowBottomDeckDropdown(false)}
                 >
                   <button
@@ -728,19 +873,8 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                     一番下を手札へ
                   </button>
                 </div>
-              )}
-            </div>
-
-            {/* 山札サーチボタン */}
-            <button
-              onClick={onOpenSearchDeck}
-              disabled={player.deck.length === 0}
-              className="flex-1 flex items-center justify-center gap-1 py-1 bg-slate-800 hover:bg-slate-700 rounded text-indigo-300 font-semibold transition-colors"
-              title="山札全体からカードを探します"
-            >
-              <Search className="w-3 h-3" />
-              探す
-            </button>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import { Card, CardColor, TriggerType } from '../../types/card';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
-import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap } from 'lucide-react';
+import { ArrowRightLeft, Trash2, RotateCw, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap, X } from 'lucide-react';
 
 interface CardViewProps {
   card: Card;
@@ -453,12 +453,26 @@ export const CardView: React.FC<CardViewProps> = ({
       {/* 右クリックコンテキストメニュー */}
       {showMenu && (
         <div
-          className="fixed z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-1.5 w-48 text-xs text-slate-200"
-          style={{ top: Math.min(menuPos.y, window.innerHeight - 250), left: Math.min(menuPos.x, window.innerWidth - 200) }}
+          className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-2 w-56 max-w-[92vw] max-h-[calc(100vh-24px)] sm:max-h-[calc(100dvh-32px)] overflow-y-auto scrollbar-thin text-xs text-slate-200 flex flex-col gap-1"
+          style={{
+            top: Math.max(8, Math.min(menuPos.y, window.innerHeight - 450)),
+            left: Math.max(8, Math.min(menuPos.x, window.innerWidth - 240)),
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className={`font-bold border-b border-slate-800 pb-1 mb-1 px-1 truncate ${isOpponent ? 'text-rose-400' : 'text-indigo-400'}`}>
-            {isOpponent ? `[相手] ${card.name}` : card.name}
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-0.5 px-0.5">
+            <span className={`font-bold truncate text-xs ${isOpponent ? 'text-rose-400' : 'text-indigo-400'}`}>
+              {isOpponent ? `[相手] ${card.name}` : card.name}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowMenu(false)}
+              className="p-0.5 text-slate-400 hover:text-white rounded ml-1"
+              title="閉じる"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {!isOpponent && !card.isRested && onDirectAttack && (
@@ -467,7 +481,7 @@ export const CardView: React.FC<CardViewProps> = ({
                 onDirectAttack();
                 setShowMenu(false);
               }}
-              className="w-full text-left px-2 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded flex items-center gap-2 mb-1"
+              className="w-full text-left px-2 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded flex items-center gap-2"
             >
               <Swords className="w-3.5 h-3.5 text-rose-400" />
               アタック（相手プレイヤーへ攻撃）
@@ -480,7 +494,7 @@ export const CardView: React.FC<CardViewProps> = ({
                 onDeclareAttack();
                 setShowMenu(false);
               }}
-              className="w-full text-left px-2 py-1.5 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold rounded flex items-center gap-2 mb-1"
+              className="w-full text-left px-2 py-1.5 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold rounded flex items-center gap-2"
             >
               <Swords className="w-3.5 h-3.5 text-amber-400" />
               アタック対象を選択（狙い撃ち）
@@ -506,10 +520,37 @@ export const CardView: React.FC<CardViewProps> = ({
                 onInspect(card);
                 setShowMenu(false);
               }}
-              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-indigo-300"
+              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2"
             >
-              <ZoomIn className="w-3.5 h-3.5 text-indigo-400" />
-              カード詳細を確認 (拡大)
+              <Eye className="w-3.5 h-3.5 text-sky-400" />
+              詳細を見る
+            </button>
+          )}
+
+          {/* 相手カードの裏向きマーカーを自分で確認する（ソロモード/開発用） */}
+          {isOpponent && card.isFaceDown && onInspect && (
+            <button
+              onClick={() => {
+                onInspect(card);
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-amber-300"
+            >
+              <Eye className="w-3.5 h-3.5 text-amber-400" />
+              裏向きカードを見る (デバッグ)
+            </button>
+          )}
+
+          {card.underCards && card.underCards.length > 0 && onOpenUnderCards && (
+            <button
+              onClick={() => {
+                onOpenUnderCards();
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-purple-300"
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-400" />
+              下敷きカードを確認 ({card.underCards.length}枚)
             </button>
           )}
 
@@ -527,22 +568,59 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
 
           {isFieldCard && onModifyBp && effectiveBp !== null && (
-            <div className="flex items-center justify-between px-2 py-1 bg-slate-800/60 rounded my-1">
-              <span className="text-slate-400">BP修正:</span>
-              <div className="flex items-center gap-1">
+            <div className="flex flex-col gap-1 p-1.5 bg-slate-800/70 rounded my-0.5 text-xs">
+              <div className="flex items-center justify-between text-[11px] font-medium">
+                <span className="text-slate-400">BP修正:</span>
+                <span className={`font-bold ${card.bpModifier > 0 ? 'text-emerald-400' : card.bpModifier < 0 ? 'text-rose-400' : 'text-slate-300'}`}>
+                  {card.bpModifier > 0 ? `+${card.bpModifier}` : card.bpModifier}
+                  <span className="text-[10px] text-slate-400 font-normal ml-1">
+                    (計 {currentBp}{effectiveHasBpPlus ? '+' : ''})
+                  </span>
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 text-[10px]">
                 <button
+                  type="button"
                   onClick={() => onModifyBp(-1000)}
-                  className="px-1.5 py-0.5 bg-rose-700/80 hover:bg-rose-600 rounded text-[10px] flex items-center"
+                  className="py-1 px-0.5 bg-rose-900/80 hover:bg-rose-700 rounded text-rose-200 font-bold text-center transition-colors"
+                  title="BPを -1000"
                 >
-                  <Minus className="w-3 h-3" /> 1000
+                  -1000
                 </button>
                 <button
-                  onClick={() => onModifyBp(1000)}
-                  className="px-1.5 py-0.5 bg-emerald-700/80 hover:bg-emerald-600 rounded text-[10px] flex items-center"
+                  type="button"
+                  onClick={() => onModifyBp(-500)}
+                  className="py-1 px-0.5 bg-rose-800/80 hover:bg-rose-600 rounded text-rose-200 font-bold text-center transition-colors"
+                  title="BPを -500"
                 >
-                  <Plus className="w-3 h-3" /> 1000
+                  -500
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onModifyBp(500)}
+                  className="py-1 px-0.5 bg-emerald-800/80 hover:bg-emerald-600 rounded text-emerald-200 font-bold text-center transition-colors"
+                  title="BPを +500"
+                >
+                  +500
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onModifyBp(1000)}
+                  className="py-1 px-0.5 bg-emerald-900/80 hover:bg-emerald-700 rounded text-emerald-200 font-bold text-center transition-colors"
+                  title="BPを +1000"
+                >
+                  +1000
                 </button>
               </div>
+              {card.bpModifier !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => onModifyBp(-card.bpModifier)}
+                  className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/60 py-0.5 rounded text-center transition-colors mt-0.5"
+                >
+                  修正リセット (±0)
+                </button>
+              )}
             </div>
           )}
 
@@ -567,9 +645,9 @@ export const CardView: React.FC<CardViewProps> = ({
                     onMoveTo('energyLine');
                     setShowMenu(false);
                   }}
-                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2"
+                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-sky-300"
                 >
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-blue-400" />
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
                   エナジーLへ移動
                 </button>
               ) : (
@@ -578,19 +656,23 @@ export const CardView: React.FC<CardViewProps> = ({
                     onMoveTo('frontLine');
                     setShowMenu(false);
                   }}
-                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2"
+                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-sky-300"
                 >
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-blue-400" />
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
                   フロントLへ移動
                 </button>
               )}
             </>
           )}
 
+          {/* 移動先ボタングループ */}
           {onMoveTo && (
-            <>
+            <div className="pt-1 border-t border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400 px-0.5">移動・登場:</span>
+
+              {/* 手札カード専用登場アクション */}
               {location?.zone === 'hand' && !isOpponent && (
-                <>
+                <div className="flex flex-col gap-1 mb-1">
                   {card.cardType === 'EVENT' ? (
                     <button
                       onClick={() => {
@@ -603,135 +685,116 @@ export const CardView: React.FC<CardViewProps> = ({
                       イベントを使用（場外へ）
                     </button>
                   ) : (
-                    <>
+                    <div className="grid grid-cols-2 gap-1">
                       <button
                         onClick={() => {
                           onMoveTo('frontLine');
                           setShowMenu(false);
                         }}
-                        className="w-full text-left px-2 py-1.5 hover:bg-indigo-950/70 rounded flex items-center gap-2 text-indigo-300 font-bold"
+                        className="py-1 px-1 bg-indigo-950/70 hover:bg-indigo-900/80 rounded flex items-center justify-center gap-1 text-indigo-300 font-bold border border-indigo-500/30 text-[11px]"
                       >
-                        <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
-                        フロントLに登場
+                        <ArrowRightLeft className="w-3 h-3 text-indigo-400" />
+                        フロントL登場
                       </button>
                       <button
                         onClick={() => {
                           onMoveTo('energyLine');
                           setShowMenu(false);
                         }}
-                        className="w-full text-left px-2 py-1.5 hover:bg-emerald-950/70 rounded flex items-center gap-2 text-emerald-300 font-bold"
+                        className="py-1 px-1 bg-emerald-950/70 hover:bg-emerald-900/80 rounded flex items-center justify-center gap-1 text-emerald-300 font-bold border border-emerald-500/30 text-[11px]"
                       >
-                        <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
-                        エナジーLに登場
+                        <ArrowRightLeft className="w-3 h-3 text-emerald-400" />
+                        エナジーL登場
                       </button>
-                    </>
+                    </div>
                   )}
-                </>
+                </div>
               )}
-              {location?.zone !== 'hand' && (
+
+              {/* 移動先グリッド */}
+              <div className="grid grid-cols-2 gap-1 text-[11px]">
+                {location?.zone !== 'hand' && (
+                  <button
+                    onClick={() => {
+                      onMoveTo('hand');
+                      setShowMenu(false);
+                    }}
+                    className="py-1 px-1.5 hover:bg-slate-800 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-amber-300 text-left"
+                  >
+                    <ArrowRightLeft className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{isOpponent ? '手札(バウンス)' : '手札に戻す'}</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
-                    onMoveTo('hand');
+                    onMoveTo('graveyard');
                     setShowMenu(false);
                   }}
-                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2"
+                  className={`py-1 px-1.5 hover:bg-slate-800 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-rose-300 text-left ${location?.zone === 'hand' ? 'col-span-2' : ''}`}
                 >
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-amber-300" />
-                  {isOpponent ? '手札に戻す（バウンス）' : '手札に戻す'}
+                  <Trash2 className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{isOpponent ? '退場(場外へ)' : location?.zone === 'hand' ? '場外へ捨てる' : '場外へ送る'}</span>
                 </button>
-              )}
-              {isOpponent ? (
-                <>
-                  <button
-                    onClick={() => {
-                      onMoveTo('lifeFaceUp');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-amber-950/60 rounded flex items-center gap-2 text-amber-300 font-bold"
-                    title="眞霜平助等の効果で相手のライフに表向きで置きます"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                    相手ライフに表向きで送る
-                  </button>
-                  <button
-                    onClick={() => {
-                      onMoveTo('life');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-rose-300"
-                    title="相手のライフに裏向きで送ります"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                    相手ライフに裏向きで送る
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      onMoveTo('lifeFaceUp');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-amber-950/60 rounded flex items-center gap-2 text-amber-300 font-bold"
-                    title="レディ・ブラック等の効果でライフに表向きで置きます"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                    ライフに表向きで置く
-                  </button>
-                  <button
-                    onClick={() => {
-                      onMoveTo('life');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-rose-300"
-                    title="ライフに裏向きで置きます"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                    ライフに裏向きで置く
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => {
-                  onMoveTo('graveyard');
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-rose-300"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {isOpponent ? '退場させる（場外へ）' : location?.zone === 'hand' ? '場外へ捨てる' : '場外へ送る'}
-              </button>
-              <button
-                onClick={() => {
-                  onMoveTo('deckTop');
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-emerald-300"
-              >
-                <ArrowUpToLine className="w-3.5 h-3.5" />
-                山札の上へ戻す
-              </button>
-              <button
-                onClick={() => {
-                  onMoveTo('deckBottom');
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-emerald-300"
-              >
-                <ArrowDownToLine className="w-3.5 h-3.5" />
-                {isOpponent ? '山札の下へ戻す（バウンス）' : '山札の下へ戻す'}
-              </button>
-              <button
-                onClick={() => {
-                  onMoveTo('removed');
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-2 py-1.5 hover:bg-purple-950/60 rounded flex items-center gap-2 text-purple-300"
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-                除外する（リムーブ）
-              </button>
-            </>
+
+                <button
+                  onClick={() => {
+                    onMoveTo('deckTop');
+                    setShowMenu(false);
+                  }}
+                  className="py-1 px-1.5 hover:bg-slate-800 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-emerald-300 text-left"
+                >
+                  <ArrowUpToLine className="w-3 h-3 shrink-0" />
+                  <span className="truncate">山札の上へ戻す</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onMoveTo('deckBottom');
+                    setShowMenu(false);
+                  }}
+                  className="py-1 px-1.5 hover:bg-slate-800 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-emerald-300 text-left"
+                >
+                  <ArrowDownToLine className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{isOpponent ? '山札下(バウンス)' : '山札の下へ戻す'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onMoveTo('lifeFaceUp');
+                    setShowMenu(false);
+                  }}
+                  className="py-1 px-1.5 hover:bg-amber-950/60 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-amber-300 font-medium text-left"
+                  title={isOpponent ? '相手ライフに表向きで送る' : 'ライフに表向きで置く'}
+                >
+                  <ShieldAlert className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="truncate">{isOpponent ? '相手ライフ(表)' : 'ライフに表向きで置く'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onMoveTo('life');
+                    setShowMenu(false);
+                  }}
+                  className="py-1 px-1.5 hover:bg-slate-800 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-rose-300 text-left"
+                  title={isOpponent ? '相手ライフに裏向きで送る' : 'ライフに裏向きで置く'}
+                >
+                  <ShieldAlert className="w-3 h-3 text-rose-400 shrink-0" />
+                  <span className="truncate">{isOpponent ? '相手ライフ(裏)' : 'ライフに裏向きで置く'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onMoveTo('removed');
+                    setShowMenu(false);
+                  }}
+                  className="col-span-2 py-1 px-1.5 hover:bg-purple-950/60 bg-slate-950/50 border border-slate-800 rounded flex items-center gap-1 text-purple-300 text-left"
+                >
+                  <ShieldAlert className="w-3 h-3 shrink-0" />
+                  <span>除外する（リムーブ）</span>
+                </button>
+              </div>
+            </div>
           )}
 
           {card.underCards && card.underCards.length > 0 && onOpenUnderCards && (

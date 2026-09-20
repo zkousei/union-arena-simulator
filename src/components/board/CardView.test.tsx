@@ -188,4 +188,61 @@ describe('CardView', () => {
 
     expect(handleClick).toHaveBeenCalledTimes(2);
   });
+
+  it('supports modifying BP in 500 and 1000 increments, and resetting modifier from context menu', () => {
+    const handleModifyBp = vi.fn();
+    const { container } = render(
+      <CardView
+        card={{ ...dummyCard, bpModifier: 500 }}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        onModifyBp={handleModifyBp}
+      />
+    );
+
+    const cardEl = container.querySelector('[draggable="true"]')!;
+    fireEvent.contextMenu(cardEl);
+
+    // Verify buttons are present
+    const plus500 = screen.getByRole('button', { name: '+500' });
+    const minus500 = screen.getByRole('button', { name: '-500' });
+    const plus1000 = screen.getByRole('button', { name: '+1000' });
+    const minus1000 = screen.getByRole('button', { name: '-1000' });
+    const resetBtn = screen.getByRole('button', { name: /修正リセット/ });
+
+    fireEvent.click(plus500);
+    expect(handleModifyBp).toHaveBeenCalledWith(500);
+
+    fireEvent.click(minus500);
+    expect(handleModifyBp).toHaveBeenCalledWith(-500);
+
+    fireEvent.click(plus1000);
+    expect(handleModifyBp).toHaveBeenCalledWith(1000);
+
+    fireEvent.click(minus1000);
+    expect(handleModifyBp).toHaveBeenCalledWith(-1000);
+
+    fireEvent.click(resetBtn);
+    expect(handleModifyBp).toHaveBeenCalledWith(-500);
+  });
+
+  it('ensures context menu is constrained to viewport and can be closed via close button', () => {
+    const { container } = render(
+      <CardView
+        card={dummyCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+      />
+    );
+
+    const cardEl = container.querySelector('[draggable="true"]')!;
+    fireEvent.contextMenu(cardEl);
+
+    // Menu should be constrained with overflow scroll
+    const menuEl = container.querySelector('.overflow-y-auto');
+    expect(menuEl).not.toBeNull();
+
+    // Close button should close the menu
+    const closeBtn = screen.getByTitle('閉じる');
+    fireEvent.click(closeBtn);
+    expect(container.querySelector('.overflow-y-auto')).toBeNull();
+  });
 });
