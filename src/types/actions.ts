@@ -268,7 +268,7 @@ export type GameAction =
       payload: {
         playerId: string;
         cardId: string;
-        destination: 'hand' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine';
+        destination: 'hand' | 'handSecret' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine';
         slotIndex?: FieldSlotIndex;
       };
     }
@@ -286,6 +286,7 @@ export type GameAction =
         cardId: string;
         destination:
           | 'hand'
+          | 'handSecret'
           | 'graveyard'
           | 'frontLine'
           | 'energyLine'

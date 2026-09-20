@@ -1385,4 +1385,47 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].graveyard[0].name).toBe('Special Move');
     expect(state.logs.some((log) => log.message.includes('イベントカード「Special Move」を使用しました'))).toBe(true);
   });
+
+  it('should support RESOLVE_TOP_DECK_CARD to handSecret without revealing card name in log', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].deck = [
+      createDummyCard('top-secret-1', '秘密のカード'),
+    ];
+
+    state = gameReducer(state, {
+      type: 'LOOK_AT_TOP_DECK',
+      payload: { playerId: 'p1', count: 1 },
+    });
+
+    state = gameReducer(state, {
+      type: 'RESOLVE_TOP_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'top-secret-1', destination: 'handSecret' },
+    });
+
+    expect(state.players['p1'].hand.length).toBe(1);
+    expect(state.players['p1'].hand[0].name).toBe('秘密のカード');
+    expect(state.revealedDeckCards).toBeNull();
+    const lastLog = state.logs[state.logs.length - 1];
+    expect(lastLog.message).toContain('手札に加えました（非公開）');
+    expect(lastLog.message).not.toContain('秘密のカード');
+  });
+
+  it('should support SEARCH_DECK_CARD to handSecret without revealing card name in log', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].deck = [
+      createDummyCard('search-secret-1', '秘密のサーチ先'),
+    ];
+
+    state = gameReducer(state, {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'search-secret-1', destination: 'handSecret' },
+    });
+
+    expect(state.players['p1'].hand.length).toBe(1);
+    expect(state.players['p1'].hand[0].name).toBe('秘密のサーチ先');
+    expect(state.players['p1'].deck.length).toBe(0);
+    const lastLog = state.logs[state.logs.length - 1];
+    expect(lastLog.message).toContain('手札に加えました（非公開）');
+    expect(lastLog.message).not.toContain('秘密のサーチ先');
+  });
 });

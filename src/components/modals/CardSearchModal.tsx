@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Search, Hand, Trash2, Shuffle, X, ArrowUpRight, Ban, ShieldAlert } from 'lucide-react';
+import { Search, Hand, Eye, Trash2, Shuffle, X, ArrowUpRight, Ban, ShieldAlert } from 'lucide-react';
 
 interface CardSearchModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface CardSearchModalProps {
   hasEmptyEnergySlot?: boolean;
   onSelectCard: (
     cardId: string,
-    destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
+    destination: 'hand' | 'handSecret' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
   ) => void;
   onInspectCard?: (card: Card) => void;
   onClose: (shuffleDeck?: boolean) => void;
@@ -89,21 +89,32 @@ export const CardSearchModal: React.FC<CardSearchModalProps> = ({
               >
                 <CardView card={card} onInspect={onInspectCard} />
                 <div className="flex flex-col gap-1 w-full text-[10px]">
-                  <div className="flex items-center gap-1">
+                  <div className="grid grid-cols-2 gap-1">
                     <button
                       onClick={() => onSelectCard(card.id, 'hand')}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold"
-                      title="手札に加える"
+                      className="flex items-center justify-center gap-0.5 py-1 px-0.5 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold text-[9px]"
+                      title="相手に公開して手札に加える（条件指定がある効果）"
                     >
-                      <Hand className="w-3 h-3" />
-                      手札へ
+                      <Eye className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">手札(公開)</span>
                     </button>
                     <button
+                      onClick={() => onSelectCard(card.id, 'handSecret')}
+                      className="flex items-center justify-center gap-0.5 py-1 px-0.5 bg-slate-800 hover:bg-slate-700 border border-sky-500/40 rounded text-sky-200 font-bold text-[9px]"
+                      title="相手に公開せず手札に加える（条件指定がない効果）"
+                    >
+                      <Hand className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                      <span className="truncate">手札(非公開)</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
                       onClick={() => onSelectCard(card.id, 'graveyard')}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold"
+                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold text-[9.5px]"
                       title="場外に置く"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-2.5 h-2.5 shrink-0" />
                       場外へ
                     </button>
                   </div>

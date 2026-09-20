@@ -1101,6 +1101,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (destination === 'hand') {
           player.hand.push(cleanCard);
           appendLog(draft, `${player.name} は確認した「${card.name}」を手札に加えました。`, playerId);
+        } else if (destination === 'handSecret') {
+          player.hand.push(cleanCard);
+          appendLog(draft, `${player.name} は確認したカードを手札に加えました（非公開）。`, playerId);
         } else if (destination === 'graveyard') {
           player.graveyard.push(cleanCard);
           appendLog(draft, `${player.name} は確認した「${card.name}」を場外に置きました。`, playerId);
@@ -1176,6 +1179,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (destination === 'hand') {
           player.hand.push(cleanCard);
           appendLog(draft, `${player.name} は山札から「${card.name}」を手札に加えました。`, playerId);
+        } else if (destination === 'handSecret') {
+          player.hand.push(cleanCard);
+          appendLog(draft, `${player.name} は山札からカードを手札に加えました（非公開）。`, playerId);
         } else if (destination === 'graveyard') {
           player.graveyard.push(cleanCard);
           appendLog(draft, `${player.name} は山札から「${card.name}」を場外に送りました。`, playerId);

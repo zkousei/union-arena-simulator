@@ -13,7 +13,7 @@ interface TopDeckModalProps {
   hasEmptyEnergySlot?: boolean;
   onResolveCard: (
     cardId: string,
-    destination: 'hand' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine'
+    destination: 'hand' | 'handSecret' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine'
   ) => void;
   onClose: (shuffleRemaining?: boolean) => void;
 }
@@ -54,7 +54,7 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
         </div>
 
         <p className="text-xs text-slate-300">
-          各カードの移動先を選択してください。手札・場外・山札上下・ライフ（表/裏）・フィールド登場に振り分けることができます：
+          各カードの移動先を選択してください。手札（公開/非公開）・場外・山札上下・ライフ・フィールド登場に振り分けることができます：
         </p>
 
         {/* 公開カード一覧 & 個別アクション */}
@@ -68,62 +68,75 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
 
               {/* 移動先ボタングループ */}
               <div className="flex flex-col gap-1 w-full text-[10px]">
+                {/* 手札へ（公開 vs 非公開） */}
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     onClick={() => onResolveCard(card.id, 'hand')}
-                    className="flex items-center justify-center gap-1 py-1 px-1 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold"
-                    title="手札に加える"
+                    className="flex items-center justify-center gap-0.5 py-1 px-0.5 bg-sky-700 hover:bg-sky-600 rounded text-white font-bold text-[9px]"
+                    title="相手に公開して手札に加える（特徴や名称等の条件指定があるカード用）"
                   >
-                    <Hand className="w-3 h-3" />
-                    手札へ
+                    <Eye className="w-2.5 h-2.5 shrink-0" />
+                    <span className="truncate">手札(公開)</span>
                   </button>
                   <button
-                    onClick={() => onResolveCard(card.id, 'graveyard')}
-                    className="flex items-center justify-center gap-1 py-1 px-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold"
-                    title="場外に置く"
+                    onClick={() => onResolveCard(card.id, 'handSecret')}
+                    className="flex items-center justify-center gap-0.5 py-1 px-0.5 bg-slate-800 hover:bg-slate-700 border border-sky-500/40 rounded text-sky-200 font-bold text-[9px]"
+                    title="相手に公開せず手札に加える（『カードを1枚手札に加える』など条件指定がないカード用）"
                   >
-                    <Trash2 className="w-3 h-3" />
-                    場外へ
+                    <Hand className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                    <span className="truncate">手札(非公開)</span>
                   </button>
                 </div>
 
+                {/* 山札へ（上 vs 下） */}
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     onClick={() => onResolveCard(card.id, 'top')}
-                    className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-amber-300 font-bold"
+                    className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-amber-300 font-bold text-[9.5px]"
                     title="山札の1番上に戻す"
                   >
-                    <ArrowUp className="w-3 h-3" />
+                    <ArrowUp className="w-3 h-3 shrink-0" />
                     山札上
                   </button>
                   <button
                     onClick={() => onResolveCard(card.id, 'bottom')}
-                    className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-indigo-300 font-bold"
+                    className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-indigo-300 font-bold text-[9.5px]"
                     title="山札の1番下に送る"
                   >
-                    <ArrowDown className="w-3 h-3" />
+                    <ArrowDown className="w-3 h-3 shrink-0" />
                     山札下
                   </button>
                 </div>
 
+                {/* 場外 & ライフ(裏) */}
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    onClick={() => onResolveCard(card.id, 'lifeFaceUp')}
-                    className="flex items-center justify-center gap-0.5 py-1 px-1 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold"
-                    title="表向きでライフに置く（ランカ・リー、オベリスク等）"
+                    onClick={() => onResolveCard(card.id, 'graveyard')}
+                    className="flex items-center justify-center gap-1 py-1 px-1 bg-rose-700 hover:bg-rose-600 rounded text-white font-bold text-[9.5px]"
+                    title="場外に置く"
                   >
-                    <ShieldAlert className="w-3 h-3 text-amber-400" />
-                    ライフ(表)
+                    <Trash2 className="w-3 h-3 shrink-0" />
+                    場外へ
                   </button>
                   <button
                     onClick={() => onResolveCard(card.id, 'life')}
-                    className="flex items-center justify-center gap-0.5 py-1 px-1 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 rounded text-rose-300 font-bold"
-                    title="裏向きでライフに置く（兎月等）"
+                    className="flex items-center justify-center gap-0.5 py-1 px-1 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 rounded text-rose-300 font-bold text-[9.5px]"
+                    title="裏向きでライフに置く"
                   >
-                    <ShieldAlert className="w-3 h-3 text-rose-400" />
+                    <ShieldAlert className="w-3 h-3 text-rose-400 shrink-0" />
                     ライフ(裏)
                   </button>
                 </div>
+
+                {/* ライフ(表) */}
+                <button
+                  onClick={() => onResolveCard(card.id, 'lifeFaceUp')}
+                  className="flex items-center justify-center gap-0.5 py-1 px-1 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold text-[9.5px]"
+                  title="表向きでライフに置く（ランカ・リー、オベリスク等）"
+                >
+                  <ShieldAlert className="w-3 h-3 text-amber-400 shrink-0" />
+                  ライフ(表向き)
+                </button>
 
                 {hasEmptyFrontSlot && card.cardType === 'CHARACTER' && (
                   <button
