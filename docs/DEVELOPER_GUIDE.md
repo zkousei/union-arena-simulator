@@ -204,8 +204,16 @@ export interface Card {
 ```bash
 npm run sync-cards
 ```
-- `scripts/sync-official-cards.ts`: バンダイ公式サイトのカード検索一覧ページを順次フェッチし、HTMLパーサー（`src/services/officialCardService.ts`）でパースして正規化されたJSONを出力します。
+- `scripts/sync-official-cards.js`: バンダイ公式サイトのカード検索一覧ページを順次フェッチし、HTMLパーサー（`src/services/officialCardService.ts`）でパースして正規化されたJSONを出力します。
 - ※ユニットテストは外部ネットワークに依存しないよう、ローカルの静的フィクスチャを用いてテストされます。
+
+### BANDAI TCG+ API 連携 (`src/services/bandaiTcgPlusService.ts`)
+BANDAI TCG+ のデッキコード／レシピURLから直接50枚デッキを構築するサービスです：
+- **2段階解決**:
+  1. `GET https://api.bandai-tcg-plus.com/api/user/deck/url_code?deck_code={code}` -> `url_code`, `game_title_id: 9`
+  2. `GET https://api.bandai-tcg-plus.com/api/user/deck/recipe?url_code={url_code}&game_title_id=9&encode=0&app_version=9.9.9` -> `main_deck`（カード番号・枚数・属性）
+- **プロキシ**: 開発環境は `vite.config.ts` の `/api/tcg-plus` リバースプロキシを経由し、静的ホスティング時は外部プロキシ（`allorigins`）にフォールバック。
+- **カード照合**: プール内のカード番号末尾一致で既存カードに紐付け。未登録新弾カードはAPIレスポンスのメタデータから自動フォールバック生成。
 
 ---
 
@@ -226,6 +234,8 @@ npm run sync-cards
 | **P2P同期・リビジョン・ホスト権威** | `src/domain/__tests__/peerSync.test.ts` | 同期整合性テスト |
 | **デッキバリデーション (50枚/制限)** | `src/domain/__tests__/deckValidation.test.ts` | ルール単体テスト |
 | **公式カードHTMLパース** | `src/services/__tests__/officialCardService.test.ts` | フィクスチャテスト |
+| **BANDAI TCG+ レシピ連携** | `src/services/__tests__/bandaiTcgPlusService.test.ts` | APIパース・照合テスト |
+| **公式インポート・TCG+モーダル** | `src/components/deck/OfficialImportModal.test.tsx` | コンポーネントテスト |
 | **盤面カード描画・操作** | `src/components/board/CardView.test.tsx` | コンポーネントテスト |
 | **フェイズ進行・ショートカット** | `src/components/controls/PhaseBar.test.tsx` | コンポーネントテスト |
 | **ライフ選択モーダル** | `src/components/modals/LifeSelectModal.test.tsx` | コンポーネントテスト |

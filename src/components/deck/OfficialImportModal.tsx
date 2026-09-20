@@ -19,6 +19,11 @@ import {
   parseDeckListText,
   parseCardFromDetailHtml,
 } from '../../services/officialCardService';
+import {
+  extractDeckCode,
+  fetchBandaiDeckRecipe,
+  mapBandaiDeckToDeckItems,
+} from '../../services/bandaiTcgPlusService';
 import { CardMaster } from '../../data/cardDatabase';
 import { DeckItem } from '../../domain/deckValidation';
 import { OFFICIAL_TITLES } from '../../data/officialSeriesData';
@@ -38,7 +43,18 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   onAddCardsToPool,
   onLoadDeckItems,
 }) => {
-  const [activeTab, setActiveTab] = useState<'series' | 'deckText' | 'html'>('series');
+  const [activeTab, setActiveTab] = useState<'tcgPlus' | 'series' | 'deckText' | 'html'>('tcgPlus');
+
+  // タブ0: BANDAI TCG+ レシピステート
+  const [tcgPlusInput, setTcgPlusInput] = useState<string>('');
+  const [tcgPlusDeckName, setTcgPlusDeckName] = useState<string>('TCG+ デッキ');
+  const [isFetchingTcgPlus, setIsFetchingTcgPlus] = useState<boolean>(false);
+  const [tcgPlusError, setTcgPlusError] = useState<string | null>(null);
+  const [tcgPlusResult, setTcgPlusResult] = useState<{
+    items: DeckItem[];
+    newCards: CardMaster[];
+    deckCode: string;
+  } | null>(null);
 
   // タブ1: シリーズ取得ステート
   const [selectedSeriesId, setSelectedSeriesId] = useState<string>(OFFICIAL_SERIES_LIST[0].seriesId);
@@ -63,6 +79,51 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   const [htmlSuccessMsg, setHtmlSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // BANDAI TCG+ レシピ取得ハンドラー
+  const handleFetchTcgPlus = async () => {
+    setIsFetchingTcgPlus(true);
+    setTcgPlusError(null);
+    setTcgPlusResult(null);
+
+    const deckCode = extractDeckCode(tcgPlusInput);
+    if (!deckCode) {
+      setTcgPlusError('有効な BANDAI TCG+ のデッキURLまたはデッキコードを入力してください。');
+      setIsFetchingTcgPlus(false);
+      return;
+    }
+
+    try {
+      const recipe = await fetchBandaiDeckRecipe(deckCode);
+      const { items, newCards } = mapBandaiDeckToDeckItems(recipe.mainDeck, cardPool);
+
+      if (items.length === 0) {
+        setTcgPlusError('デッキにカードが見つかりませんでした。');
+        return;
+      }
+
+      setTcgPlusResult({ items, newCards, deckCode });
+      setTcgPlusDeckName(`TCG+ デッキ (${deckCode})`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '通信に失敗しました';
+      setTcgPlusError(`取得エラー: ${message}`);
+    } finally {
+      setIsFetchingTcgPlus(false);
+    }
+  };
+
+  // BANDAI TCG+ デッキ適用
+  const handleApplyTcgPlusDeck = () => {
+    if (!tcgPlusResult || tcgPlusResult.items.length === 0) return;
+
+    if (tcgPlusResult.newCards.length > 0) {
+      onAddCardsToPool(tcgPlusResult.newCards);
+    }
+
+    const titleCode = tcgPlusResult.items[0]?.card.titleCode || 'OTHER';
+    onLoadDeckItems(tcgPlusResult.items, tcgPlusDeckName || 'TCG+ デッキ', titleCode);
+    onClose();
+  };
 
   // シリーズ取得ハンドラー
   const handleFetchSeries = async () => {
@@ -157,44 +218,184 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
         </div>
 
         {/* タブナビゲーション */}
-        <div className="flex border-b border-slate-800 bg-slate-950/40 text-xs px-5 pt-2 gap-2">
+        <div className="flex border-b border-slate-800 bg-slate-950/40 text-xs px-5 pt-2 gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('tcgPlus')}
+            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'tcgPlus'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            BANDAI TCG+ レシピ
+          </button>
           <button
             onClick={() => setActiveTab('series')}
-            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition ${
+            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition whitespace-nowrap ${
               activeTab === 'series'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            ① 公式シリーズ取得
+            公式シリーズ取得
           </button>
           <button
             onClick={() => setActiveTab('deckText')}
-            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition ${
+            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition whitespace-nowrap ${
               activeTab === 'deckText'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            ② デッキリスト / コード貼付
+            テキスト形式貼付
           </button>
           <button
             onClick={() => setActiveTab('html')}
-            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition ${
+            className={`flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition whitespace-nowrap ${
               activeTab === 'html'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
-            ③ HTMLソース貼付
+            HTML貼付
           </button>
         </div>
 
         {/* タブコンテンツ */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+          {/* タブ0: BANDAI TCG+ レシピ */}
+          {activeTab === 'tcgPlus' && (
+            <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400" /> BANDAI TCG+ のデッキコード / レシピURLから作成
+                </span>
+                <p className="text-slate-400 leading-relaxed text-[11px]">
+                  公式アプリやWEBで共有されたデッキレシピURL（例: <code className="text-indigo-300">https://www.bandai-tcg-plus.com/deck_code_recipe/...</code>）またはデッキコードを貼り付けると、50枚のデッキ構成を直接読み込んでシミュレータに再現します。
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-bold text-slate-300 block text-[11px]">
+                  BANDAI TCG+ デッキレシピURL または デッキコード:
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://www.bandai-tcg-plus.com/deck_code_recipe/lFv8V8TK9AD3EvVn"
+                    value={tcgPlusInput}
+                    onChange={(e) => setTcgPlusInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isFetchingTcgPlus) {
+                        handleFetchTcgPlus();
+                      }
+                    }}
+                    disabled={isFetchingTcgPlus}
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs font-mono placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleFetchTcgPlus}
+                    disabled={isFetchingTcgPlus || !tcgPlusInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 font-bold text-white transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-indigo-600/30"
+                  >
+                    {isFetchingTcgPlus ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>取得中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>レシピを取得</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* エラー表示 */}
+              {tcgPlusError && (
+                <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{tcgPlusError}</span>
+                </div>
+              )}
+
+              {/* 取得結果プレビュー */}
+              {tcgPlusResult && (
+                <div className="p-4 rounded-2xl bg-slate-950 border border-indigo-500/40 space-y-3 animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="font-bold text-white text-xs">
+                          レシピ取得成功 (コード: {tcgPlusResult.deckCode})
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-indigo-300 font-medium pl-6 block">
+                        合計 {tcgPlusResult.items.reduce((sum, it) => sum + it.count, 0)} 枚 ({tcgPlusResult.items.length} 種)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={tcgPlusDeckName}
+                        onChange={(e) => setTcgPlusDeckName(e.target.value)}
+                        placeholder="デッキ名"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-100 focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <button
+                        onClick={handleApplyTcgPlusDeck}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1 shadow-md shadow-emerald-600/30 whitespace-nowrap"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        このデッキを作成
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* カード一覧サムネイル */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto p-1">
+                    {tcgPlusResult.items.map((item) => (
+                      <div
+                        key={item.card.code}
+                        className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px]"
+                      >
+                        {item.card.imageUrl ? (
+                          <img
+                            src={item.card.imageUrl}
+                            alt={item.card.name}
+                            className="w-8 h-11 object-cover rounded shadow shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-8 h-11 bg-slate-800 rounded flex items-center justify-center text-[9px] text-slate-400 shrink-0">
+                            No Img
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-slate-200 text-[10px]">
+                            {item.card.name}
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-mono">
+                            {item.card.code}
+                          </p>
+                          <span className="text-[10px] font-bold text-indigo-400">
+                            × {item.count}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {/* タブ1: シリーズ取得 */}
           {activeTab === 'series' && (
             <div className="space-y-4">

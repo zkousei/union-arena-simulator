@@ -22,6 +22,17 @@ export default defineConfig({
           'Referer': 'https://www.unionarena-tcg.com/jp/cardlist/',
         },
       },
+      '/api/tcg-plus': {
+        target: 'https://api.bandai-tcg-plus.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/tcg-plus/, ''),
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://www.bandai-tcg-plus.com/',
+          'Origin': 'https://www.bandai-tcg-plus.com',
+        },
+      },
     },
   },
 });
