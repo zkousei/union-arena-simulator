@@ -33,15 +33,18 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-slate-900 border-2 border-rose-500/80 rounded-2xl max-w-4xl w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 text-slate-100 my-auto max-h-[92vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={isOpponent ? '相手ライフの指定・操作' : '自分ライフの選択・操作'}
+        className="bg-slate-900 border-2 border-rose-500/80 rounded-2xl max-w-4xl w-full p-3 sm:p-5 shadow-2xl flex flex-col gap-3 sm:gap-4 animate-in fade-in zoom-in-95 duration-200 text-slate-100 my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3 shrink-0">
+          <div className="flex items-start gap-2 min-w-0">
             <ShieldAlert className="w-5 h-5 text-rose-400" />
             <div>
-              <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+              <h3 className="font-extrabold text-sm sm:text-base text-white flex flex-col sm:flex-row gap-1 sm:gap-2">
                 <span>{isOpponent ? '🎯 相手ライフの指定・操作' : '🛡️ 自分ライフの選択・操作'}</span>
                 <span className="text-xs font-normal text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-full border border-rose-500/40">
                   {playerName}（残り {lifeCards.length}枚）
@@ -54,7 +57,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {lifeCards.length > 0 && (
               <button
                 onClick={() => {
@@ -65,7 +68,8 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
                 title="先頭(#1)のライフカードを素早くトリガーチェック"
               >
                 <Zap className="w-3.5 h-3.5" />
-                先頭(#1)をトリガーチェック
+                <span className="sm:hidden">先頭をチェック</span>
+                <span className="hidden sm:inline">先頭(#1)をトリガーチェック</span>
               </button>
             )}
             <button
@@ -85,7 +89,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
               ライフエリアにカードがありません。
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {lifeCards.map((card, idx) => {
                 const isFaceDown = card.isFaceDown !== false;
                 return (

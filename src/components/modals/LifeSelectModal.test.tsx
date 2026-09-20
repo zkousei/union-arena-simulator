@@ -77,6 +77,7 @@ describe('LifeSelectModal', () => {
       />
     );
 
+    expect(screen.getByRole('dialog', { name: '相手ライフの指定・操作' })).toBeTruthy();
     expect(screen.getByText('ライフ #1')).toBeDefined();
     expect(screen.getByText('ライフ #2')).toBeDefined();
     expect(screen.getByText('ライフ #3')).toBeDefined();

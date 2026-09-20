@@ -289,7 +289,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   onInspect(card);
                 }}
                 title="カード詳細を確認 (拡大表示)"
-                className="p-0.5 rounded bg-black/75 hover:bg-indigo-600 text-slate-300 hover:text-white opacity-0 group-hover/card:opacity-100 transition-opacity border border-white/20 shadow"
+                className="p-1 sm:p-0.5 rounded bg-black/75 hover:bg-indigo-600 text-slate-300 hover:text-white opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity border border-white/20 shadow"
               >
                 <ZoomIn className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
               </button>

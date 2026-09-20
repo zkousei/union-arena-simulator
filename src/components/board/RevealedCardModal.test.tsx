@@ -87,6 +87,7 @@ describe('RevealedCardModal', () => {
       />
     );
 
+    expect(screen.getByRole('dialog', { name: 'カード情報詳細' })).toBeTruthy();
     expect(screen.getByText('カード情報詳細')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /場外へ送る \(基本\)/ })).toBeNull();
 

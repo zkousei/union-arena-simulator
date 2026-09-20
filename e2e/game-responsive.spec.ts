@@ -5,6 +5,17 @@ const setPresetDeck = async (page: import('@playwright/test').Page, playerName: 
   await page.getByRole('button', { name: `${playerName}にセット` }).first().click();
 };
 
+const startSoloGame = async (page: import('@playwright/test').Page) => {
+  await setPresetDeck(page, 'あなた');
+  await setPresetDeck(page, '対戦相手');
+
+  const keepButtons = page.getByRole('button', { name: 'キープ' });
+  await keepButtons.first().click();
+  await keepButtons.first().click();
+  await page.getByRole('button', { name: /両者のライフ7枚を一括配置/ }).click();
+  await page.getByRole('button', { name: /対戦開始/ }).click();
+};
+
 const expectNoHorizontalOverflow = async (page: import('@playwright/test').Page) => {
   const viewport = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -31,6 +42,21 @@ const expectCompactHeader = async (page: import('@playwright/test').Page) => {
 
   expect(header).not.toBeNull();
   expect(header!.height).toBeLessThanOrEqual(64);
+};
+
+const expectDialogWithinViewport = async (
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator
+) => {
+  const box = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height);
 };
 
 for (const viewport of [
@@ -85,14 +111,7 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/game?mode=solo');
 
-  await setPresetDeck(page, 'あなた');
-  await setPresetDeck(page, '対戦相手');
-
-  const keepButtons = page.getByRole('button', { name: 'キープ' });
-  await keepButtons.first().click();
-  await keepButtons.first().click();
-  await page.getByRole('button', { name: /両者のライフ7枚を一括配置/ }).click();
-  await page.getByRole('button', { name: /対戦開始/ }).click();
+  await startSoloGame(page);
 
   await expect(page.getByText('TURN 1')).toBeVisible();
   for (const phaseName of ['スタート', '移動', 'メイン', 'アタック (不可)', 'エンド']) {
@@ -132,5 +151,33 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
   await page.getByRole('button', { name: /エンドへ/ }).click();
   await page.getByRole('button', { name: /ターン終了/ }).click();
   await expect(page.getByText('TURN 2')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('keeps the main game dialogs reachable on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/game?mode=solo');
+  await startSoloGame(page);
+
+  const ownHand = page.getByRole('region', { name: 'あなた の手札' });
+  await ownHand.getByTitle('カード詳細を確認 (拡大表示)').first().click();
+  const cardDialog = page.getByRole('dialog', { name: 'カード情報詳細' });
+  await expect(cardDialog).toBeVisible();
+  await expectDialogWithinViewport(page, cardDialog);
+  await cardDialog.getByRole('button', { name: /閉じる/ }).first().click();
+
+  await page.getByRole('button', { name: '上を見る' }).last().click();
+  await page.getByRole('button', { name: '上から 3 枚' }).click();
+  const topDeckDialog = page.getByRole('dialog', { name: /山札の上から確認中/ });
+  await expect(topDeckDialog).toBeVisible();
+  await expectDialogWithinViewport(page, topDeckDialog);
+  await topDeckDialog.getByRole('button', { name: '完了（そのまま閉じる）' }).click();
+
+  await page.getByTitle('クリックでライフ一覧・選択モーダルを開く').last().click();
+  const lifeDialog = page.getByRole('dialog', { name: /自分ライフの選択・操作/ });
+  await expect(lifeDialog).toBeVisible();
+  await expectDialogWithinViewport(page, lifeDialog);
+  await lifeDialog.getByRole('button', { name: /閉じる/ }).click();
+
   await expectNoHorizontalOverflow(page);
 });

@@ -29,8 +29,13 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
   if (!revealedDeck || revealedDeck.playerId !== myPlayerId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-5xl w-full p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`山札の上から確認中 (${revealedDeck.cards.length} 枚)`}
+        className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-5xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[92vh] p-3 sm:p-5 shadow-2xl flex flex-col min-h-0 gap-3 sm:gap-4 animate-in fade-in zoom-in-95 duration-200 my-auto"
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
@@ -42,6 +47,7 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
           <button
             onClick={() => onClose(false)}
             className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+            title="閉じる"
           >
             <X className="w-5 h-5" />
           </button>
@@ -52,7 +58,7 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
         </p>
 
         {/* 公開カード一覧 & 個別アクション */}
-        <div className="flex items-center justify-center gap-4 flex-wrap py-3 overflow-x-auto min-h-[220px]">
+        <div className="flex-1 min-h-0 flex items-start justify-center gap-3 sm:gap-4 flex-wrap py-2 sm:py-3 overflow-y-auto overflow-x-hidden scrollbar-thin">
           {revealedDeck.cards.map((card) => (
             <div
               key={card.id}
@@ -146,11 +152,11 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
         </div>
 
         {/* フッターアクション */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-800 text-xs shrink-0">
           <span className="text-slate-400">
             残りのカードは山札の上に戻されます。
           </span>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:flex sm:items-center gap-2">
             <button
               onClick={() => onClose(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg font-bold"

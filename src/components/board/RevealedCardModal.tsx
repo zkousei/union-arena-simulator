@@ -102,14 +102,17 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
         }}
       >
         <div
-          className="bg-slate-900 border-2 border-indigo-500/70 rounded-2xl max-w-2xl w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 text-slate-100 my-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isTriggerModal ? `トリガー確認: ${revealed?.source || ''}` : 'カード情報詳細'}
+          className="bg-slate-900 border-2 border-indigo-500/70 rounded-2xl max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] p-3 sm:p-5 shadow-2xl flex flex-col gap-3 sm:gap-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200 text-slate-100 my-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* ヘッダー */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
-              <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+              <h3 className="font-extrabold text-sm sm:text-base text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span>{isTriggerModal ? `⚡ ${revealed.source}` : revealed ? `🔍 ${revealed.source}` : 'カード情報詳細'}</span>
                 <span className="text-xs font-normal text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-700/50">
                   {card.code}
