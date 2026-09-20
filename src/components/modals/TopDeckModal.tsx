@@ -15,6 +15,7 @@ interface TopDeckModalProps {
     cardId: string,
     destination: 'hand' | 'handSecret' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine'
   ) => void;
+  onInspectCard?: (card: Card) => void;
   onClose: (shuffleRemaining?: boolean) => void;
 }
 
@@ -24,6 +25,7 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
   hasEmptyFrontSlot = false,
   hasEmptyEnergySlot = false,
   onResolveCard,
+  onInspectCard,
   onClose,
 }) => {
   if (!revealedDeck || revealedDeck.playerId !== myPlayerId) return null;
@@ -64,7 +66,7 @@ export const TopDeckModal: React.FC<TopDeckModalProps> = ({
               key={card.id}
               className="flex flex-col items-center gap-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 shadow-md w-44 shrink-0"
             >
-              <CardView card={card} />
+              <CardView card={card} onInspect={onInspectCard} />
 
               {/* 移動先ボタングループ */}
               <div className="flex flex-col gap-1 w-full text-[10px]">

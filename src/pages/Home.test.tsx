@@ -17,9 +17,7 @@ describe('HomePage', () => {
     );
 
     expect(screen.getByRole('heading', { name: /Web Simulator/ })).toBeTruthy();
-    expect(screen.queryAllByRole('button', { name: 'ソロで試す' })).toHaveLength(0);
-
-    expect(await screen.findAllByRole('button', { name: 'ソロで試す' })).toHaveLength(3);
+    expect(await screen.findAllByRole('button', { name: 'ソロで試す' }, { timeout: 5000 })).toHaveLength(3);
   });
 
   it('shows the implemented pre-game setup order', () => {

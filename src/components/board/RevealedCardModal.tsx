@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../types/card';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 import { Sparkles, Hand, Trash2, ArrowLeft, X, ShieldAlert } from 'lucide-react';
@@ -72,7 +72,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   const card = revealed ? revealed.card : inspectCard;
   const isTriggerModal = !!revealed && revealed.isTrigger !== false;
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isTriggerModal) {
       onDismissRevealed?.('graveyard');
     } else if (revealed) {
@@ -80,7 +80,22 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
     } else {
       onCloseInspect?.();
     }
-  };
+  }, [isTriggerModal, onDismissRevealed, revealed, onCloseInspect]);
+
+  useEffect(() => {
+    if (!card) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isEnlargedImage) {
+          setIsEnlargedImage(false);
+        } else if (!isTriggerModal) {
+          handleClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [card, isEnlargedImage, isTriggerModal, handleClose]);
 
   if (!card) return null;
 
@@ -96,7 +111,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
         onClick={() => {
           if (!isTriggerModal) handleClose();
         }}
@@ -297,7 +312,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
     {/* カード画像フルスクリーン拡大ビュー */}
     {isEnlargedImage && hasValidImage && (
       <div
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4 cursor-zoom-out animate-in fade-in duration-150"
+        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 p-4 cursor-zoom-out animate-in fade-in duration-150"
         onClick={() => setIsEnlargedImage(false)}
         title="クリックで拡大を閉じる"
       >

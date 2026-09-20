@@ -60,4 +60,27 @@ describe('TopDeckModal', () => {
     fireEvent.click(secretBtns[1]);
     expect(onResolveCard).toHaveBeenCalledWith('c-2', 'handSecret');
   });
+
+  it('forwards onInspectCard to CardView allowing card inspection', () => {
+    const onInspectCard = vi.fn();
+    const dummyCards = [createDummyCard('c-1', '公開テストカード')];
+
+    render(
+      <TopDeckModal
+        revealedDeck={{
+          playerId: 'p1',
+          cards: dummyCards,
+        }}
+        myPlayerId="p1"
+        onResolveCard={vi.fn()}
+        onClose={vi.fn()}
+        onInspectCard={onInspectCard}
+      />
+    );
+
+    // Clicking zoom button triggers onInspectCard
+    const zoomBtn = screen.getByTitle('カード詳細を確認 (拡大表示)');
+    fireEvent.click(zoomBtn);
+    expect(onInspectCard).toHaveBeenCalledWith(dummyCards[0]);
+  });
 });

@@ -12,6 +12,7 @@ interface OpponentHandModalProps {
     cardIndex: number,
     destination: 'deckTopFaceUp' | 'deckTop' | 'deckBottom' | 'graveyard'
   ) => void;
+  onInspectCard?: (card: Card) => void;
   onClose: () => void;
 }
 
@@ -21,6 +22,7 @@ export const OpponentHandModal: React.FC<OpponentHandModalProps> = ({
   opponentName,
   onDiscardCard,
   onMoveOpponentHandCard,
+  onInspectCard,
   onClose,
 }) => {
   if (!isOpen) return null;
@@ -68,7 +70,7 @@ export const OpponentHandModal: React.FC<OpponentHandModalProps> = ({
                 <div className="text-[10px] font-bold text-slate-400">
                   #{index + 1}
                 </div>
-                <CardView card={card} />
+                <CardView card={card} onInspect={onInspectCard} />
 
                 {/* アクションボタングループ */}
                 <div className="flex flex-col gap-1 w-full text-[10px]">

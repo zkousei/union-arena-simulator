@@ -3,7 +3,7 @@ import { Card, CardColor, TriggerType } from '../../types/card';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
-import { ArrowRightLeft, Trash2, RotateCw, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap, X } from 'lucide-react';
+import { ArrowRightLeft, Trash2, RotateCw, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap, X } from 'lucide-react';
 
 interface CardViewProps {
   card: Card;
@@ -520,10 +520,10 @@ export const CardView: React.FC<CardViewProps> = ({
                 onInspect(card);
                 setShowMenu(false);
               }}
-              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2"
+              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-sky-400"
             >
               <Eye className="w-3.5 h-3.5 text-sky-400" />
-              詳細を見る
+              カード詳細・効果を見る
             </button>
           )}
 
@@ -807,19 +807,6 @@ export const CardView: React.FC<CardViewProps> = ({
             >
               <Layers className="w-3.5 h-3.5 text-purple-400" />
               下のカードを確認 ({card.underCards.length}枚)
-            </button>
-          )}
-
-          {onInspect && (
-            <button
-              onClick={() => {
-                onInspect(card);
-                setShowMenu(false);
-              }}
-              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-sky-400 border-t border-slate-800 mt-1"
-            >
-              <Info className="w-3.5 h-3.5" />
-              カード効果を見る
             </button>
           )}
         </div>

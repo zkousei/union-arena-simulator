@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Card } from '../../types/card';
 import { CardView } from './CardView';
@@ -244,5 +244,30 @@ describe('CardView', () => {
     const closeBtn = screen.getByTitle('閉じる');
     fireEvent.click(closeBtn);
     expect(container.querySelector('.overflow-y-auto')).toBeNull();
+  });
+
+  it('renders a single consolidated inspect button in context menu and opens inspect modal on click', () => {
+    const handleInspect = vi.fn();
+    const { container } = render(
+      <CardView
+        card={dummyCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        onInspect={handleInspect}
+      />
+    );
+
+    const cardEl = container.querySelector('[draggable="true"]')!;
+    fireEvent.contextMenu(cardEl);
+
+    const menuEl = container.querySelector('.overflow-y-auto')!;
+    expect(menuEl).not.toBeNull();
+
+    // There should be exactly one inspect button in the context menu (not duplicated)
+    const inspectBtns = within(menuEl as HTMLElement).getAllByRole('button', { name: /詳細|効果/ });
+    expect(inspectBtns).toHaveLength(1);
+    expect(inspectBtns[0].textContent).toContain('カード詳細・効果を見る');
+
+    fireEvent.click(inspectBtns[0]);
+    expect(handleInspect).toHaveBeenCalledWith(dummyCard);
   });
 });

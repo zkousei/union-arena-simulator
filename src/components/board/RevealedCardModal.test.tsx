@@ -97,4 +97,31 @@ describe('RevealedCardModal', () => {
     fireEvent.click(closeBtns[0]);
     expect(onCloseInspect).toHaveBeenCalledTimes(1);
   });
+
+  it('renders with z-[60] to overlay above standard z-50 modals', () => {
+    const { container } = render(
+      <RevealedCardModal
+        revealed={null}
+        inspectCard={dummyCard}
+        onCloseInspect={vi.fn()}
+      />
+    );
+
+    const backdrop = container.querySelector('.fixed.inset-0');
+    expect(backdrop?.className).toContain('z-[60]');
+  });
+
+  it('closes inspect modal when Escape key is pressed', () => {
+    const onCloseInspect = vi.fn();
+    render(
+      <RevealedCardModal
+        revealed={null}
+        inspectCard={dummyCard}
+        onCloseInspect={onCloseInspect}
+      />
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onCloseInspect).toHaveBeenCalledTimes(1);
+  });
 });

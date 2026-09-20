@@ -1493,16 +1493,6 @@ export const Board: React.FC<BoardProps> = ({
         />
       </div>
 
-      {/* 公開カード / 詳細モーダル */}
-      <RevealedCardModal
-        revealed={gameState.revealedCard}
-        inspectCard={inspectCard}
-        onDismissRevealed={(destination) =>
-          dispatchAction({ type: 'DISMISS_REVEALED_CARD', payload: { destination } })
-        }
-        onCloseInspect={() => setInspectCard(null)}
-      />
-
       {/* 山札の上からN枚確認モーダル */}
       <TopDeckModal
         revealedDeck={gameState.revealedDeckCards}
@@ -1519,6 +1509,7 @@ export const Board: React.FC<BoardProps> = ({
             payload: { playerId: gameState.revealedDeckCards?.playerId || bottomPlayerId, cardId, destination },
           })
         }
+        onInspectCard={setInspectCard}
         onClose={(shuffleRemaining) =>
           dispatchAction({
             type: 'CLOSE_TOP_DECK',
@@ -1676,6 +1667,7 @@ export const Board: React.FC<BoardProps> = ({
           });
         }}
         onMoveOpponentHandCard={handleMoveOpponentHandCard}
+        onInspectCard={setInspectCard}
         onClose={() => setIsOpponentHandOpen(false)}
       />
 
@@ -1733,6 +1725,16 @@ export const Board: React.FC<BoardProps> = ({
         onSelectRaid={handleExecuteRaid}
         onSelectMarker={handleExecuteMarker}
         onClose={() => setPendingRaidOrMarker(null)}
+      />
+
+      {/* 公開カード / 詳細モーダル (全モーダルの最前面に表示) */}
+      <RevealedCardModal
+        revealed={gameState.revealedCard}
+        inspectCard={inspectCard}
+        onDismissRevealed={(destination) =>
+          dispatchAction({ type: 'DISMISS_REVEALED_CARD', payload: { destination } })
+        }
+        onCloseInspect={() => setInspectCard(null)}
       />
 
       {/* 手札カード選択中インジケーター */}
