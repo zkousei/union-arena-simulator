@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardColor } from '../../types/card';
 import { FieldSlotIndex, GameState, CardLocation } from '../../types/game';
 import { GameAction } from '../../types/actions';
@@ -23,6 +23,8 @@ interface BoardProps {
   onOpenDeckPicker?: (targetPlayerId?: string) => void;
   isSoloMode?: boolean;
   isFitMode?: boolean;
+  onUndo?: () => void;
+  canUndo?: boolean;
 }
 
 export const Board: React.FC<BoardProps> = ({
@@ -32,6 +34,8 @@ export const Board: React.FC<BoardProps> = ({
   onOpenDeckPicker,
   isSoloMode = false,
   isFitMode = true,
+  onUndo,
+  canUndo = false,
 }) => {
   // プレイヤーIDと各プレイヤー状態の決定 (ソロモードでは P1が下・P2が上で固定)
   const playerIds = Object.keys(gameState.players);
@@ -92,6 +96,62 @@ export const Board: React.FC<BoardProps> = ({
     zone: 'frontLine' | 'energyLine';
     slotIndex: FieldSlotIndex;
   } | null>(null);
+
+  // フェイズ順次進行ハンドラ (START -> MOVE -> MAIN -> ATTACK(先攻1TはEND) -> END -> ターン終了)
+  const handleAdvancePhase = useCallback(() => {
+    if (gameState.phase === 'START') {
+      dispatchAction({ type: 'SET_PHASE', payload: { phase: 'MOVE' } });
+    } else if (gameState.phase === 'MOVE') {
+      dispatchAction({ type: 'SET_PHASE', payload: { phase: 'MAIN' } });
+    } else if (gameState.phase === 'MAIN') {
+      const isFirstTurnFirstPlayer = gameState.turn === 1 && !!gameState.players[gameState.activePlayerId]?.isFirst;
+      if (isFirstTurnFirstPlayer) {
+        dispatchAction({ type: 'SET_PHASE', payload: { phase: 'END' } });
+      } else {
+        dispatchAction({ type: 'SET_PHASE', payload: { phase: 'ATTACK' } });
+      }
+    } else if (gameState.phase === 'ATTACK') {
+      dispatchAction({ type: 'SET_PHASE', payload: { phase: 'END' } });
+    } else if (gameState.phase === 'END') {
+      dispatchAction({ type: 'PASS_TURN', payload: { playerId: gameState.activePlayerId } });
+    }
+  }, [gameState.phase, gameState.turn, gameState.activePlayerId, gameState.players, dispatchAction]);
+
+  // キーボードショートカット管理 (Space: 次フェイズ/ターン終了, Escape: 選択・アタックキャンセル, Ctrl+Z/Cmd+Z: Undo)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleAdvancePhase();
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (attackingState !== null) {
+          setAttackingState(null);
+        } else if (selectedHandCard !== null) {
+          setSelectedHandCard(null);
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        if (onUndo && canUndo) {
+          e.preventDefault();
+          onUndo();
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleAdvancePhase, attackingState, selectedHandCard, onUndo, canUndo]);
 
   // 発生エナジー計算ヘルパー (公式ルール: エナジーラインのアクティブ状態のキャラから発生)
   const calculateGeneratedEnergy = (slots: (Card | null)[]) => {
@@ -1127,6 +1187,7 @@ export const Board: React.FC<BoardProps> = ({
         isFirstTurnFirstPlayer={gameState.turn === 1 && !!gameState.players[gameState.activePlayerId]?.isFirst}
         onSetPhase={(phase) => dispatchAction({ type: 'SET_PHASE', payload: { phase } })}
         onPassTurn={() => dispatchAction({ type: 'PASS_TURN', payload: { playerId: gameState.activePlayerId } })}
+        onAdvancePhase={handleAdvancePhase}
         onExtraDraw={() => dispatchAction({ type: 'EXTRA_DRAW', payload: { playerId: gameState.activePlayerId } })}
       />
 
@@ -1399,6 +1460,29 @@ export const Board: React.FC<BoardProps> = ({
         onSelectMarker={handleExecuteMarker}
         onClose={() => setPendingRaidOrMarker(null)}
       />
+
+      {/* 手札カード選択中インジケーター */}
+      {selectedHandCard && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/95 border-2 border-indigo-500 rounded-xl px-4 py-2 shadow-2xl flex items-center gap-3 text-xs animate-in slide-in-from-bottom-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping shrink-0" />
+          <div className="flex items-center gap-1.5 text-slate-200">
+            <span className="text-indigo-300 font-bold">手札選択中:</span>
+            <span className="font-extrabold text-white">「{selectedHandCard.card.name}」</span>
+            <span className="text-slate-400 text-[11px]">
+              {selectedHandCard.card.cardType === 'EVENT'
+                ? '➔ スロットをクリックまたはドラッグで使用（場外へ）'
+                : '➔ 配置したいスロットをクリックまたはドラッグ'}
+            </span>
+          </div>
+          <button
+            onClick={() => setSelectedHandCard(null)}
+            className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded text-[11px] font-bold border border-slate-700 flex items-center gap-1"
+            title="選択を解除します (ESCキー)"
+          >
+            解除 [ESC]
+          </button>
+        </div>
+      )}
     </div>
   );
 };

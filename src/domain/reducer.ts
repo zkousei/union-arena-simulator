@@ -742,8 +742,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const bottomCard = player.deck[player.deck.length - 1];
           draft.revealedCard = {
             card: { ...resetCardState(bottomCard), isFaceDown: false },
-            source: '山札の下（確認）',
+            source: '山札の下（公開・確認）',
             fromPlayerId: playerId,
+            isTrigger: false,
           };
           appendLog(draft, `${player.name} が山札の一番下のカード「${bottomCard.name}」を確認・公開しました。`, playerId);
         } else if (bottomAction === 'mill') {
@@ -856,6 +857,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           card: selectedLife,
           source: `ライフ${idx + 1}枚目（トリガーチェック）`,
           fromPlayerId: playerId,
+          isTrigger: true,
         };
 
         const triggerStr = selectedLife.triggers.length > 0 ? `【トリガー: ${selectedLife.triggers.join(', ')}】` : '（トリガーなし）';
@@ -867,8 +869,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const { destination } = action.payload;
         if (!draft.revealedCard) return;
 
-        const { card, fromPlayerId } = draft.revealedCard;
+        const { card, fromPlayerId, isTrigger } = draft.revealedCard;
         const player = draft.players[fromPlayerId];
+
+        // isTrigger === false の場合（山札下の公開・確認など）、カードは元のゾーンに存在するため複製・移動を行わない
+        if (isTrigger === false) {
+          draft.revealedCard = null;
+          break;
+        }
 
         if (player) {
           if (destination === 'graveyard') {
@@ -947,7 +955,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const { playerId } = action.payload;
         const playerIds = Object.keys(draft.players);
         const nextPlayerId = playerIds.find((id) => id !== playerId) || playerId;
+        const prevPlayer = draft.players[playerId] || draft.players[draft.activePlayerId];
         const nextPlayer = draft.players[nextPlayerId];
+
+        // 公式ルール P13: エンドフェイズ処理（押し忘れ対応）
+        // ターンを終えるプレイヤーの全カード（フロント・エナジー・AP）をすべてアクティブ化する
+        if (prevPlayer) {
+          prevPlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
+          prevPlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+          prevPlayer.apArea.forEach((c) => { c.isRested = false; });
+        }
 
         draft.turn += 1;
         draft.activePlayerId = nextPlayerId;

@@ -296,6 +296,46 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].apMax).toBe(3);
   });
 
+  it('should automatically active all rested cards of the player finishing their turn on PASS_TURN even if END phase was not clicked', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const card1 = createDummyCard('f-1', 'Front Attacker');
+    const card2 = createDummyCard('e-1', 'Energy Gen');
+    state.players['p1'].hand = [card1, card2];
+
+    // 手札からフロントラインとエナジーラインへ配置（Ver 1.1ルールにより自動的に isRested = true）
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'f-1',
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+      },
+    });
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'e-1',
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+      },
+    });
+
+    expect(state.players['p1'].frontLine[0]?.isRested).toBe(true);
+    expect(state.players['p1'].energyLine[0]?.isRested).toBe(true);
+
+    // フェイズは ATTACK のまま、ENDフェイズボタンを押さずに PASS_TURN を実行
+    state = gameReducer(state, { type: 'SET_PHASE', payload: { phase: 'ATTACK' } });
+    state = gameReducer(state, { type: 'PASS_TURN', payload: { playerId: 'p1' } });
+
+    // ターン終了した p1 のカードがすべてアクティブ（リロール）になっていること
+    expect(state.players['p1'].frontLine[0]?.isRested).toBe(false);
+    expect(state.players['p1'].energyLine[0]?.isRested).toBe(false);
+    // 新ターン p2 の状態
+    expect(state.turn).toBe(2);
+    expect(state.activePlayerId).toBe('p2');
+    expect(state.phase).toBe('START');
+  });
+
   it('should look at top N cards of deck and route them to hand, graveyard, top or bottom', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].deck = [
@@ -841,13 +881,24 @@ describe('gameReducer Official Rules Unit Tests', () => {
       createDummyCard('d-bottom', 'Bottom Card'),
     ];
 
-    // view (公開モーダルにセット)
+    // view (公開モーダルにセット) - トリガー扱いにならず、閉じた後もカード複製されないこと
     state = gameReducer(state, {
       type: 'BOTTOM_DECK_ACTION',
       payload: { playerId: 'p1', action: 'view' },
     });
     expect(state.revealedCard?.card.name).toBe('Bottom Card');
+    expect(state.revealedCard?.isTrigger).toBe(false);
     expect(state.players['p1'].deck.length).toBe(3);
+
+    // モーダルを閉じる
+    state = gameReducer(state, {
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination: 'graveyard' },
+    });
+    // isTrigger: false なので場外へ送られず、山札も場外もカードが増減しないこと
+    expect(state.revealedCard).toBeNull();
+    expect(state.players['p1'].deck.length).toBe(3);
+    expect(state.players['p1'].graveyard.length).toBe(0);
 
     // toHand (手札へ)
     state = gameReducer(state, {

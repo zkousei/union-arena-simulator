@@ -634,6 +634,8 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
             onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
             isSoloMode={isSoloMode}
             isFitMode={isFitMode}
+            onUndo={undo}
+            canUndo={canUndo}
           />
         </div>
 

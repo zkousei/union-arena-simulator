@@ -694,11 +694,24 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                   onClick={() => setShowBottomDeckDropdown(false)}
                 >
                   <button
-                    onClick={() => onBottomDeckAction && onBottomDeckAction('view')}
+                    onClick={() => {
+                      if (player.deck.length > 0 && onInspectCard) {
+                        onInspectCard(player.deck[player.deck.length - 1]);
+                      } else if (onBottomDeckAction) {
+                        onBottomDeckAction('view');
+                      }
+                    }}
                     className="px-2 py-1 hover:bg-slate-800 rounded text-left text-sky-300 text-xs"
-                    title="山札の一番下のカードを確認・公開する（ガメラ等）"
+                    title="山札の一番下のカードを確認する（自分のみ）"
                   >
                     一番下を確認
+                  </button>
+                  <button
+                    onClick={() => onBottomDeckAction && onBottomDeckAction('view')}
+                    className="px-2 py-1 hover:bg-slate-800 rounded text-left text-amber-300 text-xs"
+                    title="山札の一番下のカードを公開する（相手にも公開）"
+                  >
+                    一番下を公開
                   </button>
                   <button
                     onClick={() => onBottomDeckAction && onBottomDeckAction('mill')}

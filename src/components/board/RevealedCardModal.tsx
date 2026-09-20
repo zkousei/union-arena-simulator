@@ -7,6 +7,7 @@ interface RevealedCardModalProps {
     card: Card;
     source: string;
     fromPlayerId: string;
+    isTrigger?: boolean;
   } | null;
   inspectCard: Card | null;
   onDismissRevealed?: (destination: 'hand' | 'graveyard' | 'life' | 'cancel') => void;
@@ -68,7 +69,17 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   const [imgError, setImgError] = useState(false);
   const [isEnlargedImage, setIsEnlargedImage] = useState(false);
   const card = revealed ? revealed.card : inspectCard;
-  const isTriggerModal = !!revealed;
+  const isTriggerModal = !!revealed && revealed.isTrigger !== false;
+
+  const handleClose = () => {
+    if (isTriggerModal) {
+      onDismissRevealed?.('graveyard');
+    } else if (revealed) {
+      onDismissRevealed?.('cancel');
+    } else {
+      onCloseInspect?.();
+    }
+  };
 
   if (!card) return null;
 
@@ -79,7 +90,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
         onClick={() => {
-          if (!isTriggerModal && onCloseInspect) onCloseInspect();
+          if (!isTriggerModal) handleClose();
         }}
       >
         <div
@@ -91,7 +102,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
               <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                <span>{isTriggerModal ? `⚡ ${revealed.source}` : 'カード情報詳細'}</span>
+                <span>{isTriggerModal ? `⚡ ${revealed.source}` : revealed ? `🔍 ${revealed.source}` : 'カード情報詳細'}</span>
                 <span className="text-xs font-normal text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-700/50">
                   {card.code}
                 </span>
@@ -99,7 +110,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
             </div>
             {!isTriggerModal && (
               <button
-                onClick={onCloseInspect}
+                onClick={handleClose}
                 className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition"
                 title="閉じる (Esc)"
               >
@@ -254,6 +265,19 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
                 ライフに戻す
               </button>
             </div>
+          </div>
+        )}
+
+        {/* 非トリガー時（カード情報確認・公開時）の閉じるボタン */}
+        {!isTriggerModal && (
+          <div className="flex justify-end pt-2 border-t border-slate-800">
+            <button
+              onClick={handleClose}
+              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-slate-700"
+            >
+              <X className="w-4 h-4" />
+              閉じる (Esc)
+            </button>
           </div>
         )}
       </div>

@@ -92,10 +92,11 @@ export const AttackLineOverlay: React.FC<AttackLineOverlayProps> = ({
         </div>
         <button
           onClick={onCancel}
-          className="ml-2 px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 flex items-center gap-1 text-[11px]"
+          className="ml-2 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg text-slate-300 hover:text-white flex items-center gap-1 text-[11px] font-bold border border-slate-700"
+          title="アタック宣言をキャンセルします (ESCキー)"
         >
           <X className="w-3.5 h-3.5" />
-          キャンセル
+          キャンセル [ESC]
         </button>
       </div>
     </div>

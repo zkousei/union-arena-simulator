@@ -67,6 +67,7 @@ export interface GameState {
     card: Card;
     source: string;
     fromPlayerId: string;
+    isTrigger?: boolean;
   } | null;
   revealedDeckCards: {
     playerId: string;

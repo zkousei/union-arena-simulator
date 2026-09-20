@@ -14,6 +14,7 @@ interface PhaseBarProps {
   isCompact?: boolean;
   onSetPhase: (phase: Phase) => void;
   onPassTurn: () => void;
+  onAdvancePhase?: () => void;
   onExtraDraw?: () => void;
 }
 
@@ -25,6 +26,23 @@ const PHASES: Array<{ id: Phase; label: string; icon: React.ReactNode }> = [
   { id: 'ATTACK', label: 'アタック', icon: <Swords className="w-3.5 h-3.5" /> },
   { id: 'END', label: 'エンド', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
 ];
+
+const getNextPhaseInfo = (phase: Phase, isFirstTurnFirstPlayer: boolean) => {
+  switch (phase) {
+    case 'START':
+      return { label: '移動へ ▶', fullLabel: '移動フェイズへ ▶', next: 'MOVE' as const };
+    case 'MOVE':
+      return { label: 'メインへ ▶', fullLabel: 'メインフェイズへ ▶', next: 'MAIN' as const };
+    case 'MAIN':
+      return isFirstTurnFirstPlayer
+        ? { label: 'エンドへ ▶', fullLabel: 'エンドフェイズへ ▶', next: 'END' as const }
+        : { label: 'アタックへ ▶', fullLabel: 'アタックフェイズへ ▶', next: 'ATTACK' as const };
+    case 'ATTACK':
+      return { label: 'エンドへ ▶', fullLabel: 'エンドフェイズへ ▶', next: 'END' as const };
+    case 'END':
+      return { label: 'ターン終了 ➔', fullLabel: 'ターン終了 ➔', next: 'PASS' as const };
+  }
+};
 
 export const PhaseBar: React.FC<PhaseBarProps> = ({
   currentPhase,
@@ -38,8 +56,23 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
   isCompact = false,
   onSetPhase,
   onPassTurn,
+  onAdvancePhase,
   onExtraDraw,
 }) => {
+  const nextInfo = getNextPhaseInfo(currentPhase, isFirstTurnFirstPlayer);
+
+  const handleAdvance = () => {
+    if (onAdvancePhase) {
+      onAdvancePhase();
+    } else {
+      if (nextInfo.next === 'PASS') {
+        onPassTurn();
+      } else {
+        onSetPhase(nextInfo.next);
+      }
+    }
+  };
+
   return (
     <div className={`flex items-center justify-between bg-slate-900/90 border-y border-slate-800 w-full flex-wrap gap-2 shrink-0 ${
       isCompact ? 'px-3 py-0.5 shadow-sm text-xs' : 'px-4 py-2 shadow-md text-xs'
@@ -104,7 +137,7 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
         })}
       </div>
 
-      {/* スタートフェイズのエクストラドロー & ターン終了ボタン */}
+      {/* フェイズ進行コントロール・ターン終了ボタン */}
       <div className="flex items-center gap-2">
         {currentPhase === 'START' && isActivePlayer && onExtraDraw && (
           <button
@@ -120,13 +153,32 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
           </button>
         )}
 
+        {/* 次のフェイズへ進むボタン (エンドフェイズ以外) */}
+        {currentPhase !== 'END' && (
+          <button
+            onClick={handleAdvance}
+            className={`flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-lg shadow transition ${
+              isCompact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+            }`}
+            title={`次のフェイズへ進みます (ショートカット: Spaceキー)`}
+          >
+            <span>{isCompact ? nextInfo.label : `${nextInfo.fullLabel} [Space]`}</span>
+          </button>
+        )}
+
+        {/* ターン終了ボタン (エンドフェイズ時は強調表示) */}
         <button
           onClick={onPassTurn}
-          className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold rounded-lg shadow-lg shadow-amber-600/20 transition-transform active:scale-95 ${
+          className={`flex items-center gap-1.5 font-extrabold rounded-lg shadow-lg transition-all active:scale-95 ${
+            currentPhase === 'END'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white ring-2 ring-amber-400/80 shadow-amber-500/30 scale-105 animate-pulse'
+              : 'bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 text-slate-200 border border-slate-600 hover:text-white'
+          } ${
             isCompact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
           }`}
+          title="ターンを終了して相手プレイヤーに交代します (エンドフェイズ時はSpaceキーでも実行可能)"
         >
-          <span>ターン終了</span>
+          <span>ターン終了{currentPhase === 'END' ? ' [Space]' : ''}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
