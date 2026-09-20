@@ -12,9 +12,9 @@ import { CardSearchModal } from '../modals/CardSearchModal';
 import { UnderCardsModal } from '../modals/UnderCardsModal';
 import { OpponentHandModal } from '../modals/OpponentHandModal';
 import { LifeReorderModal } from '../modals/LifeReorderModal';
+import { LifeSelectModal } from '../modals/LifeSelectModal';
 import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
-import { HoverCardPreview } from './HoverCardPreview';
 
 interface BoardProps {
   gameState: GameState;
@@ -64,12 +64,12 @@ export const Board: React.FC<BoardProps> = ({
     playerId: string;
   } | null>(null);
   const [inspectCard, setInspectCard] = useState<Card | null>(null);
-  const [hoverCard, setHoverCard] = useState<Card | null>(null);
   const [isCardSearchOpen, setIsCardSearchOpen] = useState(false);
   const [searchPlayerId, setSearchPlayerId] = useState<string>(bottomPlayerId);
   const [isOpponentHandOpen, setIsOpponentHandOpen] = useState(false);
   const [isLifeReorderOpen, setIsLifeReorderOpen] = useState(false);
   const [lifeReorderPlayerId, setLifeReorderPlayerId] = useState<string>(bottomPlayerId);
+  const [lifeSelectPlayerId, setLifeSelectPlayerId] = useState<string | null>(null);
   const [pendingRaidOrMarker, setPendingRaidOrMarker] = useState<{
     targetPlayerId: string;
     incomingCard: Card;
@@ -268,6 +268,20 @@ export const Board: React.FC<BoardProps> = ({
     const handIndex = targetPlayer.hand.findIndex((c) => c.id === selectedHandCard.card.id);
     if (handIndex === -1) return;
 
+    if (selectedHandCard.card.cardType === 'EVENT') {
+      // イベントカードは使用時、場には出ずに場外へ
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: selectedHandCard.card.id,
+          from: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
+          to: { playerId: targetPlayerId, zone: 'graveyard' },
+        },
+      });
+      setSelectedHandCard(null);
+      return;
+    }
+
     if (existingCard) {
       setPendingRaidOrMarker({
         targetPlayerId,
@@ -432,6 +446,19 @@ export const Board: React.FC<BoardProps> = ({
       const card = targetPlayer.hand[handIndex];
       if (!card) return;
 
+      if (card.cardType === 'EVENT') {
+        // イベントカードは使用時、場には出ず直接場外へ
+        dispatchAction({
+          type: 'MOVE_CARD',
+          payload: {
+            cardId: card.id,
+            from,
+            to: { playerId: targetPlayerId, zone: 'graveyard' },
+          },
+        });
+        return;
+      }
+
       if (existingCard) {
         setPendingRaidOrMarker({
           targetPlayerId,
@@ -524,6 +551,18 @@ export const Board: React.FC<BoardProps> = ({
     if (!card) return;
 
     if (dest === 'frontLine' || dest === 'energyLine') {
+      if (card.cardType === 'EVENT') {
+        // イベントカードは使用時、場には出ず直接場外へ
+        dispatchAction({
+          type: 'MOVE_CARD',
+          payload: {
+            cardId: card.id,
+            from: { playerId, zone: 'hand', index: cardIndex },
+            to: { playerId, zone: 'graveyard' },
+          },
+        });
+        return;
+      }
       const targetSlots = dest === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
@@ -967,6 +1006,7 @@ export const Board: React.FC<BoardProps> = ({
             setLifeReorderPlayerId(topPlayerId);
             setIsLifeReorderOpen(true);
           }}
+          onOpenLifeSelectModal={() => setLifeSelectPlayerId(topPlayerId)}
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: topPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: topPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: topPlayerId, count } })}
@@ -1010,7 +1050,6 @@ export const Board: React.FC<BoardProps> = ({
             onSelectCard={(card) => handleSelectHandCard(topPlayerId, card)}
             onMoveTo={(cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropToHand={handleDropToHand}
             onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
             onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
@@ -1034,7 +1073,6 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
@@ -1065,7 +1103,6 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'frontLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
@@ -1135,7 +1172,6 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'frontLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
@@ -1157,7 +1193,6 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
@@ -1173,7 +1208,6 @@ export const Board: React.FC<BoardProps> = ({
             onSelectCard={(card) => handleSelectHandCard(bottomPlayerId, card)}
             onMoveTo={(cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onHoverCard={setHoverCard}
             onDropToHand={handleDropToHand}
             onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
           />
@@ -1194,6 +1228,7 @@ export const Board: React.FC<BoardProps> = ({
             setLifeReorderPlayerId(bottomPlayerId);
             setIsLifeReorderOpen(true);
           }}
+          onOpenLifeSelectModal={() => setLifeSelectPlayerId(bottomPlayerId)}
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: bottomPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: bottomPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: bottomPlayerId, count } })}
@@ -1223,9 +1258,6 @@ export const Board: React.FC<BoardProps> = ({
         }
         onCloseInspect={() => setInspectCard(null)}
       />
-
-      {/* ホバー時クイックカードプレビュー (PC等大画面向け) */}
-      <HoverCardPreview card={hoverCard} />
 
       {/* 山札の上からN枚確認モーダル */}
       <TopDeckModal
@@ -1319,6 +1351,40 @@ export const Board: React.FC<BoardProps> = ({
         playerName={gameState.players[lifeReorderPlayerId]?.name || ''}
         onConfirmReorder={handleConfirmLifeReorder}
         onClose={() => setIsLifeReorderOpen(false)}
+      />
+
+      {/* ライフ任意選択・操作モーダル */}
+      <LifeSelectModal
+        isOpen={lifeSelectPlayerId !== null}
+        lifeCards={gameState.players[lifeSelectPlayerId || '']?.life || []}
+        playerName={gameState.players[lifeSelectPlayerId || '']?.name || ''}
+        isOpponent={lifeSelectPlayerId !== bottomPlayerId && !isSoloMode}
+        onCheckLife={(lifeIndex) => {
+          if (lifeSelectPlayerId) {
+            dispatchAction({
+              type: 'CHECK_LIFE_TRIGGER',
+              payload: { playerId: lifeSelectPlayerId, lifeIndex },
+            });
+          }
+        }}
+        onTakeLife={(dest, lifeIndex) => {
+          if (lifeSelectPlayerId) {
+            dispatchAction({
+              type: 'TAKE_LIFE',
+              payload: { playerId: lifeSelectPlayerId, destination: dest, lifeIndex },
+            });
+          }
+        }}
+        onFlipLife={(lifeIndex) => {
+          if (lifeSelectPlayerId) {
+            dispatchAction({
+              type: 'FLIP_LIFE',
+              payload: { playerId: lifeSelectPlayerId, lifeIndex },
+            });
+          }
+        }}
+        onInspectCard={setInspectCard}
+        onClose={() => setLifeSelectPlayerId(null)}
       />
 
       {/* レイド登場・マーカー配置モーダル */}

@@ -73,12 +73,45 @@ describe('CardView', () => {
     expect(handleToggleRest).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onInspect when double-clicked or zoom button clicked', () => {
+  it('calls onToggleRest when double-clicked if onToggleRest is provided', () => {
+    const handleToggleRest = vi.fn();
     const handleInspect = vi.fn();
     const { container } = render(
       <CardView
         card={dummyCard}
         location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        onToggleRest={handleToggleRest}
+        onInspect={handleInspect}
+      />
+    );
+
+    const cardEl = container.querySelector('[draggable="true"]')!;
+    fireEvent.doubleClick(cardEl);
+    expect(handleToggleRest).toHaveBeenCalledTimes(1);
+    expect(handleInspect).not.toHaveBeenCalled();
+  });
+
+  it('calls onToggleRest when rotate icon button is clicked', () => {
+    const handleToggleRest = vi.fn();
+    render(
+      <CardView
+        card={dummyCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        onToggleRest={handleToggleRest}
+      />
+    );
+
+    const rotateBtn = screen.getByTitle('レストにする (ダブルクリックでも切替可)');
+    fireEvent.click(rotateBtn);
+    expect(handleToggleRest).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onInspect when double-clicked if onToggleRest is not provided, or when zoom button clicked', () => {
+    const handleInspect = vi.fn();
+    const { container } = render(
+      <CardView
+        card={dummyCard}
+        location={{ playerId: 'player-1', zone: 'hand', index: 0 }}
         onInspect={handleInspect}
       />
     );
@@ -87,7 +120,7 @@ describe('CardView', () => {
     fireEvent.doubleClick(cardEl);
     expect(handleInspect).toHaveBeenCalledTimes(1);
 
-    const zoomBtn = screen.getByTitle('ダブルクリックまたはクリックで詳細拡大表示');
+    const zoomBtn = screen.getByTitle('カード詳細を確認 (拡大表示)');
     fireEvent.click(zoomBtn);
     expect(handleInspect).toHaveBeenCalledTimes(2);
   });

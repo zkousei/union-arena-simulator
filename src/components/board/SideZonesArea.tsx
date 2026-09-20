@@ -17,6 +17,7 @@ import {
   MoreVertical,
   ArrowUp,
   ArrowDown,
+  Target,
 } from 'lucide-react';
 import { GraveyardModal } from '../modals/GraveyardModal';
 import { RemovedModal } from '../modals/RemovedModal';
@@ -34,6 +35,7 @@ interface SideZonesAreaProps {
   onTakeLife?: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', lifeIndex?: number) => void;
   onFlipLife?: (lifeIndex: number) => void;
   onOpenLifeReorder?: () => void;
+  onOpenLifeSelectModal?: () => void;
   onUseAp?: () => void;
   onRecoverAp?: () => void;
   onLookAtTopDeck?: (count: number) => void;
@@ -70,6 +72,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   onTakeLife,
   onFlipLife,
   onOpenLifeReorder,
+  onOpenLifeSelectModal,
   onUseAp,
   onRecoverAp,
   onLookAtTopDeck,
@@ -168,17 +171,34 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
             <span>ライフ</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-base font-extrabold text-white px-2 py-0.5 bg-rose-950/80 rounded border border-rose-500/50">
+            <button
+              type="button"
+              onClick={onOpenLifeSelectModal}
+              disabled={player.life.length === 0}
+              className="text-base font-extrabold text-white px-2 py-0.5 bg-rose-950/80 hover:bg-rose-900 rounded border border-rose-500/50 cursor-pointer disabled:cursor-default transition-colors"
+              title="クリックでライフ一覧・選択モーダルを開く"
+            >
               {player.life.length}
-            </span>
+            </button>
             {isOpponent ? (
               <div className="flex items-center gap-1">
+                {onOpenLifeSelectModal && (
+                  <button
+                    onClick={onOpenLifeSelectModal}
+                    disabled={player.life.length === 0}
+                    className="px-1.5 py-1 bg-indigo-700 hover:bg-indigo-600 disabled:opacity-40 rounded text-[9px] font-bold text-white shadow flex items-center gap-0.5 transition-colors"
+                    title="ライフ一覧から好きなカードを任意指定してトリガーチェックや操作を行う"
+                  >
+                    <Target className="w-2.5 h-2.5" />
+                    選択
+                  </button>
+                )}
                 {onCheckLife && (
                   <button
                     onClick={() => onCheckLife(0)}
                     disabled={player.life.length === 0}
                     className="px-1.5 py-1 bg-rose-700 hover:bg-rose-600 disabled:opacity-40 rounded text-[9px] font-bold text-white shadow flex items-center gap-0.5 transition-colors"
-                    title="相手のライフ（先頭）をトリガーチェック（下のカードをクリックで指定可能）"
+                    title="相手のライフ（先頭）をトリガーチェック（下のカードまたは「選択」ボタンで任意指定可能）"
                   >
                     <Eye className="w-2.5 h-2.5" />
                     チェック
@@ -196,15 +216,28 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                 )}
               </div>
             ) : (
-              <button
-                onClick={() => onCheckLife && onCheckLife(0)}
-                disabled={player.life.length === 0}
-                className="px-2 py-1 bg-rose-700 hover:bg-rose-600 disabled:opacity-40 rounded text-[10px] font-bold text-white shadow flex items-center gap-1 transition-colors"
-                title="アタックダメージのトリガーチェック"
-              >
-                <Eye className="w-3 h-3" />
-                チェック
-              </button>
+              <div className="flex items-center gap-1">
+                {onOpenLifeSelectModal && (
+                  <button
+                    onClick={onOpenLifeSelectModal}
+                    disabled={player.life.length === 0}
+                    className="px-1.5 py-1 bg-indigo-700 hover:bg-indigo-600 disabled:opacity-40 rounded text-[9px] font-bold text-white shadow flex items-center gap-0.5 transition-colors"
+                    title="ライフ一覧から好きなカードを任意指定して操作を行う"
+                  >
+                    <Target className="w-2.5 h-2.5" />
+                    選択
+                  </button>
+                )}
+                <button
+                  onClick={() => onCheckLife && onCheckLife(0)}
+                  disabled={player.life.length === 0}
+                  className="px-2 py-1 bg-rose-700 hover:bg-rose-600 disabled:opacity-40 rounded text-[10px] font-bold text-white shadow flex items-center gap-1 transition-colors"
+                  title="アタックダメージのトリガーチェック"
+                >
+                  <Eye className="w-3 h-3" />
+                  チェック
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -213,8 +246,19 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
         {player.life.length > 0 && (
           <div className="flex flex-col gap-1 pt-1 border-t border-slate-800/80">
             <div className="flex items-center justify-between text-[9px] text-slate-400">
-              <span>{isOpponent ? 'カードクリックで指定チェック' : '各ライフカード'}</span>
-              <span className="text-[8px] text-rose-300">任意選択可</span>
+              <span className="font-semibold text-rose-300">
+                {isOpponent ? '🎯 クリックで指定チェック' : '各ライフカード'}
+              </span>
+              {onOpenLifeSelectModal && (
+                <button
+                  type="button"
+                  onClick={onOpenLifeSelectModal}
+                  className="text-[8px] text-indigo-400 hover:text-indigo-200 underline font-bold"
+                  title="大きな画面で全ライフを確認・選択"
+                >
+                  一覧・任意選択
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-1 overflow-x-auto py-1 px-0.5 max-w-full">

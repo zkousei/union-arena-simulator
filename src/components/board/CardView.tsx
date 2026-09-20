@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
-import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn } from 'lucide-react';
+import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap } from 'lucide-react';
 
 interface CardViewProps {
   card: Card;
@@ -207,7 +207,11 @@ export const CardView: React.FC<CardViewProps> = ({
           onClick={onClick}
           onDoubleClick={(e) => {
             e.stopPropagation();
-            if (onInspect) onInspect(card);
+            if (onToggleRest) {
+              onToggleRest();
+            } else if (onInspect) {
+              onInspect(card);
+            }
           }}
           style={{ zIndex: 2 }}
           className={`relative w-full h-full rounded-lg border-2 shadow-lg flex flex-col justify-between overflow-hidden transition-all ${colorClass} ${
@@ -216,20 +220,39 @@ export const CardView: React.FC<CardViewProps> = ({
             isDragging ? 'opacity-40 scale-95 border-dashed border-amber-400' : ''
           }`}
         >
-          {/* クイック拡大確認ボタン (ホバー時に薄く表示) */}
-          {onInspect && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onInspect(card);
-              }}
-              title="ダブルクリックまたはクリックで詳細拡大表示"
-              className="absolute top-1 right-1 z-30 p-0.5 rounded bg-black/75 hover:bg-indigo-600 text-slate-300 hover:text-white opacity-0 group-hover/card:opacity-100 transition-opacity border border-white/20 shadow"
-            >
-              <ZoomIn className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-            </button>
-          )}
+          {/* クイック操作ボタン (レスト切替 / 拡大確認) */}
+          <div className="absolute top-1 right-1 z-30 flex items-center gap-0.5">
+            {onToggleRest && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleRest();
+                }}
+                title={card.isRested ? 'アクティブにする (ダブルクリックでも切替可)' : 'レストにする (ダブルクリックでも切替可)'}
+                className={`p-0.5 rounded transition-all border shadow ${
+                  card.isRested
+                    ? 'bg-emerald-800/90 text-emerald-200 border-emerald-400 hover:bg-emerald-600 hover:text-white'
+                    : 'bg-black/75 text-amber-300 border-amber-500/50 hover:bg-amber-600 hover:text-white opacity-80 group-hover/card:opacity-100'
+                }`}
+              >
+                <RotateCw className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+              </button>
+            )}
+            {onInspect && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInspect(card);
+                }}
+                title="カード詳細を確認 (拡大表示)"
+                className="p-0.5 rounded bg-black/75 hover:bg-indigo-600 text-slate-300 hover:text-white opacity-0 group-hover/card:opacity-100 transition-opacity border border-white/20 shadow"
+              >
+                <ZoomIn className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+              </button>
+            )}
+          </div>
 
           {/* 公式カード画像背景 (存在する場合) */}
           {hasValidImage ? (
@@ -422,6 +445,19 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           )}
 
+          {onInspect && (
+            <button
+              onClick={() => {
+                onInspect(card);
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-indigo-300"
+            >
+              <ZoomIn className="w-3.5 h-3.5 text-indigo-400" />
+              カード詳細を確認 (拡大)
+            </button>
+          )}
+
           {isFieldCard && onToggleFreeze && (
             <button
               onClick={() => {
@@ -500,26 +536,41 @@ export const CardView: React.FC<CardViewProps> = ({
             <>
               {location?.zone === 'hand' && !isOpponent && (
                 <>
-                  <button
-                    onClick={() => {
-                      onMoveTo('frontLine');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-indigo-950/70 rounded flex items-center gap-2 text-indigo-300 font-bold"
-                  >
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
-                    フロントLに登場
-                  </button>
-                  <button
-                    onClick={() => {
-                      onMoveTo('energyLine');
-                      setShowMenu(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-emerald-950/70 rounded flex items-center gap-2 text-emerald-300 font-bold"
-                  >
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
-                    エナジーLに登場
-                  </button>
+                  {card.cardType === 'EVENT' ? (
+                    <button
+                      onClick={() => {
+                        onMoveTo('graveyard');
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 bg-amber-950/70 hover:bg-amber-900/80 rounded flex items-center gap-2 text-amber-300 font-bold border border-amber-500/40"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      イベントを使用（場外へ）
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          onMoveTo('frontLine');
+                          setShowMenu(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 hover:bg-indigo-950/70 rounded flex items-center gap-2 text-indigo-300 font-bold"
+                      >
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
+                        フロントLに登場
+                      </button>
+                      <button
+                        onClick={() => {
+                          onMoveTo('energyLine');
+                          setShowMenu(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 hover:bg-emerald-950/70 rounded flex items-center gap-2 text-emerald-300 font-bold"
+                      >
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
+                        エナジーLに登場
+                      </button>
+                    </>
+                  )}
                 </>
               )}
               {location?.zone !== 'hand' && (

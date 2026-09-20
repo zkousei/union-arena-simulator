@@ -1189,4 +1189,31 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].frontLine[0]?.name).toBe('Top Card B');
     expect(state.players['p1'].frontLine[0]?.isRested).toBe(true); // 登場時レスト
   });
+
+  it('should send EVENT card directly to graveyard when played/moved towards field', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const eventCard: Card = {
+      ...createDummyCard('event-1', 'Special Move'),
+      cardType: 'EVENT',
+    };
+    state.players['p1'].hand = [eventCard];
+    state.players['p1'].frontLine = [null, null, null, null];
+
+    // イベントカードをフロントライン0番に配置しようとする
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'event-1',
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+      },
+    });
+
+    // フィールドには置かれず、手札から場外へ送られること
+    expect(state.players['p1'].hand.length).toBe(0);
+    expect(state.players['p1'].frontLine[0]).toBeNull();
+    expect(state.players['p1'].graveyard.length).toBe(1);
+    expect(state.players['p1'].graveyard[0].name).toBe('Special Move');
+    expect(state.logs.some((log) => log.message.includes('イベントカード「Special Move」を使用しました'))).toBe(true);
+  });
 });

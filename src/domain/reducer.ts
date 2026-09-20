@@ -341,6 +341,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const isEnteringField = isToField;
         const isLeavingField = isFromField && !isEnteringField;
 
+        // 公式ルール: イベントカードは使用時、場には出ずに場外へ置かれる
+        if (card.cardType === 'EVENT' && isEnteringField) {
+          toPlayer.graveyard.push(resetCardState(card));
+          appendLog(
+            draft,
+            `📜【イベント使用】${fromPlayer.name} がイベントカード「${card.name}」を使用しました（イベントカードは場に出ず場外に置かれます）。`,
+            from.playerId,
+            'action'
+          );
+          return;
+        }
+
         // レイド下敷きカード群の退場処理
         const underCards = card.underCards || [];
 
@@ -380,6 +392,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             draft,
             `📚 ${fromPlayer.name} が「${card.name}」を山札の${isTop ? '一番上' : '一番下'}へ戻しました。`,
             from.playerId
+          );
+        } else if (from.zone === 'hand' && to.zone === 'graveyard' && card.cardType === 'EVENT') {
+          appendLog(
+            draft,
+            `📜【イベント使用】${fromPlayer.name} がイベントカード「${card.name}」を使用し、場外へ置きました。`,
+            from.playerId,
+            'action'
           );
         } else {
           const fromDesc = `${from.zone}${from.slotIndex !== undefined ? `[枠${from.slotIndex + 1}]` : ''}`;
