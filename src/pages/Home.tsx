@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Swords,
   Layers,
@@ -16,8 +16,8 @@ import {
   Flame,
   LogIn,
 } from 'lucide-react';
-import { PRESET_DECKS, PresetDeckInfo } from '../data/sampleDeck';
-import { UserDeck } from '../domain/deckValidation';
+import type { PresetDeckInfo } from '../data/sampleDeck';
+import type { UserDeck } from '../domain/deckValidation';
 
 interface HomeProps {
   onStartSolo: () => void;
@@ -37,6 +37,17 @@ export const HomePage: React.FC<HomeProps> = ({
   const [activeRuleTab, setActiveRuleTab] = useState<'basics' | 'phases' | 'raid' | 'battle'>('basics');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [joinRoomInput, setJoinRoomInput] = useState('');
+  const [presetDecks, setPresetDecks] = useState<PresetDeckInfo[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void import('../data/sampleDeck').then(({ PRESET_DECKS }) => {
+      if (!cancelled) setPresetDecks(PRESET_DECKS);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleFaq = (index: number) => {
     setExpandedFaq(expandedFaq === index ? null : index);
@@ -285,7 +296,15 @@ export const HomePage: React.FC<HomeProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PRESET_DECKS.map((preset: PresetDeckInfo) => (
+          {presetDecks === null
+            ? Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={index}
+                  aria-hidden="true"
+                  className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60"
+                />
+              ))
+            : presetDecks.map((preset: PresetDeckInfo) => (
             <div
               key={preset.id}
               className={`rounded-2xl border p-5 transition flex flex-col justify-between shadow-lg ${preset.colorClass}`}
@@ -346,7 +365,7 @@ export const HomePage: React.FC<HomeProps> = ({
                 </div>
               </div>
             </div>
-          ))}
+            ))}
         </div>
       </section>
 

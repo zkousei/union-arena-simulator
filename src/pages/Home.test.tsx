@@ -5,6 +5,23 @@ import { describe, expect, it, vi } from 'vitest';
 import { HomePage } from './Home';
 
 describe('HomePage', () => {
+  it('renders the home content before loading preset deck data', async () => {
+    render(
+      <HomePage
+        onStartSolo={vi.fn()}
+        onHostGame={vi.fn()}
+        onJoinGame={vi.fn()}
+        onOpenDeckBuilder={vi.fn()}
+        onSelectPresetDeck={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: /Web Simulator/ })).toBeTruthy();
+    expect(screen.queryAllByRole('button', { name: 'ソロで試す' })).toHaveLength(0);
+
+    expect(await screen.findAllByRole('button', { name: 'ソロで試す' })).toHaveLength(3);
+  });
+
   it('shows the implemented pre-game setup order', () => {
     render(
       <HomePage

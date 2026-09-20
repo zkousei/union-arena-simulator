@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from './hooks/useGame';
-import { Board } from './components/board/Board';
 import { ActionToolbar } from './components/controls/ActionToolbar';
 import { PreGameBar } from './components/controls/PreGameBar';
 import { GameLog } from './components/log/GameLog';
 import { PeerModal } from './components/peer/PeerModal';
-import { DeckBuilderPage } from './pages/DeckBuilder';
 import { HomePage } from './pages/Home';
-import { SavedDeckPickerModal } from './components/modals/SavedDeckPickerModal';
-import { UserDeck, flattenDeckToCards } from './domain/deckValidation';
+import type { UserDeck } from './domain/deckValidation';
 import {
   Swords,
   Layers,
@@ -32,6 +29,18 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { sound } from './utils/audio';
+
+const Board = lazy(() =>
+  import('./components/board/Board').then((module) => ({ default: module.Board }))
+);
+const DeckBuilderPage = lazy(() =>
+  import('./pages/DeckBuilder').then((module) => ({ default: module.DeckBuilderPage }))
+);
+const SavedDeckPickerModal = lazy(() =>
+  import('./components/modals/SavedDeckPickerModal').then((module) => ({
+    default: module.SavedDeckPickerModal,
+  }))
+);
 
 // ヘッダーナビゲーション (shadowverse-evolve-app の AppNavigation を参考)
 interface AppNavigationProps {
@@ -460,7 +469,8 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   const myPlayer = gameState.players[myPlayerId];
   const opponentPlayer = gameState.players[opponentPlayerId];
 
-  const handleSelectDeck = (deck: UserDeck, targetPlayerId: string) => {
+  const handleSelectDeck = async (deck: UserDeck, targetPlayerId: string) => {
+    const { flattenDeckToCards } = await import('./domain/deckValidation');
     const cards = flattenDeckToCards(deck, targetPlayerId);
     dispatchAction({
       type: 'SETUP_GAME',
@@ -633,16 +643,24 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
       <main className="flex-1 min-h-0 flex overflow-hidden relative">
         {/* ボード領域 */}
         <div className="flex-1 min-w-0 h-full overflow-y-auto">
-          <Board
-            gameState={gameState}
-            myPlayerId={myPlayerId}
-            dispatchAction={dispatchAction}
-            onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
-            isSoloMode={isSoloMode}
-            isFitMode={isFitMode}
-            onUndo={undo}
-            canUndo={canUndo}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                盤面を読み込んでいます...
+              </div>
+            }
+          >
+            <Board
+              gameState={gameState}
+              myPlayerId={myPlayerId}
+              dispatchAction={dispatchAction}
+              onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
+              isSoloMode={isSoloMode}
+              isFitMode={isFitMode}
+              onUndo={undo}
+              canUndo={canUndo}
+            />
+          </Suspense>
         </div>
 
         {/* 対戦行動ログサイドバー */}
@@ -725,16 +743,18 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
       )}
 
       {/* デッキ選択モーダル（保存済みマイデッキ & 公式プリセット） */}
-      <SavedDeckPickerModal
-        isOpen={isDeckPickerOpen}
-        onClose={() => setIsDeckPickerOpen(false)}
-        onSelectDeck={handleSelectDeck}
-        myPlayerId={myPlayerId}
-        isSoloMode={isSoloMode}
-        player1Name={gameState.players['player-1']?.name || 'Player 1'}
-        player2Name={gameState.players['player-2']?.name || 'Player 2'}
-        onNavigateToDeckBuilder={() => navigate('/deck-builder')}
-      />
+      <Suspense fallback={null}>
+        <SavedDeckPickerModal
+          isOpen={isDeckPickerOpen}
+          onClose={() => setIsDeckPickerOpen(false)}
+          onSelectDeck={handleSelectDeck}
+          myPlayerId={myPlayerId}
+          isSoloMode={isSoloMode}
+          player1Name={gameState.players['player-1']?.name || 'Player 1'}
+          player2Name={gameState.players['player-2']?.name || 'Player 2'}
+          onNavigateToDeckBuilder={() => navigate('/deck-builder')}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -794,7 +814,8 @@ export function App() {
 
   // デッキ選択してゲーム開始
   const handlePlayWithCustomDeck = useCallback(
-    (deck: UserDeck, targetMode: 'solo' | 'p2p' = 'solo') => {
+    async (deck: UserDeck, targetMode: 'solo' | 'p2p' = 'solo') => {
+      const { flattenDeckToCards } = await import('./domain/deckValidation');
       const customCards = flattenDeckToCards(deck, myPlayerId);
       dispatchAction({
         type: 'SETUP_GAME',
@@ -852,7 +873,17 @@ export function App() {
         />
         <Route
           path="/deck-builder"
-          element={<DeckBuilderPage onPlayWithDeck={handlePlayWithCustomDeck} />}
+          element={
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+                  デッキビルダーを読み込んでいます...
+                </div>
+              }
+            >
+              <DeckBuilderPage onPlayWithDeck={handlePlayWithCustomDeck} />
+            </Suspense>
+          }
         />
         <Route
           path="/game"
