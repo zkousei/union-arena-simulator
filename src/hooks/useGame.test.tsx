@@ -182,4 +182,87 @@ describe('useGame P2P resynchronization', () => {
       })
     );
   });
+
+  it('applies duplicate guest action requests only once', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.createRoom.mockImplementation(async (handler) => {
+      onMessage = handler;
+      return 'host-room';
+    });
+
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => {
+      await result.current.createRoom();
+    });
+    peerMock.role = 'host';
+    peerMock.status = 'connected';
+    rerender();
+    peerMock.sendMessage.mockClear();
+
+    const request: PeerMessage = {
+      type: 'ACTION_REQUEST',
+      senderId: 'player-2',
+      requestId: 'guest-action-1',
+      timestamp: Date.now(),
+      payload: {
+        type: 'ADD_LOG',
+        payload: { message: 'one committed action', playerId: 'player-2' },
+      },
+    };
+    act(() => {
+      onMessage?.(request);
+      onMessage?.(request);
+    });
+
+    expect(result.current.gameState.logs.filter((log) => log.message === 'one committed action')).toHaveLength(1);
+    expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
+    expect(peerMock.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'STATE_COMMIT',
+        payload: expect.objectContaining({ revision: 1 }),
+      })
+    );
+  });
+
+  it('applies duplicate guest undo requests only once', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.createRoom.mockImplementation(async (handler) => {
+      onMessage = handler;
+      return 'host-room';
+    });
+
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => {
+      await result.current.createRoom();
+    });
+    peerMock.role = 'host';
+    peerMock.status = 'connected';
+    rerender();
+    act(() => {
+      result.current.dispatchAction({ type: 'SET_PHASE', payload: { phase: 'MAIN' } });
+      result.current.dispatchAction({ type: 'SET_PHASE', payload: { phase: 'END' } });
+    });
+    expect(result.current.gameState.phase).toBe('END');
+    peerMock.sendMessage.mockClear();
+
+    const request: PeerMessage = {
+      type: 'UNDO_REQUEST',
+      senderId: 'player-2',
+      requestId: 'guest-undo-1',
+      timestamp: Date.now(),
+    };
+    act(() => {
+      onMessage?.(request);
+      onMessage?.(request);
+    });
+
+    expect(result.current.gameState.phase).toBe('MAIN');
+    expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
+    expect(peerMock.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'STATE_COMMIT',
+        payload: expect.objectContaining({ revision: 3 }),
+      })
+    );
+  });
 });

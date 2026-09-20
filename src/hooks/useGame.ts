@@ -29,6 +29,8 @@ export function useGame() {
   const lastAppliedRevisionRef = useRef(-1);
   const isSynchronizingRef = useRef(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestSequenceRef = useRef(0);
+  const processedRequestIdsRef = useRef(new Set<string>());
 
   const peer = usePeer();
   const {
@@ -203,13 +205,27 @@ export function useGame() {
     }
   }, [broadcastSnapshot]);
 
+  const hasProcessedRequest = useCallback((msg: PeerMessage) => {
+    if (!msg.requestId) return false;
+    if (processedRequestIdsRef.current.has(msg.requestId)) return true;
+
+    processedRequestIdsRef.current.add(msg.requestId);
+    if (processedRequestIdsRef.current.size > 200) {
+      const oldestRequestId = processedRequestIdsRef.current.values().next().value;
+      if (oldestRequestId) processedRequestIdsRef.current.delete(oldestRequestId);
+    }
+    return false;
+  }, []);
+
   // P2Pメッセージ受信ハンドラ。ホストのみがアクションを確定する。
   const handlePeerMessage = useCallback((msg: PeerMessage) => {
     if (msg.type === 'ACTION_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
+      if (hasProcessedRequest(msg)) return;
       applyAuthoritativeAction(msg.payload as GameAction);
     } else if (msg.type === 'UNDO_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
+      if (hasProcessedRequest(msg)) return;
       performAuthoritativeUndo();
     } else if (msg.type === 'STATE_COMMIT') {
       if (networkRoleRef.current !== 'guest') return;
@@ -244,6 +260,7 @@ export function useGame() {
     applyAuthoritativeAction,
     applyRemoteSnapshot,
     clearSyncTimeout,
+    hasProcessedRequest,
     performAuthoritativeUndo,
     setSynchronizationState,
   ]);
@@ -253,6 +270,7 @@ export function useGame() {
     networkRoleRef.current = 'host';
     myPlayerIdRef.current = 'player-1';
     hostRevisionRef.current = 0;
+    processedRequestIdsRef.current.clear();
     setMyPlayerId('player-1');
     return createRoom(handlePeerMessage);
   }, [createRoom, handlePeerMessage]);
@@ -262,6 +280,7 @@ export function useGame() {
     networkRoleRef.current = 'guest';
     myPlayerIdRef.current = 'player-2';
     lastAppliedRevisionRef.current = -1;
+    requestSequenceRef.current = 0;
     setSynchronizationState(true);
     setSyncError(null);
     setMyPlayerId('player-2');
@@ -281,9 +300,11 @@ export function useGame() {
     if (!canDispatchNetworkAction()) return;
 
     if (networkRoleRef.current === 'guest') {
+      requestSequenceRef.current += 1;
       sendMessageRef.current({
         type: 'ACTION_REQUEST',
         senderId: myPlayerIdRef.current,
+        requestId: `${myPlayerIdRef.current}-${requestSequenceRef.current}`,
         timestamp: Date.now(),
         payload: action,
       });
@@ -298,9 +319,11 @@ export function useGame() {
     if (!canDispatchNetworkAction()) return;
 
     if (networkRoleRef.current === 'guest') {
+      requestSequenceRef.current += 1;
       sendMessageRef.current({
         type: 'UNDO_REQUEST',
         senderId: myPlayerIdRef.current,
+        requestId: `${myPlayerIdRef.current}-${requestSequenceRef.current}`,
         timestamp: Date.now(),
       });
       return;

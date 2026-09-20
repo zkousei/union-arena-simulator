@@ -58,4 +58,30 @@ describe('PreGameBar', () => {
 
     expect(screen.getByRole('button', { name: /対戦開始/ }).hasAttribute('disabled')).toBe(true);
   });
+
+  it.each([
+    ['solo', true],
+    ['P2P', false],
+  ])('enables game start in %s mode after both players complete setup', (_mode, isSoloMode) => {
+    const player1 = createInitialPlayerState('player-1', 'Player 1', true);
+    const player2 = createInitialPlayerState('player-2', 'Player 2', false);
+    for (const player of [player1, player2]) {
+      player.hand = [{ ...card, id: `${player.id}-hand` }];
+      player.life = [{ ...card, id: `${player.id}-life`, isFaceDown: true }];
+      player.isHandKept = true;
+      player.isReady = true;
+    }
+
+    render(
+      <PreGameBar
+        myPlayer={player1}
+        opponentPlayer={player2}
+        firstPlayerId="player-1"
+        isSoloMode={isSoloMode}
+        {...callbacks}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /対戦開始/ }).hasAttribute('disabled')).toBe(false);
+  });
 });

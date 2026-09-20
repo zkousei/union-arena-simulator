@@ -97,7 +97,7 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].life.every((c) => c.isFaceDown)).toBe(true);
   });
 
-  it('should support KEEP_HAND and auto-place life on START_GAME if not placed', () => {
+  it('should support KEEP_HAND and start after both players place life', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     const p1Cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p1-${i}`, `P1 Card ${i}`));
     const p2Cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p2-${i}`, `P2 Card ${i}`));
@@ -126,8 +126,11 @@ describe('gameReducer Official Rules Unit Tests', () => {
     });
     expect(state.players['p1'].hand).toBe(handBefore);
 
-    // ライフ未配置のまま START_GAME した場合のセーフティネット
+    state = gameReducer(state, { type: 'PLACE_INITIAL_LIFE', payload: { playerId: 'p1' } });
+    state = gameReducer(state, { type: 'KEEP_HAND', payload: { playerId: 'p2' } });
+    state = gameReducer(state, { type: 'PLACE_INITIAL_LIFE', payload: { playerId: 'p2' } });
     state = gameReducer(state, { type: 'START_GAME' });
+    expect(state.status).toBe('PLAYING');
     expect(state.players['p1'].life.length).toBe(7);
     expect(state.players['p1'].deck.length).toBe(36);
   });
@@ -146,6 +149,44 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.turn).toBe(1);
     expect(state.players['p1'].life).toHaveLength(0);
     expect(state.logs.some((log) => log.message.includes('ゲームが開始されました'))).toBe(false);
+  });
+
+  it('should reject life placement before keep or mulligan', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p1-${i}`, `P1 Card ${i}`));
+    state = gameReducer(state, {
+      type: 'SETUP_GAME',
+      payload: { playerId: 'p1', deckCards: cards, apCards: [] },
+    });
+
+    const before = state;
+    state = gameReducer(state, { type: 'PLACE_INITIAL_LIFE', payload: { playerId: 'p1' } });
+
+    expect(state).toBe(before);
+    expect(state.players['p1'].life).toHaveLength(0);
+    expect(state.players['p1'].deck).toHaveLength(43);
+  });
+
+  it('should reject game start until both players determine their hands and place life', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    for (const playerId of ['p1', 'p2']) {
+      const cards = Array.from({ length: 50 }, (_, i) =>
+        createDummyCard(`${playerId}-${i}`, `${playerId} Card ${i}`)
+      );
+      state = gameReducer(state, {
+        type: 'SETUP_GAME',
+        payload: { playerId, deckCards: cards, apCards: [] },
+      });
+    }
+
+    state = gameReducer(state, { type: 'START_GAME' });
+    expect(state.status).toBe('PREPARING');
+
+    for (const playerId of ['p1', 'p2']) {
+      state = gameReducer(state, { type: 'KEEP_HAND', payload: { playerId } });
+    }
+    state = gameReducer(state, { type: 'START_GAME' });
+    expect(state.status).toBe('PREPARING');
   });
 
   it('should place card into field with RESTED state (Ver 1.1 official rule)', () => {

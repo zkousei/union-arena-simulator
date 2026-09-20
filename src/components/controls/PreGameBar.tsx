@@ -54,8 +54,10 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
     const canStartSolo =
       p1HasHand &&
       p2HasHand &&
-      (p1HasLife || p1.isReady) &&
-      (p2HasLife || p2.isReady);
+      p1HandDetermined &&
+      p2HandDetermined &&
+      p1HasLife &&
+      p2HasLife;
 
     return (
       <div className="flex flex-col gap-2 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-indigo-500/30 p-3 shadow-lg w-full text-xs">
@@ -243,8 +245,12 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
   const canStart =
     hasHand &&
     oppHasHand &&
-    (hasLife || myPlayer.isReady) &&
-    (opponentPlayer.life.length > 0 || opponentPlayer.isReady);
+    isHandDetermined &&
+    oppHandDetermined &&
+    hasLife &&
+    opponentPlayer.life.length > 0 &&
+    myPlayer.isReady &&
+    opponentPlayer.isReady;
 
   return (
     <div className="flex flex-col gap-2 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-indigo-500/30 p-3 shadow-lg w-full text-xs">
@@ -364,7 +370,7 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
           {/* ステップ5: 準備完了 (Ready) */}
           <button
             onClick={() => onToggleReady(myPlayer.id)}
-            disabled={!hasHand}
+            disabled={!hasHand || !isHandDetermined || !hasLife}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs shadow transition ${
               myPlayer.isReady
                 ? 'bg-emerald-600 text-white shadow-emerald-600/30'

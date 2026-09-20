@@ -13,68 +13,88 @@ import {
 } from './deck';
 import { createInitialGameState } from './initialState';
 
+function getCardAtLocation(player: PlayerState, loc: CardLocation, cardId?: string): Card | null {
+  if (loc.zone === 'frontLine' || loc.zone === 'energyLine') {
+    const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
+    const card = loc.zone === 'frontLine' ? player.frontLine[slot] : player.energyLine[slot];
+    return card && (!cardId || card.id === cardId) ? card : null;
+  }
+
+  const cards =
+    loc.zone === 'hand'
+      ? player.hand
+      : loc.zone === 'deck'
+        ? player.deck
+        : loc.zone === 'life'
+          ? player.life
+          : loc.zone === 'graveyard'
+            ? player.graveyard
+            : loc.zone === 'removed'
+              ? player.removed
+              : null;
+  if (!cards) return null;
+  if (loc.index !== undefined) {
+    const card = cards[loc.index];
+    return card && (!cardId || card.id === cardId) ? card : null;
+  }
+  if (cardId) return cards.find((card) => card.id === cardId) ?? null;
+  return loc.zone === 'deck' || loc.zone === 'life' ? cards[0] ?? null : null;
+}
+
 /**
  * 補助関数: プレイヤーの特定ゾーンからカードを取り出す
  */
 function removeCardFromLocation(player: PlayerState, loc: CardLocation, cardId?: string): Card | null {
+  const resolveIndex = (cards: Card[], fallbackToTop = false): number => {
+    if (loc.index !== undefined) {
+      const indexedCard = cards[loc.index];
+      return indexedCard && (!cardId || indexedCard.id === cardId) ? loc.index : -1;
+    }
+    if (cardId) return cards.findIndex((card) => card.id === cardId);
+    return fallbackToTop && cards.length > 0 ? 0 : -1;
+  };
+
   if (loc.zone === 'frontLine') {
     const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
     const card = player.frontLine[slot];
+    if (!card || (cardId && card.id !== cardId)) return null;
     player.frontLine[slot] = null;
     return card;
   }
   if (loc.zone === 'energyLine') {
     const slot = (loc.slotIndex ?? 0) as FieldSlotIndex;
     const card = player.energyLine[slot];
+    if (!card || (cardId && card.id !== cardId)) return null;
     player.energyLine[slot] = null;
     return card;
   }
   if (loc.zone === 'hand') {
-    let idx = loc.index;
-    if (idx === undefined && cardId) {
-      idx = player.hand.findIndex((c) => c.id === cardId);
-    }
-    if (idx !== undefined && idx >= 0 && idx < player.hand.length) {
+    const idx = resolveIndex(player.hand);
+    if (idx >= 0) {
       return player.hand.splice(idx, 1)[0];
     }
   }
   if (loc.zone === 'deck') {
-    let idx = loc.index;
-    if (idx === undefined && cardId) {
-      idx = player.deck.findIndex((c) => c.id === cardId);
-    }
-    if (idx === undefined) idx = 0;
-    if (idx >= 0 && idx < player.deck.length) {
+    const idx = resolveIndex(player.deck, true);
+    if (idx >= 0) {
       return player.deck.splice(idx, 1)[0];
     }
   }
   if (loc.zone === 'life') {
-    let idx = loc.index;
-    if (idx === undefined && cardId) {
-      idx = player.life.findIndex((c) => c.id === cardId);
-    }
-    if (idx === undefined) idx = 0;
-    if (idx >= 0 && idx < player.life.length) {
+    const idx = resolveIndex(player.life, true);
+    if (idx >= 0) {
       return player.life.splice(idx, 1)[0];
     }
   }
   if (loc.zone === 'graveyard') {
-    let idx = loc.index;
-    if (idx === undefined && cardId) {
-      idx = player.graveyard.findIndex((c) => c.id === cardId);
-    }
-    if (idx === undefined && loc.index !== undefined) idx = loc.index;
-    if (idx !== undefined && idx >= 0 && idx < player.graveyard.length) {
+    const idx = resolveIndex(player.graveyard);
+    if (idx >= 0) {
       return player.graveyard.splice(idx, 1)[0];
     }
   }
   if (loc.zone === 'removed') {
-    let idx = loc.index;
-    if (idx === undefined && cardId) {
-      idx = player.removed.findIndex((c) => c.id === cardId);
-    }
-    if (idx === undefined && loc.index !== undefined) idx = loc.index;
-    if (idx !== undefined && idx >= 0 && idx < player.removed.length) {
+    const idx = resolveIndex(player.removed);
+    if (idx >= 0) {
       return player.removed.splice(idx, 1)[0];
     }
   }
@@ -236,7 +256,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'PLACE_INITIAL_LIFE': {
         const { playerId, count = 7 } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.life.length > 0) return;
+        if (!player || !player.isHandKept || player.life.length > 0 || player.deck.length < count) return;
 
         // 公式ルール P3: マリガン終了後、山札の上から7枚を裏向きでライフエリアへ配置
         const { life, deck } = placeInitialLife(player.deck, count);
@@ -256,15 +276,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const { playerId, isReady } = action.payload;
         const player = draft.players[playerId];
         if (!player) return;
+        if (isReady && (!player.isHandKept || player.life.length === 0)) return;
         player.isReady = isReady;
         appendLog(draft, `${player.name} が準備${isReady ? '完了' : '未完了'}になりました。`, playerId, 'system');
         break;
       }
 
       case 'START_GAME': {
-        // UI以外からの操作やP2P同期でも、両者のデッキ準備が完了する前は開始させない。
-        // SETUP_GAME は初手を配るため、準備済みかどうかは手札の有無で判定できる。
-        if (draft.status !== 'PREPARING' || Object.values(draft.players).some((player) => player.hand.length === 0)) {
+        // UI以外からの操作やP2P同期でも、両者の初期準備完了前は開始させない。
+        const hasIncompletePlayer = Object.values(draft.players).some(
+          (player) => player.hand.length === 0 || !player.isHandKept || player.life.length === 0
+        );
+        if (draft.status !== 'PREPARING' || hasIncompletePlayer) {
           return;
         }
 
@@ -273,14 +296,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         draft.phase = 'START';
         draft.activePlayerId = draft.firstPlayerId || Object.keys(draft.players)[0];
 
-        // 各プレイヤーのライフ未配置セーフティネット & AP初期化
+        // 各プレイヤーのAP初期化
         Object.values(draft.players).forEach((p) => {
-          if (p.life.length === 0 && p.deck.length >= 7) {
-            const { life, deck } = placeInitialLife(p.deck, 7);
-            p.life = life;
-            p.deck = deck;
-            appendLog(draft, `🛡️【ライフ自動配置】${p.name} のライフ7枚を配置しました。`, p.id, 'system');
-          }
           p.apMax = calculateMaxAp(1, p.isFirst);
           p.apCurrent = p.apMax;
           p.hasExtraDrawn = false;
@@ -304,6 +321,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         const isFromField = from.zone === 'frontLine' || from.zone === 'energyLine';
         const isToField = to.zone === 'frontLine' || to.zone === 'energyLine';
+        const sourceCard = getCardAtLocation(fromPlayer, from, cardId);
+        if (!sourceCard) return;
 
         // 盤面スロット間の移動で、移動先に既にカードが存在する場合は「位置のスワップ（入れ替え）」を実行
         if (isFromField && isToField && from.slotIndex !== undefined && to.slotIndex !== undefined) {
@@ -312,7 +331,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const fromCard = from.zone === 'frontLine' ? fromPlayer.frontLine[fromSlot] : fromPlayer.energyLine[fromSlot];
           const toCard = to.zone === 'frontLine' ? toPlayer.frontLine[toSlot] : toPlayer.energyLine[toSlot];
 
-          if (fromCard && toCard) {
+          if (fromCard && fromCard.id === cardId && toCard) {
             // スワップ
             if (from.zone === 'frontLine') {
               fromPlayer.frontLine[fromSlot] = toCard;
@@ -333,6 +352,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             );
             return;
           }
+        }
+
+        if (isToField && !isFromField && sourceCard.cardType !== 'EVENT') {
+          const toSlot = (to.slotIndex ?? 0) as FieldSlotIndex;
+          const destinationCard =
+            to.zone === 'frontLine' ? toPlayer.frontLine[toSlot] : toPlayer.energyLine[toSlot];
+          if (destinationCard) return;
         }
 
         const card = removeCardFromLocation(fromPlayer, from, cardId);

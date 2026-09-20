@@ -60,4 +60,35 @@ describe('authoritative P2P synchronization', () => {
     expect(isNewerSnapshot(snapshot, 8)).toBe(false);
     expect(isNewerSnapshot(snapshot, 9)).toBe(false);
   });
+
+  it('shares the host-selected random discard without guest recomputation', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    state.players.p2.hand = Array.from({ length: 5 }, (_, index) => createCard(index));
+    const action = { type: 'DISCARD_HAND_CARD', payload: { playerId: 'p2' } } as const;
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.41);
+    const transition = createAuthoritativeTransition(state, action, 10);
+
+    expect(transition.snapshot.revision).toBe(11);
+    expect(transition.snapshot.state.players.p2.graveyard.map((card) => card.id)).toEqual(['card-2']);
+    expect(transition.snapshot.state.players.p2.hand.map((card) => card.id)).toEqual([
+      'card-0',
+      'card-1',
+      'card-3',
+      'card-4',
+    ]);
+  });
+
+  it('does not increment the authoritative revision for an invalid no-op action', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    const transition = createAuthoritativeTransition(
+      state,
+      { type: 'DRAW_CARD', payload: { playerId: 'missing-player' } },
+      12
+    );
+
+    expect(transition.changed).toBe(false);
+    expect(transition.snapshot.revision).toBe(12);
+    expect(transition.snapshot.state).toBe(state);
+  });
 });

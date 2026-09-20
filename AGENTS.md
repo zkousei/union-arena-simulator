@@ -320,12 +320,15 @@ Unless the user requests a narrower scope, finish production changes with:
 - The narrowest relevant test during iteration
 - `npm run lint`
 - `npm test`
+- `npm run test:coverage`
 - `npm run build`
+- `npm run test:e2e`
 - Browser verification when layout, interaction, routing, or P2P UI changed
 - `git diff --check`
 
-There is currently no repository E2E script. Do not claim that E2E checks ran.
-If one is added later, update this checklist and `package.json` together.
+Playwright E2E tests use the repository-owned Chromium installation and start a
+local Vite server. Keep complete user flows under `e2e/` and avoid live network
+dependencies.
 
 For card-data synchronization, also report whether `npm run sync-cards` was run
 and whether it required live network access.

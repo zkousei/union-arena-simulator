@@ -93,15 +93,64 @@ export function exportDeckToJson(deck: UserDeck): string {
   return JSON.stringify(deck, null, 2);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function isValidImportedCard(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.code === 'string' &&
+    value.code.length > 0 &&
+    typeof value.name === 'string' &&
+    value.name.length > 0 &&
+    typeof value.title === 'string' &&
+    typeof value.titleCode === 'string' &&
+    value.titleCode.length > 0 &&
+    typeof value.cardType === 'string' &&
+    typeof value.color === 'string' &&
+    (typeof value.bp === 'number' || value.bp === null) &&
+    typeof value.apCost === 'number' &&
+    typeof value.reqEnergy === 'number' &&
+    typeof value.genEnergy === 'number' &&
+    isStringArray(value.traits) &&
+    isStringArray(value.triggers) &&
+    typeof value.effectText === 'string'
+  );
+}
+
 // JSONインポート
 export function importDeckFromJson(jsonStr: string): UserDeck {
-  const parsed = JSON.parse(jsonStr);
-  if (!parsed.name || !Array.isArray(parsed.items)) {
+  const parsed: unknown = JSON.parse(jsonStr);
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.name !== 'string' ||
+    parsed.name.trim().length === 0 ||
+    typeof parsed.titleCode !== 'string' ||
+    parsed.titleCode.trim().length === 0 ||
+    !Array.isArray(parsed.items) ||
+    !parsed.items.every(
+      (item) =>
+        isRecord(item) &&
+        Number.isInteger(item.count) &&
+        (item.count as number) > 0 &&
+        isValidImportedCard(item.card)
+    ) ||
+    (parsed.apCards !== undefined &&
+      (!Array.isArray(parsed.apCards) || !parsed.apCards.every(isValidImportedCard)))
+  ) {
     throw new Error('無効なデッキJSONフォーマットです');
   }
   return {
-    ...parsed,
     id: `imported-${Date.now()}`,
+    name: parsed.name,
+    titleCode: parsed.titleCode,
+    items: parsed.items as UserDeck['items'],
+    ...(parsed.apCards !== undefined ? { apCards: parsed.apCards as UserDeck['apCards'] } : {}),
     updatedAt: Date.now(),
   };
 }
