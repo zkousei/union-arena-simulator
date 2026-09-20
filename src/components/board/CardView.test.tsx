@@ -142,4 +142,15 @@ describe('CardView', () => {
     fireEvent.mouseLeave(cardStack);
     expect(handleHoverCard).toHaveBeenCalledWith(null);
   });
+
+  it('renders + symbol next to BP when card has hasBpPlus', () => {
+    render(<CardView card={{ ...dummyCard, bp: 4000, hasBpPlus: true }} />);
+    expect(screen.getByText('4000+')).toBeTruthy();
+  });
+
+  it('hydrates and renders BP from CARD_DATABASE when card.bp is null', () => {
+    // UA01BT/CGH-1-001 has BP 2500 in official cards
+    render(<CardView card={{ ...dummyCard, bp: null }} />);
+    expect(screen.getByText('2500')).toBeTruthy();
+  });
 });

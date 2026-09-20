@@ -1,5 +1,5 @@
 import { Card, getBaseCardCode } from '../types/card';
-import { CardMaster } from '../data/cardDatabase';
+import { CardMaster, CARD_DATABASE } from '../data/cardDatabase';
 
 export interface DeckItem {
   card: CardMaster;
@@ -140,10 +140,19 @@ export function flattenDeckToCards(deck: UserDeck, playerId: string = 'player-1'
   let idCount = 1;
 
   for (const item of deck.items) {
+    const master = CARD_DATABASE.find((c) => c.code === item.card.code);
+    const cardData = master
+      ? {
+          ...item.card,
+          bp: master.bp ?? item.card.bp,
+          hasBpPlus: master.hasBpPlus ?? item.card.hasBpPlus,
+        }
+      : item.card;
+
     for (let i = 0; i < item.count; i++) {
       cards.push({
-        ...item.card,
-        id: `${playerId}-${item.card.code}-${idCount++}`,
+        ...cardData,
+        id: `${playerId}-${cardData.code}-${idCount++}`,
         isRested: false,
         bpModifier: 0,
         underCards: [],

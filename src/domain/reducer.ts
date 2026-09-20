@@ -938,12 +938,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const { phase } = action.payload;
         draft.phase = phase;
 
-        // 公式ルール P13: エンドフェイズ突入時、自陣の全カード（キャラ・フィールド）をアクティブ化する
+        // 公式ルール P13: エンドフェイズ突入時、自陣の全カード（キャラ・フィールド）をアクティブ化し一時BP補正を解除
         if (phase === 'END') {
           const activePlayer = draft.players[draft.activePlayerId];
           if (activePlayer) {
-            activePlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
-            activePlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+            activePlayer.frontLine.forEach((c) => {
+              if (c) {
+                c.isRested = false;
+                c.bpModifier = 0;
+              }
+            });
+            activePlayer.energyLine.forEach((c) => {
+              if (c) {
+                c.isRested = false;
+                c.bpModifier = 0;
+              }
+            });
           }
         }
 
@@ -959,12 +969,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const nextPlayer = draft.players[nextPlayerId];
 
         // 公式ルール P13: エンドフェイズ処理（押し忘れ対応）
-        // ターンを終えるプレイヤーの全カード（フロント・エナジー・AP）をすべてアクティブ化する
+        // ターンを終えるプレイヤーの全カード（フロント・エナジー・AP）をすべてアクティブ化し、一時BP補正をリセット
         if (prevPlayer) {
-          prevPlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
-          prevPlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+          prevPlayer.frontLine.forEach((c) => {
+            if (c) {
+              c.isRested = false;
+              c.bpModifier = 0;
+            }
+          });
+          prevPlayer.energyLine.forEach((c) => {
+            if (c) {
+              c.isRested = false;
+              c.bpModifier = 0;
+            }
+          });
           prevPlayer.apArea.forEach((c) => { c.isRested = false; });
         }
+
+        // 両プレイヤーの残余BP補正もクリーンアップ
+        Object.values(draft.players).forEach((p) => {
+          p.frontLine.forEach((c) => { if (c) c.bpModifier = 0; });
+          p.energyLine.forEach((c) => { if (c) c.bpModifier = 0; });
+        });
 
         draft.turn += 1;
         draft.activePlayerId = nextPlayerId;

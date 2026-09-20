@@ -97,11 +97,22 @@ export function parseCardFromDetailHtml(
   );
   const apCost = apMatch ? parseInt(apMatch[1], 10) : 1;
 
-  // BP
+  // BP (4000, 2000+, 1500+ 等の表記に対応)
   const bpMatch = detailHtml.match(
-    /<dl class="cardDataCol bpData">[\s\S]*?<dd class="cardDataContents">\s*(\d+|-)\s*<\/dd>/
+    /<dl class="cardDataCol bpData">[\s\S]*?<dd class="cardDataContents">([\s\S]*?)<\/dd>/i
   );
-  const bp = bpMatch && bpMatch[1] !== '-' ? parseInt(bpMatch[1], 10) : null;
+  let bp: number | null = null;
+  let hasBpPlus = false;
+  if (bpMatch) {
+    const rawBp = bpMatch[1].replace(/<[^>]+>/g, '').trim();
+    if (rawBp && rawBp !== '-') {
+      const numMatch = rawBp.match(/\d+/);
+      if (numMatch) {
+        bp = parseInt(numMatch[0], 10);
+      }
+      hasBpPlus = /[+＋]/.test(rawBp);
+    }
+  }
 
   // 特徴
   const traitMatch = detailHtml.match(
@@ -219,6 +230,7 @@ export function parseCardFromDetailHtml(
     cardType,
     color,
     bp,
+    hasBpPlus,
     apCost,
     reqEnergy,
     genEnergy,

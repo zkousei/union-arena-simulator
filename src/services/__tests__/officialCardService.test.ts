@@ -147,4 +147,22 @@ describe('officialCardService Tests', () => {
     expect(items.length).toBeGreaterThanOrEqual(1);
     expect(notFound).toContain('UNKNOWN/XXX-1-001');
   });
+
+  it('should parse BP with + notation (e.g. 4000+, 2000+) correctly with numeric bp and hasBpPlus flag', () => {
+    const mockPlusBpHtml = `
+      <div class="cardNameNumCol">
+        <h2 class="cardNameCol">紅月 カレン</h2>
+      </div>
+      <dd class="cardDataTitleCol cgh"><img alt="コードギアス 反逆のルルーシュ"></dd>
+      <dl class="cardDataCol needEnergyData"><dd class="cardDataContents"><img alt="赤1"></dd></dl>
+      <dl class="cardDataCol apData"><dd class="cardDataContents">1</dd></dl>
+      <dl class="cardDataCol categoryData"><dd class="cardDataContents">キャラクター</dd></dl>
+      <dl class="cardDataCol bpData"><dd class="cardDataContents">2000+</dd></dl>
+      <dl class="cardDataCol effectData"><dd class="cardDataContents">[自分のターン中]BP+1000。</dd></dl>
+    `;
+
+    const card = parseCardFromDetailHtml(mockPlusBpHtml, 'UA01BT/CGH-1-003', 'https://example.com/cgh3.png');
+    expect(card.bp).toBe(2000);
+    expect(card.hasBpPlus).toBe(true);
+  });
 });

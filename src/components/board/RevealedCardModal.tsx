@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../../types/card';
+import { CARD_DATABASE } from '../../data/cardDatabase';
 import { Sparkles, Hand, Trash2, ArrowLeft, X, ShieldAlert } from 'lucide-react';
 
 interface RevealedCardModalProps {
@@ -83,6 +84,13 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
 
   if (!card) return null;
 
+  const masterCard =
+    card.bp === null || card.bp === undefined
+      ? CARD_DATABASE.find((c) => c.code === card.code)
+      : null;
+  const effectiveBp = card.bp ?? masterCard?.bp ?? null;
+  const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
+
   const hasValidImage = !!card.imageUrl && !imgError;
 
   return (
@@ -146,9 +154,9 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
                     <div className="text-sm font-bold text-white mb-1">{card.name}</div>
                     <div className="text-xs text-slate-400">[{card.cardType}]</div>
                   </div>
-                  {card.bp !== null && (
+                  {effectiveBp !== null && (
                     <div className="bg-slate-800 px-3 py-1 rounded text-xs font-bold text-amber-300 border border-amber-500/40">
-                      BP {card.bp}
+                      BP {effectiveBp}{effectiveHasBpPlus ? '+' : ''}
                     </div>
                   )}
                 </div>
@@ -161,9 +169,9 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
               <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-extrabold text-sm sm:text-base text-white">{card.name}</span>
-                  {card.bp !== null && (
+                  {effectiveBp !== null && (
                     <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-500/60 font-black text-amber-300 text-xs shadow">
-                      BP {card.bp}
+                      BP {effectiveBp}{effectiveHasBpPlus ? '+' : ''}
                     </span>
                   )}
                 </div>

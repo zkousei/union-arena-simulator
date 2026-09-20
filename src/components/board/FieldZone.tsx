@@ -118,7 +118,10 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
             <div
               key={index}
               id={`slot-${playerId}-${zone}-${index}`}
-              onClick={() => onSlotClick && onSlotClick(slotIdx)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSlotClick?.(slotIdx);
+              }}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={(e) => handleDragLeave(e, index)}
               onDrop={(e) => handleDrop(e, slotIdx)}

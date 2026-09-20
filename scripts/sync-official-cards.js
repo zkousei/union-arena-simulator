@@ -71,8 +71,19 @@ function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
   const apMatch = detailHtml.match(/<dl class="cardDataCol apData">[\s\S]*?<dd class="cardDataContents">\s*(\d+)\s*<\/dd>/);
   const apCost = apMatch ? parseInt(apMatch[1], 10) : 1;
 
-  const bpMatch = detailHtml.match(/<dl class="cardDataCol bpData">[\s\S]*?<dd class="cardDataContents">\s*(\d+|-)\s*<\/dd>/);
-  const bp = bpMatch && bpMatch[1] !== '-' ? parseInt(bpMatch[1], 10) : null;
+  const bpMatch = detailHtml.match(/<dl class="cardDataCol bpData">[\s\S]*?<dd class="cardDataContents">([\s\S]*?)<\/dd>/i);
+  let bp = null;
+  let hasBpPlus = false;
+  if (bpMatch) {
+    const rawBp = bpMatch[1].replace(/<[^>]+>/g, '').trim();
+    if (rawBp && rawBp !== '-') {
+      const numMatch = rawBp.match(/\d+/);
+      if (numMatch) {
+        bp = parseInt(numMatch[0], 10);
+      }
+      hasBpPlus = /[+＋]/.test(rawBp);
+    }
+  }
 
   const traitMatch = detailHtml.match(/<dl class="cardDataCol attributeData">[\s\S]*?<dd class="cardDataContents">\s*([\s\S]*?)\s*<\/dd>/);
   let traits = [];
@@ -165,6 +176,7 @@ function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
     cardType,
     color,
     bp,
+    hasBpPlus,
     apCost,
     reqEnergy,
     genEnergy,
@@ -248,7 +260,12 @@ async function syncSeries(series, includeParallel = false, existingCardMap = new
   // 既に取得済みのカードをフィルタリング（増分同期で高速化）
   const needsFetch = cardsSummary.filter(({ cardNo }) => {
     const existing = existingCardMap.get(cardNo);
-    return !existing || !existing.rarity || !existing.name;
+    return (
+      !existing ||
+      !existing.rarity ||
+      !existing.name ||
+      (existing.cardType === 'CHARACTER' && existing.bp === null)
+    );
   });
 
   console.log(

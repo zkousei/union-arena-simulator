@@ -15,6 +15,15 @@ import { LifeReorderModal } from '../modals/LifeReorderModal';
 import { LifeSelectModal } from '../modals/LifeSelectModal';
 import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
+import { calculateBattleResult } from '../../domain/battle';
+import { CARD_DATABASE } from '../../data/cardDatabase';
+import { Shield, ShieldAlert, X, Zap } from 'lucide-react';
+
+const getCardBaseBp = (card: Card): number => {
+  if (card.bp !== null && card.bp !== undefined) return card.bp;
+  const master = CARD_DATABASE.find((c) => c.code === card.code);
+  return master?.bp ?? 0;
+};
 
 interface BoardProps {
   gameState: GameState;
@@ -97,8 +106,27 @@ export const Board: React.FC<BoardProps> = ({
     slotIndex: FieldSlotIndex;
   } | null>(null);
 
+  // ブロック選択状態 (防御側のブロック受付中)
+  const [pendingBlockState, setPendingBlockState] = useState<{
+    attackerPlayerId: string;
+    attackerZone: 'frontLine' | 'energyLine';
+    attackerSlotIndex: FieldSlotIndex;
+    targetPlayerId: string;
+    attackerCardName: string;
+    attackerBp: number;
+  } | null>(null);
+
+  // ノーブロック時のライフダメージ案内状態
+  const [pendingLifeDamageState, setPendingLifeDamageState] = useState<{
+    targetPlayerId: string;
+    attackerCardName: string;
+  } | null>(null);
+
   // フェイズ順次進行ハンドラ (START -> MOVE -> MAIN -> ATTACK(先攻1TはEND) -> END -> ターン終了)
   const handleAdvancePhase = useCallback(() => {
+    setAttackingState(null);
+    setPendingBlockState(null);
+    setPendingLifeDamageState(null);
     if (gameState.phase === 'START') {
       dispatchAction({ type: 'SET_PHASE', payload: { phase: 'MOVE' } });
     } else if (gameState.phase === 'MOVE') {
@@ -117,6 +145,18 @@ export const Board: React.FC<BoardProps> = ({
     }
   }, [gameState.phase, gameState.turn, gameState.activePlayerId, gameState.players, dispatchAction]);
 
+  // アタック取り消し (巻き戻し)
+  const handleCancelPendingBlock = useCallback(() => {
+    if (!pendingBlockState) return;
+    const { attackerPlayerId, attackerZone, attackerSlotIndex } = pendingBlockState;
+    // アタッカーをアクティブに戻す
+    dispatchAction({
+      type: 'TOGGLE_REST',
+      payload: { playerId: attackerPlayerId, zone: attackerZone, slotIndex: attackerSlotIndex },
+    });
+    setPendingBlockState(null);
+  }, [pendingBlockState, dispatchAction]);
+
   // キーボードショートカット管理 (Space: 次フェイズ/ターン終了, Escape: 選択・アタックキャンセル, Ctrl+Z/Cmd+Z: Undo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,6 +174,10 @@ export const Board: React.FC<BoardProps> = ({
       if (e.key === 'Escape') {
         if (attackingState !== null) {
           setAttackingState(null);
+        } else if (pendingBlockState !== null) {
+          handleCancelPendingBlock();
+        } else if (pendingLifeDamageState !== null) {
+          setPendingLifeDamageState(null);
         } else if (selectedHandCard !== null) {
           setSelectedHandCard(null);
         }
@@ -151,7 +195,7 @@ export const Board: React.FC<BoardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAdvancePhase, attackingState, selectedHandCard, onUndo, canUndo]);
+  }, [handleAdvancePhase, attackingState, pendingBlockState, pendingLifeDamageState, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
 
   // 発生エナジー計算ヘルパー (公式ルール: エナジーラインのアクティブ状態のキャラから発生)
   const calculateGeneratedEnergy = (slots: (Card | null)[]) => {
@@ -219,7 +263,7 @@ export const Board: React.FC<BoardProps> = ({
     setAttackingState({ attackerPlayerId, zone, slotIndex });
   };
 
-  // プレイヤーへのアタック解決
+  // プレイヤーへのアタック解決 (通常攻撃 -> 防御側のブロック選択へ移行)
   const handleAttackPlayer = (targetPlayerId: string) => {
     if (attackingState === null) return;
     const { attackerPlayerId, zone, slotIndex } = attackingState;
@@ -238,19 +282,30 @@ export const Board: React.FC<BoardProps> = ({
       payload: { playerId: attackerPlayerId, zone, slotIndex },
     });
 
+    const attackerBp = getCardBaseBp(attacker) + attacker.bpModifier;
+
     dispatchAction({
       type: 'ADD_LOG',
       payload: {
-        message: `⚔️【プレイヤーアタック】${attackerPlayer.name}の「${attacker.name}」が ${targetPlayer.name} にアタックしました！相手ライフのトリガーチェックを行ってください。`,
+        message: `⚔️【アタック宣言】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) が ${targetPlayer.name} にアタックしました！相手はブロックするか選択してください。`,
         playerId: attackerPlayerId,
         type: 'action',
       },
     });
 
+    setPendingBlockState({
+      attackerPlayerId,
+      attackerZone: zone,
+      attackerSlotIndex: slotIndex,
+      targetPlayerId,
+      attackerCardName: attacker.name,
+      attackerBp,
+    });
+
     setAttackingState(null);
   };
 
-  // キャラへのアタック（バトル）解決
+  // キャラへのアタック（【狙い撃ち】バトル）解決
   const handleAttackOpponentCard = (targetPlayerId: string, oppSlotIndex: FieldSlotIndex) => {
     if (attackingState === null) return;
     const { attackerPlayerId, zone, slotIndex } = attackingState;
@@ -270,26 +325,23 @@ export const Board: React.FC<BoardProps> = ({
       payload: { playerId: attackerPlayerId, zone, slotIndex },
     });
 
-    const attackerBp = (attacker.bp ?? 0) + attacker.bpModifier;
-    const defenderBp = (defender.bp ?? 0) + defender.bpModifier;
+    const attackerBp = getCardBaseBp(attacker) + attacker.bpModifier;
+    const defenderBp = getCardBaseBp(defender) + defender.bpModifier;
 
-    // 公式ルール P12: アタック側BP >= 防御側BP ならアタック側勝利
-    const isAttackerWin = attackerBp >= defenderBp;
+    // 公式ルール P12: アタッカーBP vs ディフェンダーBP の勝敗計算
+    const battle = calculateBattleResult(attackerBp, defenderBp, attacker.name, defender.name);
 
     dispatchAction({
       type: 'ADD_LOG',
       payload: {
-        message: `⚔️【バトル解決】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) VS ${targetPlayer.name}の「${defender.name}」(BP${defenderBp}) ➔ ${
-          isAttackerWin
-            ? `勝者: 「${attacker.name}」！「${defender.name}」は退場（場外）です。`
-            : `勝者: 「${defender.name}」！「${attacker.name}」は防御を突破できませんでした。`
-        }`,
+        message: `⚔️【狙い撃ち / バトル解決】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) VS ${targetPlayer.name}の「${defender.name}」(BP${defenderBp}) ➔ ${battle.logMessage}`,
         playerId: attackerPlayerId,
         type: 'action',
       },
     });
 
-    if (isAttackerWin) {
+    // 敗者退場処理 (相打ち時は両者退場、返り討ち時はアタッカー退場)
+    if (battle.shouldRetireDefender) {
       dispatchAction({
         type: 'MOVE_CARD',
         payload: {
@@ -300,7 +352,96 @@ export const Board: React.FC<BoardProps> = ({
       });
     }
 
+    if (battle.shouldRetireAttacker) {
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: attacker.id,
+          from: { playerId: attackerPlayerId, zone, slotIndex },
+          to: { playerId: attackerPlayerId, zone: 'graveyard' },
+        },
+      });
+    }
+
     setAttackingState(null);
+  };
+
+  // ブロック宣言 (防御側フロントラインのキャラでブロック)
+  const handleDeclareBlock = (blockerPlayerId: string, blockerSlotIndex: FieldSlotIndex) => {
+    if (!pendingBlockState) return;
+    const { attackerPlayerId, attackerZone, attackerSlotIndex, targetPlayerId, attackerCardName, attackerBp } =
+      pendingBlockState;
+    if (blockerPlayerId !== targetPlayerId) return;
+
+    const blockerPlayer = gameState.players[blockerPlayerId];
+    const attackerPlayer = gameState.players[attackerPlayerId];
+    if (!blockerPlayer || !attackerPlayer) return;
+
+    const blocker = blockerPlayer.frontLine[blockerSlotIndex];
+    const attacker = attackerPlayer[attackerZone][attackerSlotIndex];
+    if (!blocker || !attacker) return;
+
+    // ブロッカーをレストに
+    dispatchAction({
+      type: 'TOGGLE_REST',
+      payload: { playerId: blockerPlayerId, zone: 'frontLine', slotIndex: blockerSlotIndex },
+    });
+
+    const blockerBp = getCardBaseBp(blocker) + blocker.bpModifier;
+    const battle = calculateBattleResult(attackerBp, blockerBp, attackerCardName, blocker.name);
+
+    dispatchAction({
+      type: 'ADD_LOG',
+      payload: {
+        message: `🛡️【ブロック解決】${blockerPlayer.name}の「${blocker.name}」(BP${blockerBp}) がブロック！ VS ${attackerPlayer.name}の「${attackerCardName}」(BP${attackerBp}) ➔ ${battle.logMessage}`,
+        playerId: blockerPlayerId,
+        type: 'action',
+      },
+    });
+
+    // 敗者退場処理 (相打ち時は両者退場、返り討ち時はアタッカー退場)
+    if (battle.shouldRetireDefender) {
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: blocker.id,
+          from: { playerId: blockerPlayerId, zone: 'frontLine', slotIndex: blockerSlotIndex },
+          to: { playerId: blockerPlayerId, zone: 'graveyard' },
+        },
+      });
+    }
+
+    if (battle.shouldRetireAttacker) {
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: attacker.id,
+          from: { playerId: attackerPlayerId, zone: attackerZone, slotIndex: attackerSlotIndex },
+          to: { playerId: attackerPlayerId, zone: 'graveyard' },
+        },
+      });
+    }
+
+    setPendingBlockState(null);
+  };
+
+  // ノーブロック (アタックを通す -> ライフダメージへ)
+  const handlePassBlock = () => {
+    if (!pendingBlockState) return;
+    const { targetPlayerId, attackerCardName } = pendingBlockState;
+    const targetPlayer = gameState.players[targetPlayerId];
+
+    dispatchAction({
+      type: 'ADD_LOG',
+      payload: {
+        message: `🛡️【ノーブロック】${targetPlayer?.name || targetPlayerId} はブロックせずアタックを通しました。ライフのトリガーチェックを行ってください。`,
+        playerId: targetPlayerId,
+        type: 'action',
+      },
+    });
+
+    setPendingBlockState(null);
+    setPendingLifeDamageState({ targetPlayerId, attackerCardName });
   };
 
   // 手札カード選択ハンドラ (所持プレイヤーID付き)
@@ -1153,6 +1294,12 @@ export const Board: React.FC<BoardProps> = ({
                 } else {
                   handleAttackPlayer(topPlayerId);
                 }
+              } else if (pendingBlockState !== null && pendingBlockState.targetPlayerId === topPlayerId) {
+                // ブロック選択中: フロントラインのアクティブキャラをクリックでブロック
+                const targetCard = topPlayer.frontLine[slotIdx];
+                if (targetCard && !targetCard.isRested) {
+                  handleDeclareBlock(topPlayerId, slotIdx);
+                }
               } else {
                 handleSlotClick(topPlayerId, 'frontLine', slotIdx);
               }
@@ -1222,6 +1369,12 @@ export const Board: React.FC<BoardProps> = ({
                   handleAttackOpponentCard(bottomPlayerId, slotIdx);
                 } else {
                   handleAttackPlayer(bottomPlayerId);
+                }
+              } else if (pendingBlockState !== null && pendingBlockState.targetPlayerId === bottomPlayerId) {
+                // ブロック選択中: フロントラインのアクティブキャラをクリックでブロック
+                const targetCard = bottomPlayer.frontLine[slotIdx];
+                if (targetCard && !targetCard.isRested) {
+                  handleDeclareBlock(bottomPlayerId, slotIdx);
                 }
               } else {
                 handleSlotClick(bottomPlayerId, 'frontLine', slotIdx);
@@ -1389,6 +1542,93 @@ export const Board: React.FC<BoardProps> = ({
         }
         onCancel={() => setAttackingState(null)}
       />
+
+      {/* ブロック選択プロンプトバー */}
+      {pendingBlockState && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-blue-950/95 via-indigo-950/95 to-blue-950/95 border-2 border-blue-500 rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 text-white text-xs animate-in slide-in-from-top-4 max-w-[95vw]">
+          <div className="bg-blue-600 p-2 rounded-full animate-pulse shrink-0">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-blue-300">【ブロック選択】</span>
+              <span className="font-bold text-white">「{pendingBlockState.attackerCardName}」(BP{pendingBlockState.attackerBp})</span>
+              <span className="text-slate-300">のアタック！</span>
+            </div>
+            <span className="text-slate-300 text-[11px]">
+              {gameState.players[pendingBlockState.targetPlayerId]?.name} のフロントラインのアクティブキャラをクリックしてブロック、または通す
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handlePassBlock}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-emerald-400"
+            >
+              <ShieldAlert className="w-4 h-4" />
+              通す (ノーブロック)
+            </button>
+            <button
+              onClick={handleCancelPendingBlock}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 border border-slate-700"
+              title="アタックを取り消し (アタッカーをアクティブに戻す)"
+            >
+              <X className="w-3.5 h-3.5" />
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ライフダメージ / トリガー案内バー */}
+      {pendingLifeDamageState && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-amber-950/95 via-red-950/95 to-amber-950/95 border-2 border-amber-500 rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 text-white text-xs animate-in slide-in-from-top-4 max-w-[95vw]">
+          <div className="bg-amber-600 p-2 rounded-full animate-bounce shrink-0">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-amber-300">【ライフダメージ】</span>
+              <span className="font-bold text-white">「{pendingLifeDamageState.attackerCardName}」</span>
+              <span className="text-slate-300">のアタックが通りました！</span>
+            </div>
+            <span className="text-slate-300 text-[11px]">
+              {gameState.players[pendingLifeDamageState.targetPlayerId]?.name} のライフトップをチェックするか、一覧から選択してください（インパクト等の追加ダメージもサイドゾーンからいつでも手動実行可能）
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                dispatchAction({
+                  type: 'CHECK_LIFE_TRIGGER',
+                  payload: { playerId: pendingLifeDamageState.targetPlayerId, lifeIndex: 0 },
+                });
+                setPendingLifeDamageState(null);
+              }}
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md"
+            >
+              <Zap className="w-4 h-4" />
+              ライフトップをチェック
+            </button>
+            <button
+              onClick={() => {
+                setLifeSelectPlayerId(pendingLifeDamageState.targetPlayerId);
+                setPendingLifeDamageState(null);
+              }}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-indigo-400"
+            >
+              ライフ一覧から選択
+            </button>
+            <button
+              onClick={() => setPendingLifeDamageState(null)}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 border border-slate-700"
+              title="閉じる (ライフはいつでも直接操作可能です)"
+            >
+              <X className="w-3.5 h-3.5" />
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 相手手札確認・ハンデスモーダル */}
       <OpponentHandModal

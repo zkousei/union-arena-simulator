@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
+import { CARD_DATABASE } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
 import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap } from 'lucide-react';
@@ -116,7 +117,13 @@ export const CardView: React.FC<CardViewProps> = ({
     );
   }
 
-  const currentBp = (card.bp ?? 0) + card.bpModifier;
+  const masterCard =
+    card.bp === null || card.bp === undefined
+      ? CARD_DATABASE.find((c) => c.code === card.code)
+      : null;
+  const effectiveBp = card.bp ?? masterCard?.bp ?? null;
+  const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
+  const currentBp = (effectiveBp ?? 0) + card.bpModifier;
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
   const underCount = card.underCards?.length ?? 0;
   const isRaid = underCount > 0 && !!card.underCards?.[0];
@@ -376,7 +383,7 @@ export const CardView: React.FC<CardViewProps> = ({
 
         {/* フッター: BP / トリガー */}
         <div className={`relative z-10 flex items-center justify-between ${isCompact ? 'text-[8px] p-0.5' : 'text-[9px] sm:text-[10px] p-1'} font-bold pointer-events-none mt-auto`}>
-          {card.bp !== null ? (
+          {effectiveBp !== null ? (
             <div
               className={`${isCompact ? 'px-0.5 py-0 text-[10px]' : 'px-1 py-0.5 text-xs'} rounded leading-none border shadow-md font-black ${
                 card.bpModifier > 0
@@ -386,7 +393,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   : 'bg-slate-950/90 text-slate-100 border-slate-700'
               }`}
             >
-              {currentBp}
+              {currentBp}{effectiveHasBpPlus ? '+' : ''}
             </div>
           ) : (
             <div />
@@ -471,7 +478,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           )}
 
-          {isFieldCard && onModifyBp && card.bp !== null && (
+          {isFieldCard && onModifyBp && effectiveBp !== null && (
             <div className="flex items-center justify-between px-2 py-1 bg-slate-800/60 rounded my-1">
               <span className="text-slate-400">BP修正:</span>
               <div className="flex items-center gap-1">

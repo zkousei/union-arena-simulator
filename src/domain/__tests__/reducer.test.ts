@@ -336,6 +336,25 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.phase).toBe('START');
   });
 
+  it('should reset temporary bpModifier on all field cards to 0 upon PASS_TURN', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const card1 = createDummyCard('f-1', 'Buffed Attacker');
+    state.players['p1'].frontLine[0] = card1;
+
+    // +1000 BPバフを付与
+    state = gameReducer(state, {
+      type: 'MODIFY_BP',
+      payload: { playerId: 'p1', zone: 'frontLine', slotIndex: 0, delta: 1000 },
+    });
+    expect(state.players['p1'].frontLine[0]?.bpModifier).toBe(1000);
+
+    // ターン終了
+    state = gameReducer(state, { type: 'PASS_TURN', payload: { playerId: 'p1' } });
+
+    // 一時的BP補正が0にリセットされていること
+    expect(state.players['p1'].frontLine[0]?.bpModifier).toBe(0);
+  });
+
   it('should look at top N cards of deck and route them to hand, graveyard, top or bottom', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].deck = [

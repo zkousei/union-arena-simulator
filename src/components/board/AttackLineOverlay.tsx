@@ -87,7 +87,7 @@ export const AttackLineOverlay: React.FC<AttackLineOverlayProps> = ({
           <span className="font-extrabold text-amber-300 mr-1">【アタック宣言】</span>
           <span className="font-bold text-white">「{attackerName}」</span>
           <span className="text-slate-300 ml-1.5 text-[11px]">
-            攻撃対象（相手プレイヤーまたは相手キャラ）をクリックしてください
+            相手プレイヤー（ライフ）をクリックして通常攻撃、または相手キャラをクリックして【狙い撃ち】
           </span>
         </div>
         <button

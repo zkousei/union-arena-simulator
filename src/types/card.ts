@@ -19,6 +19,7 @@ export interface Card {
   cardType: CardType;     // キャラ / イベント / フィールド / AP
   color: CardColor;       // 色
   bp: number | null;      // バトルポイント (キャラのみ)
+  hasBpPlus?: boolean;    // BPに「+」表記があるカード（例: 4000+）
   apCost: number;         // APコスト (通常1)
   reqEnergy: number;      // 必要エナジー
   genEnergy: number;      // 発生エナジー (通常1〜2)

@@ -37,8 +37,25 @@ export function loadSavedDecks(): UserDeck[] {
       return [];
     }
     const decks = JSON.parse(raw) as UserDeck[];
-    // 初期サンプルデッキ (default-cgh-deck) は除外
-    return decks.filter((d) => d.id !== 'default-cgh-deck');
+    // 初期サンプルデッキ (default-cgh-deck) は除外し、カード情報を最新のCARD_DATABASEで修復
+    return decks
+      .filter((d) => d.id !== 'default-cgh-deck')
+      .map((d) => ({
+        ...d,
+        items: (d.items || []).map((it) => {
+          const master = CARD_DATABASE.find((c) => c.code === it.card?.code);
+          return master
+            ? {
+                ...it,
+                card: {
+                  ...it.card,
+                  bp: master.bp ?? it.card.bp,
+                  hasBpPlus: master.hasBpPlus ?? it.card.hasBpPlus,
+                },
+              }
+            : it;
+        }),
+      }));
   } catch (e) {
     console.error('Failed to load decks from localStorage:', e);
     return [];

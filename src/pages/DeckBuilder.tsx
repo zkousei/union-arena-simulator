@@ -33,7 +33,15 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         const extraCards: CardMaster[] = JSON.parse(stored);
         const map = new Map<string, CardMaster>();
         CARD_DATABASE.forEach((c) => map.set(c.code, c));
-        extraCards.forEach((c) => map.set(c.code, c));
+        extraCards.forEach((c) => {
+          const master = CARD_DATABASE.find((m) => m.code === c.code);
+          map.set(
+            c.code,
+            master
+              ? { ...c, bp: master.bp ?? c.bp, hasBpPlus: master.hasBpPlus ?? c.hasBpPlus }
+              : c
+          );
+        });
         return Array.from(map.values());
       }
     } catch (e) {

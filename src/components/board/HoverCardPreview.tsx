@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../../types/card';
+import { CARD_DATABASE } from '../../data/cardDatabase';
 import { ShieldAlert } from 'lucide-react';
 
 interface HoverCardPreviewProps {
@@ -15,6 +16,12 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
 
   if (!card || !enabled) return null;
 
+  const masterCard =
+    card.bp === null || card.bp === undefined
+      ? CARD_DATABASE.find((c) => c.code === card.code)
+      : null;
+  const effectiveBp = card.bp ?? masterCard?.bp ?? null;
+  const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
   const hasValidImage = !!card.imageUrl && !imgError;
 
   return (
@@ -40,9 +47,9 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
       {/* カードステータス */}
       <div className="flex items-center justify-between gap-1 mb-1.5">
         <span className="font-bold text-xs text-white truncate">{card.name}</span>
-        {card.bp !== null && (
+        {effectiveBp !== null && (
           <span className="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/60 font-black text-amber-300 text-[10px] shrink-0">
-            BP {card.bp}
+            BP {effectiveBp}{effectiveHasBpPlus ? '+' : ''}
           </span>
         )}
       </div>
