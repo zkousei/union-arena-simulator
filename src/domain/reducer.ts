@@ -262,6 +262,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       case 'START_GAME': {
+        // UI以外からの操作やP2P同期でも、両者のデッキ準備が完了する前は開始させない。
+        // SETUP_GAME は初手を配るため、準備済みかどうかは手札の有無で判定できる。
+        if (draft.status !== 'PREPARING' || Object.values(draft.players).some((player) => player.hand.length === 0)) {
+          return;
+        }
+
         draft.status = 'PLAYING';
         draft.turn = 1;
         draft.phase = 'START';
@@ -1032,9 +1038,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const player = draft.players[playerId];
         if (player && draft.revealedDeckCards.cards.length > 0) {
           // 残りのカードを山札の上に戻す
-          draft.revealedDeckCards.cards.forEach((card) => {
-            player.deck.unshift(resetCardState(card));
-          });
+          const remainingCards = draft.revealedDeckCards.cards.map(resetCardState);
+          player.deck.unshift(...remainingCards);
           if (shuffleRemaining) {
             player.deck = shuffleCards(player.deck);
             appendLog(draft, `${player.name} が山札をシャッフルしました。`, playerId);

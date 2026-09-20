@@ -99,11 +99,16 @@ describe('gameReducer Official Rules Unit Tests', () => {
 
   it('should support KEEP_HAND and auto-place life on START_GAME if not placed', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
-    const dummyCards = Array.from({ length: 50 }, (_, i) => createDummyCard(`c-${i}`, `Card ${i}`));
+    const p1Cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p1-${i}`, `P1 Card ${i}`));
+    const p2Cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p2-${i}`, `P2 Card ${i}`));
 
     state = gameReducer(state, {
       type: 'SETUP_GAME',
-      payload: { playerId: 'p1', deckCards: dummyCards, apCards: [] },
+      payload: { playerId: 'p1', deckCards: p1Cards, apCards: [] },
+    });
+    state = gameReducer(state, {
+      type: 'SETUP_GAME',
+      payload: { playerId: 'p2', deckCards: p2Cards, apCards: [] },
     });
 
     // キープ
@@ -125,6 +130,22 @@ describe('gameReducer Official Rules Unit Tests', () => {
     state = gameReducer(state, { type: 'START_GAME' });
     expect(state.players['p1'].life.length).toBe(7);
     expect(state.players['p1'].deck.length).toBe(36);
+  });
+
+  it('should not start the game until both players have set a deck', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const p1Cards = Array.from({ length: 50 }, (_, i) => createDummyCard(`p1-${i}`, `P1 Card ${i}`));
+
+    state = gameReducer(state, {
+      type: 'SETUP_GAME',
+      payload: { playerId: 'p1', deckCards: p1Cards, apCards: [] },
+    });
+    state = gameReducer(state, { type: 'START_GAME' });
+
+    expect(state.status).toBe('PREPARING');
+    expect(state.turn).toBe(1);
+    expect(state.players['p1'].life).toHaveLength(0);
+    expect(state.logs.some((log) => log.message.includes('ゲームが開始されました'))).toBe(false);
   });
 
   it('should place card into field with RESTED state (Ver 1.1 official rule)', () => {
@@ -311,6 +332,32 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.revealedDeckCards).toBeNull();
     expect(state.players['p1'].deck.length).toBe(2);
     expect(state.players['p1'].deck[1].name).toBe('Card 2'); // bottom
+  });
+
+  it('should preserve card order when closing the top-deck viewer without resolving cards', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players['p1'].deck = [
+      createDummyCard('top-1', 'Card 1'),
+      createDummyCard('top-2', 'Card 2'),
+      createDummyCard('top-3', 'Card 3'),
+      createDummyCard('top-4', 'Card 4'),
+    ];
+
+    state = gameReducer(state, {
+      type: 'LOOK_AT_TOP_DECK',
+      payload: { playerId: 'p1', count: 3 },
+    });
+    state = gameReducer(state, {
+      type: 'CLOSE_TOP_DECK',
+      payload: { playerId: 'p1', shuffleRemaining: false },
+    });
+
+    expect(state.players['p1'].deck.map((card) => card.id)).toEqual([
+      'top-1',
+      'top-2',
+      'top-3',
+      'top-4',
+    ]);
   });
 
   it('should search card from deck and add to hand or graveyard', () => {

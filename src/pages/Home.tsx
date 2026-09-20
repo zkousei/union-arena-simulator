@@ -439,9 +439,9 @@ export const HomePage: React.FC<HomeProps> = ({
                 <h4 className="font-bold text-emerald-300">初期準備フロー</h4>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-slate-300">
                   <li>ダイスやじゃんけんで先攻・後攻を決定</li>
-                  <li>山札から上から7枚を裏向きで「ライフ」にセット</li>
-                  <li>山札から上から7枚を手札として引く</li>
+                  <li>山札の上から7枚を手札として引く</li>
                   <li><strong>マリガン（引き直し）</strong>：手札が気に入らない場合、1回だけ手札7枚を横に置き、新たに山札から7枚引いてから、横の7枚を山札に戻してシャッフル</li>
+                  <li>マリガン終了後、山札の上から7枚を裏向きで「ライフ」にセット</li>
                   <li>準備完了でお互いにゲーム開始</li>
                 </ol>
               </div>

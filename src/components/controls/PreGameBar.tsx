@@ -52,9 +52,10 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
 
   if (isSoloMode) {
     const canStartSolo =
-      (p1HasLife || p1.isReady || !p1HasHand) &&
-      (p2HasLife || p2.isReady || !p2HasHand) &&
-      (p1HasHand || p2HasHand);
+      p1HasHand &&
+      p2HasHand &&
+      (p1HasLife || p1.isReady) &&
+      (p2HasLife || p2.isReady);
 
     return (
       <div className="flex flex-col gap-2 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-indigo-500/30 p-3 shadow-lg w-full text-xs">
@@ -239,7 +240,11 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
   // 公式ルール順序ガイド: 先攻が未判断で、自分が後攻の場合
   const isWaitingForFirstPlayer = oppIsFirst && oppHasHand && !oppHandDetermined && !isHandDetermined;
 
-  const canStart = (hasLife || myPlayer.isReady) && (opponentPlayer.life.length > 0 || opponentPlayer.isReady || opponentPlayer.hand.length === 0);
+  const canStart =
+    hasHand &&
+    oppHasHand &&
+    (hasLife || myPlayer.isReady) &&
+    (opponentPlayer.life.length > 0 || opponentPlayer.isReady);
 
   return (
     <div className="flex flex-col gap-2 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-indigo-500/30 p-3 shadow-lg w-full text-xs">
