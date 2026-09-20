@@ -34,12 +34,11 @@ export function loadSavedDecks(): UserDeck[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const defaultDeck = createDefaultSampleDeck();
-      saveDeck(defaultDeck);
-      return [defaultDeck];
+      return [];
     }
     const decks = JSON.parse(raw) as UserDeck[];
-    return decks;
+    // 初期サンプルデッキ (default-cgh-deck) は除外
+    return decks.filter((d) => d.id !== 'default-cgh-deck');
   } catch (e) {
     console.error('Failed to load decks from localStorage:', e);
     return [];

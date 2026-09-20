@@ -21,6 +21,7 @@ export interface CardLocation {
   zone: ZoneType;
   slotIndex?: number; // frontLine または energyLine の場合 0..3
   index?: number;     // hand, deck, life, graveyard などの配列インデックス
+  isFaceDown?: boolean; // 表向き/裏向きの指定（ライフ配置時等）
 }
 
 export interface PlayerState {

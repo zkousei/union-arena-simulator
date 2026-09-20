@@ -921,4 +921,191 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p2'].graveyard.length).toBe(1);
     expect(state.players['p2'].graveyard[0].name).toBe('Life Target');
   });
+
+  it('should support placing a card from hand face-up into life (Lady Black behavior)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const heroCard = createDummyCard('shy-hero-1', 'レディ・ブラック');
+    state.players['p1'].hand = [heroCard];
+    state.players['p1'].life = [createDummyCard('l-1', 'Existing Life')];
+
+    // 手札からライフに表向きで置く (isFaceDown: false)
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'shy-hero-1',
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'life', isFaceDown: false },
+      },
+    });
+
+    const p1 = state.players['p1'];
+    expect(p1.hand.length).toBe(0);
+    expect(p1.life.length).toBe(2);
+    // 新規配置されたカードは先頭に表向きで配置される
+    expect(p1.life[0].name).toBe('レディ・ブラック');
+    expect(p1.life[0].isFaceDown).toBe(false);
+
+    // ログに表向きで追加された記録が残る
+    const latestLog = state.logs[state.logs.length - 1];
+    expect(latestLog.message).toContain('表向き');
+    expect(latestLog.message).toContain('レディ・ブラック');
+
+    // FLIP_LIFE で裏向きにトグル可能
+    state = gameReducer(state, {
+      type: 'FLIP_LIFE',
+      payload: { playerId: 'p1', lifeIndex: 0 },
+    });
+    expect(state.players['p1'].life[0].isFaceDown).toBe(true);
+  });
+
+  it('should support TAKE_LIFE to deckTop and deckBottom (Kamen Rider OOO Putotyra)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const life1 = createDummyCard('l-1', 'Life Card 1');
+    const life2 = createDummyCard('l-2', 'Life Card 2');
+    const deck1 = createDummyCard('d-1', 'Deck Card 1');
+    state.players['p1'].life = [life1, life2];
+    state.players['p1'].deck = [deck1];
+
+    // ライフ1枚目を山札の上に置く
+    state = gameReducer(state, {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'deckTop', lifeIndex: 0 },
+    });
+    expect(state.players['p1'].life.length).toBe(1);
+    expect(state.players['p1'].life[0].name).toBe('Life Card 2');
+    expect(state.players['p1'].deck.length).toBe(2);
+    expect(state.players['p1'].deck[0].name).toBe('Life Card 1'); // トップに置かれた
+
+    // 残りのライフを山札の下に置く
+    state = gameReducer(state, {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'deckBottom', lifeIndex: 0 },
+    });
+    expect(state.players['p1'].life.length).toBe(0);
+    expect(state.players['p1'].deck.length).toBe(3);
+    expect(state.players['p1'].deck[2].name).toBe('Life Card 2'); // ボトムに置かれた
+  });
+
+  it('should support RECOVER_LIFE face-up (Ranka Lee, Obelisk, Utsuki)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const topDeckCard = createDummyCard('top-1', 'ランカ・リー');
+    state.players['p1'].deck = [topDeckCard];
+    state.players['p1'].life = [];
+
+    // 山札の上から表向きでライフへ回復
+    state = gameReducer(state, {
+      type: 'RECOVER_LIFE',
+      payload: { playerId: 'p1', isFaceDown: false },
+    });
+
+    expect(state.players['p1'].deck.length).toBe(0);
+    expect(state.players['p1'].life.length).toBe(1);
+    expect(state.players['p1'].life[0].name).toBe('ランカ・リー');
+    expect(state.players['p1'].life[0].isFaceDown).toBe(false);
+  });
+
+  it('should support REORDER_LIFE (Sir Nighteye)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const lifeA = createDummyCard('l-a', 'Card A');
+    const lifeB = createDummyCard('l-b', 'Card B');
+    const lifeC = createDummyCard('l-c', 'Card C');
+    state.players['p1'].life = [lifeA, lifeB, lifeC];
+
+    // 順序を C, A, B に変更
+    state = gameReducer(state, {
+      type: 'REORDER_LIFE',
+      payload: {
+        playerId: 'p1',
+        newLifeCards: [lifeC, lifeA, lifeB],
+      },
+    });
+
+    expect(state.players['p1'].life.map((c) => c.name)).toEqual(['Card C', 'Card A', 'Card B']);
+  });
+
+  it('should support SEPARATE_UNDER_CARD to life and deck (Leafa Earth Goddess Terraria)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const under1 = createDummyCard('u-1', 'UnderCard 1');
+    const under2 = createDummyCard('u-2', 'UnderCard 2');
+    const parentCard = {
+      ...createDummyCard('p-1', 'Raid Host'),
+      underCards: [under1, under2],
+    };
+    state.players['p1'].frontLine[0] = parentCard;
+    state.players['p1'].life = [];
+    state.players['p1'].deck = [createDummyCard('d-0', 'Initial Deck')];
+
+    // 下敷き1をライフに表向きで分離
+    state = gameReducer(state, {
+      type: 'SEPARATE_UNDER_CARD',
+      payload: {
+        playerId: 'p1',
+        zone: 'frontLine',
+        slotIndex: 0,
+        underCardId: 'u-1',
+        destination: 'lifeFaceUp',
+      },
+    });
+
+    expect(state.players['p1'].frontLine[0]?.underCards?.length).toBe(1);
+    expect(state.players['p1'].life.length).toBe(1);
+    expect(state.players['p1'].life[0].name).toBe('UnderCard 1');
+    expect(state.players['p1'].life[0].isFaceDown).toBe(false);
+
+    // 下敷き2を山札の上に分離
+    state = gameReducer(state, {
+      type: 'SEPARATE_UNDER_CARD',
+      payload: {
+        playerId: 'p1',
+        zone: 'frontLine',
+        slotIndex: 0,
+        underCardId: 'u-2',
+        destination: 'deckTop',
+      },
+    });
+
+    expect(state.players['p1'].frontLine[0]?.underCards?.length).toBe(0);
+    expect(state.players['p1'].deck[0].name).toBe('UnderCard 2');
+  });
+
+  it('should support RESOLVE_TOP_DECK_CARD to lifeFaceUp and frontLine (Gloucester)', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const cardA = createDummyCard('top-a', 'Top Card A');
+    const cardB = createDummyCard('top-b', 'Top Card B');
+    state.revealedDeckCards = {
+      playerId: 'p1',
+      cards: [cardA, cardB],
+    };
+    state.players['p1'].frontLine = [null, null, null, null];
+    state.players['p1'].life = [];
+
+    // cardA をライフ(表向き)に送る
+    state = gameReducer(state, {
+      type: 'RESOLVE_TOP_DECK_CARD',
+      payload: {
+        playerId: 'p1',
+        cardId: 'top-a',
+        destination: 'lifeFaceUp',
+      },
+    });
+
+    expect(state.revealedDeckCards?.cards.map((c) => c.name)).toEqual(['Top Card B']);
+    expect(state.players['p1'].life.length).toBe(1);
+    expect(state.players['p1'].life[0].name).toBe('Top Card A');
+    expect(state.players['p1'].life[0].isFaceDown).toBe(false);
+
+    // cardB をフロントラインに出す
+    state = gameReducer(state, {
+      type: 'RESOLVE_TOP_DECK_CARD',
+      payload: {
+        playerId: 'p1',
+        cardId: 'top-b',
+        destination: 'frontLine',
+      },
+    });
+
+    expect(state.revealedDeckCards).toBeNull();
+    expect(state.players['p1'].frontLine[0]?.name).toBe('Top Card B');
+    expect(state.players['p1'].frontLine[0]?.isRested).toBe(true); // 登場時レスト
+  });
 });

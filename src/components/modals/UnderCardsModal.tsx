@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Layers, Hand, Trash2, ArrowUpRight, X, ShieldAlert, ArrowUp, ArrowDown, Split } from 'lucide-react';
+import { Layers, Hand, Trash2, ArrowUpRight, X, ShieldAlert, ArrowUp, ArrowDown, Split, Eye } from 'lucide-react';
 
 interface UnderCardsModalProps {
   isOpen: boolean;
   parentCard: Card | null;
   hasEmptyFrontSlot: boolean;
   hasEmptyEnergySlot: boolean;
-  onSeparateCard: (underCardId: string, destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed') => void;
-  onSeparateParentCard?: (destination: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom') => void;
+  onSeparateCard: (
+    underCardId: string,
+    destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp' | 'deckTop' | 'deckBottom'
+  ) => void;
+  onSeparateParentCard?: (destination: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp') => void;
+  onInspectCard?: (card: Card) => void;
   onClose: () => void;
 }
 
@@ -20,13 +24,15 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
   hasEmptyEnergySlot,
   onSeparateCard,
   onSeparateParentCard,
+  onInspectCard,
   onClose,
 }) => {
+  const [revealFaceDown, setRevealFaceDown] = useState(true);
   if (!isOpen || !parentCard) return null;
 
   const underCards = parentCard.underCards || [];
 
-  const handleSeparateParent = (dest: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom') => {
+  const handleSeparateParent = (dest: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp') => {
     if (onSeparateParentCard) {
       onSeparateParentCard(dest);
       onClose();
@@ -52,12 +58,22 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRevealFaceDown(!revealFaceDown)}
+              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-colors"
+              title="裏向きマーカーの内容表示を切り替えます（ルール上、プレイヤー自身はいつでも確認可能です）"
+            >
+              <Eye className="w-3.5 h-3.5 text-amber-400" />
+              <span>{revealFaceDown ? 'マーカー表面を表示中' : 'マーカーを裏面で表示'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* メインコンテンツ: 上のカード（親）と 下敷きカード（子） */}
@@ -69,7 +85,17 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
               現在の表面（上のカード）
             </div>
             
-            <CardView card={parentCard} />
+            <CardView card={parentCard} onInspect={onInspectCard} />
+            {onInspectCard && (
+              <button
+                onClick={() => onInspectCard(parentCard)}
+                className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400/40 rounded text-[10px] text-purple-200 font-bold transition-colors"
+                title="表面カードの詳細・テキストを確認"
+              >
+                <Eye className="w-3 h-3 text-purple-300" />
+                表面カードの詳細
+              </button>
+            )}
 
             <div className="w-full mt-2 pt-2 border-t border-purple-500/30 flex flex-col gap-1.5">
               <span className="text-[11px] font-bold text-slate-300 text-center">
@@ -113,6 +139,26 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                   山札上へ
                 </button>
               </div>
+
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <button
+                  onClick={() => handleSeparateParent('lifeFaceUp')}
+                  className="flex items-center justify-center gap-1 py-1.5 px-2 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold transition-colors"
+                  title="上のカードをライフに表向きで置く"
+                >
+                  <ShieldAlert className="w-3 h-3 text-amber-400" />
+                  ライフ(表)
+                </button>
+                <button
+                  onClick={() => handleSeparateParent('life')}
+                  className="flex items-center justify-center gap-1 py-1.5 px-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 rounded text-rose-300 font-bold transition-colors"
+                  title="上のカードをライフに裏向きで置く"
+                >
+                  <ShieldAlert className="w-3 h-3 text-rose-400" />
+                  ライフ(裏)
+                </button>
+              </div>
+
               <button
                 onClick={() => handleSeparateParent('deckBottom')}
                 className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] text-slate-300 font-bold transition-colors"
@@ -130,7 +176,7 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
               <Layers className="w-3.5 h-3.5 text-slate-400" />
               下敷きカード一覧（{underCards.length}枚）
               <span className="text-[10px] font-normal text-slate-400 ml-1">
-                ※下敷きカード単体を個別に手札・場外・フィールドへ分離できます
+                ※下敷きカード単体を個別に手札・場外・ライフ・フィールドへ分離できます
               </span>
             </div>
 
@@ -149,13 +195,39 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                     >
                       <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mb-0.5">
                         <span>下敷き #{index + 1}</span>
+                        {card.isFaceDown ? (
+                          <span className="text-[9px] bg-amber-950/90 text-amber-300 px-1 rounded border border-amber-500/40 flex items-center gap-0.5">
+                            <Eye className="w-2.5 h-2.5" />
+                            マーカー(裏)
+                          </span>
+                        ) : (
+                          <span className="text-[9px] bg-purple-950/80 text-purple-300 px-1 rounded border border-purple-500/40">
+                            レイド元(表)
+                          </span>
+                        )}
                         {isTopUnderCard && (
-                          <span className="text-[9px] bg-amber-950/80 text-amber-300 px-1 rounded border border-amber-500/40">
-                            直下（親分離時の新表面）
+                          <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-1 rounded border border-indigo-500/40">
+                            直下
                           </span>
                         )}
                       </div>
-                      <CardView card={card} />
+                      <CardView
+                        card={card}
+                        revealFaceDown={revealFaceDown}
+                        onInspect={onInspectCard}
+                      />
+
+                      {/* 詳細確認ボタン */}
+                      {onInspectCard && (
+                        <button
+                          onClick={() => onInspectCard(card)}
+                          className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] text-indigo-300 font-bold transition-colors"
+                          title="カード詳細・効果テキストを確認"
+                        >
+                          <Eye className="w-3 h-3 text-indigo-400" />
+                          詳細を確認
+                        </button>
+                      )}
 
                       {/* 下敷きカード個別分離アクションボタン */}
                       <div className="flex flex-col gap-1 w-full text-[10px] mt-1">
@@ -183,6 +255,45 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                           >
                             <ShieldAlert className="w-3 h-3" />
                             除外へ
+                          </button>
+                        </div>
+
+                        {/* ライフ・山札送り (リーファ地神テラリア等) */}
+                        <div className="grid grid-cols-2 gap-1">
+                          <button
+                            onClick={() => onSeparateCard(card.id, 'lifeFaceUp')}
+                            className="flex items-center justify-center gap-0.5 py-1 px-1 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold transition-colors"
+                            title="ライフに表向きで置く（リーファ地神テラリア等の効果）"
+                          >
+                            <ShieldAlert className="w-3 h-3 text-amber-400" />
+                            ライフ(表)
+                          </button>
+                          <button
+                            onClick={() => onSeparateCard(card.id, 'life')}
+                            className="flex items-center justify-center gap-0.5 py-1 px-1 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 rounded text-rose-300 font-bold transition-colors"
+                            title="ライフに裏向きで置く"
+                          >
+                            <ShieldAlert className="w-3 h-3 text-rose-400" />
+                            ライフ(裏)
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1">
+                          <button
+                            onClick={() => onSeparateCard(card.id, 'deckTop')}
+                            className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-amber-300 font-semibold transition-colors"
+                            title="山札の上に置く"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                            山札上
+                          </button>
+                          <button
+                            onClick={() => onSeparateCard(card.id, 'deckBottom')}
+                            className="flex items-center justify-center gap-1 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-indigo-300 font-semibold transition-colors"
+                            title="山札の下に置く"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                            山札下
                           </button>
                         </div>
 

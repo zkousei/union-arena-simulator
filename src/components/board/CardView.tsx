@@ -2,17 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
-import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert } from 'lucide-react';
+import { ArrowRightLeft, Trash2, RotateCw, Plus, Minus, Info, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye } from 'lucide-react';
 
 interface CardViewProps {
   card: Card;
   location?: CardLocation;
   isOpponent?: boolean;
+  revealFaceDown?: boolean;
   onToggleRest?: () => void;
   onModifyBp?: (delta: number) => void;
   onToggleFreeze?: () => void;
   onAddMarker?: (from: 'deckTop' | 'hand') => void;
-  onMoveTo?: (destination: 'frontLine' | 'energyLine' | 'graveyard' | 'hand' | 'removed' | 'deckTop' | 'deckBottom') => void;
+  onMoveTo?: (
+    destination:
+      | 'frontLine'
+      | 'energyLine'
+      | 'graveyard'
+      | 'hand'
+      | 'removed'
+      | 'deckTop'
+      | 'deckBottom'
+      | 'life'
+      | 'lifeFaceUp'
+  ) => void;
   onInspect?: (card: Card) => void;
   onClick?: () => void;
   onDeclareAttack?: () => void;
@@ -43,6 +55,7 @@ export const CardView: React.FC<CardViewProps> = ({
   card,
   location,
   isOpponent = false,
+  revealFaceDown = false,
   onToggleRest,
   onModifyBp,
   onToggleFreeze,
@@ -59,16 +72,30 @@ export const CardView: React.FC<CardViewProps> = ({
   const [imgError, setImgError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // 裏向き表示
-  if (card.isFaceDown) {
+  // 裏向き表示 (revealFaceDown が true の場合は表面を表示しつつ裏向きバッジを表示)
+  if (card.isFaceDown && !revealFaceDown) {
     return (
       <div
-        className="w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105"
+        className="w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown"
         onClick={onClick}
       >
         <div className="w-12 h-16 rounded border border-indigo-500/30 flex items-center justify-center">
           <span className="text-[10px] font-bold text-indigo-400/80 tracking-wider">UA</span>
         </div>
+        {onInspect && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect(card);
+            }}
+            className="absolute bottom-1 px-1.5 py-0.5 rounded bg-black/80 border border-amber-500/40 text-[9px] text-amber-300 opacity-0 group-hover/facedown:opacity-100 transition-opacity flex items-center gap-0.5 shadow"
+            title="自分のみ表面を確認"
+          >
+            <Eye className="w-2.5 h-2.5 text-amber-400" />
+            確認
+          </button>
+        )}
       </div>
     );
   }
@@ -163,9 +190,11 @@ export const CardView: React.FC<CardViewProps> = ({
               <span className="text-[7px] font-black text-white/90 leading-tight">1</span>
             </div>
             {/* 下敷きカード名のチラ見せ */}
-            {topUnderCard && !topUnderCard.isFaceDown && (
+            {topUnderCard && (
               <div className="absolute bottom-1 right-1 text-[7px] font-bold text-slate-300/80 bg-black/60 px-1 rounded max-w-[80%] truncate">
-                {topUnderCard.name}
+                {topUnderCard.isFaceDown
+                  ? (!isOpponent ? `🔒 ${topUnderCard.name}` : '🔒 マーカー')
+                  : topUnderCard.name}
               </div>
             )}
           </div>
@@ -261,8 +290,18 @@ export const CardView: React.FC<CardViewProps> = ({
           </div>
         )}
 
+        {/* 裏向きマーカー表示バッジ（コントローラー自身のみ確認中） */}
+        {card.isFaceDown && (
+          <div className="absolute top-0 left-0 right-0 bg-amber-950/95 text-amber-300 text-[8px] font-black py-0.5 px-1 text-center border-b border-amber-500/60 z-20 flex items-center justify-center gap-1 shadow-md">
+            <Eye className="w-2.5 h-2.5 text-amber-400" />
+            <span>マーカー（裏向き）</span>
+          </div>
+        )}
+
         {/* ヘッダー: エナジー / AP */}
-        <div className="relative z-10 flex items-center justify-between gap-0.5 text-[9px] sm:text-[10px] font-bold leading-none p-1 pointer-events-none">
+        <div className={`relative z-10 flex items-center justify-between gap-0.5 text-[9px] sm:text-[10px] font-bold leading-none p-1 pointer-events-none ${
+          card.isFaceDown ? 'pt-3.5' : ''
+        }`}>
           <div className="flex items-center gap-0.5">
             {card.reqEnergy > 0 && (
               <span className="bg-slate-900/90 px-1 py-0.5 rounded text-amber-300 border border-amber-500/40" title={`必要エナジー: ${card.reqEnergy}`}>
@@ -454,6 +493,57 @@ export const CardView: React.FC<CardViewProps> = ({
                   <ArrowRightLeft className="w-3.5 h-3.5 text-amber-300" />
                   {isOpponent ? '手札に戻す（バウンス）' : '手札に戻す'}
                 </button>
+              )}
+              {isOpponent ? (
+                <>
+                  <button
+                    onClick={() => {
+                      onMoveTo('lifeFaceUp');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-amber-950/60 rounded flex items-center gap-2 text-amber-300 font-bold"
+                    title="眞霜平助等の効果で相手のライフに表向きで置きます"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                    相手ライフに表向きで送る
+                  </button>
+                  <button
+                    onClick={() => {
+                      onMoveTo('life');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-rose-300"
+                    title="相手のライフに裏向きで送ります"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                    相手ライフに裏向きで送る
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      onMoveTo('lifeFaceUp');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-amber-950/60 rounded flex items-center gap-2 text-amber-300 font-bold"
+                    title="レディ・ブラック等の効果でライフに表向きで置きます"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                    ライフに表向きで置く
+                  </button>
+                  <button
+                    onClick={() => {
+                      onMoveTo('life');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-rose-300"
+                    title="ライフに裏向きで置きます"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                    ライフに裏向きで置く
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {

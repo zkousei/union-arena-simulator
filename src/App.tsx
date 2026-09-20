@@ -8,7 +8,7 @@ import { GameLog } from './components/log/GameLog';
 import { PeerModal } from './components/peer/PeerModal';
 import { DeckBuilderPage } from './pages/DeckBuilder';
 import { HomePage } from './pages/Home';
-import { generateSampleDeck } from './data/sampleDeck';
+import { SavedDeckPickerModal } from './components/modals/SavedDeckPickerModal';
 import { UserDeck, flattenDeckToCards } from './domain/deckValidation';
 import {
   Swords,
@@ -406,7 +406,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     joinRoom,
   } = game;
 
+  const navigate = useNavigate();
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
+  const [isDeckPickerOpen, setIsDeckPickerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // URLにゲスト用roomがある場合、自動的に部屋参加を試行
@@ -435,16 +437,17 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   const myPlayer = gameState.players[myPlayerId];
   const opponentPlayer = gameState.players[opponentPlayerId];
 
-  const handleSetupDeck = (targetPlayerId: string = myPlayerId) => {
-    const sampleCards = generateSampleDeck(targetPlayerId);
+  const handleSelectDeck = (deck: UserDeck, targetPlayerId: string) => {
+    const cards = flattenDeckToCards(deck, targetPlayerId);
     dispatchAction({
       type: 'SETUP_GAME',
       payload: {
         playerId: targetPlayerId,
-        deckCards: sampleCards,
+        deckCards: cards,
         apCards: [],
       },
     });
+    sound.playPlace();
   };
 
   const handleSetAllActive = () => {
@@ -566,7 +569,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
           opponentPlayer={opponentPlayer}
           firstPlayerId={gameState.firstPlayerId}
           onSetFirstPlayer={handleSetFirstPlayer}
-          onSetupDeck={() => handleSetupDeck(myPlayerId)}
+          onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
           onMulligan={() => handleMulligan(myPlayerId)}
           onKeepHand={() => handleKeepHand(myPlayerId)}
           onPlaceLife={() => handlePlaceInitialLife(myPlayerId)}
@@ -576,7 +579,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
         />
       ) : (
         <ActionToolbar
-          onSetupDeck={() => handleSetupDeck(myPlayerId)}
+          onSetupDeck={() => setIsDeckPickerOpen(true)}
           onDrawCard={handleDrawCard}
           onSetAllActive={handleSetAllActive}
           onRecoverAp={handleRecoverAp}
@@ -600,6 +603,8 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
             gameState={gameState}
             myPlayerId={myPlayerId}
             dispatchAction={dispatchAction}
+            onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
+            isSoloMode={!peer.status || peer.status === 'disconnected'}
           />
         </div>
 
@@ -642,6 +647,18 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
           )}
         </div>
       </main>
+
+      {/* デッキ選択モーダル（保存済みマイデッキ & 公式プリセット） */}
+      <SavedDeckPickerModal
+        isOpen={isDeckPickerOpen}
+        onClose={() => setIsDeckPickerOpen(false)}
+        onSelectDeck={handleSelectDeck}
+        myPlayerId={myPlayerId}
+        isSoloMode={!peer.status || peer.status === 'disconnected'}
+        player1Name={gameState.players['player-1']?.name || 'Player 1'}
+        player2Name={gameState.players['player-2']?.name || 'Player 2'}
+        onNavigateToDeckBuilder={() => navigate('/deck-builder')}
+      />
     </div>
   );
 }

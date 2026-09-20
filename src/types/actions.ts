@@ -110,7 +110,7 @@ export type GameAction =
         zone: 'frontLine' | 'energyLine';
         slotIndex: FieldSlotIndex;
         underCardId: string;
-        destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed';
+        destination: 'hand' | 'graveyard' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp' | 'deckTop' | 'deckBottom';
         destSlotIndex?: FieldSlotIndex;
       };
     }
@@ -120,7 +120,7 @@ export type GameAction =
         playerId: string;
         zone: 'frontLine' | 'energyLine';
         slotIndex: FieldSlotIndex;
-        destination: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom';
+        destination: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp';
       };
     }
   | {
@@ -146,14 +146,22 @@ export type GameAction =
       payload: {
         playerId: string;
         count?: number;
+        isFaceDown?: boolean;
       };
     }
   | {
       type: 'TAKE_LIFE';
       payload: {
         playerId: string;
-        destination: 'hand' | 'graveyard';
+        destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom';
         lifeIndex?: number;
+      };
+    }
+  | {
+      type: 'REORDER_LIFE';
+      payload: {
+        playerId: string;
+        newLifeCards: Card[];
       };
     }
   | {
@@ -260,7 +268,8 @@ export type GameAction =
       payload: {
         playerId: string;
         cardId: string;
-        destination: 'hand' | 'graveyard' | 'top' | 'bottom';
+        destination: 'hand' | 'graveyard' | 'top' | 'bottom' | 'life' | 'lifeFaceUp' | 'frontLine' | 'energyLine';
+        slotIndex?: FieldSlotIndex;
       };
     }
   | {

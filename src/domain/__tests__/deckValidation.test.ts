@@ -177,5 +177,43 @@ describe('Deck Validation Official Rules Tests', () => {
       }
     }
   });
+
+  it('should flatten deck to 50 cards assigned to target player ID', async () => {
+    const { PRESET_DECKS } = await import('../../data/sampleDeck');
+    const { flattenDeckToCards } = await import('../deckValidation');
+    const cardsP1 = flattenDeckToCards(PRESET_DECKS[0].deck, 'player-1');
+    expect(cardsP1.length).toBe(50);
+    expect(cardsP1[0].id).toContain('player-1-');
+
+    const cardsP2 = flattenDeckToCards(PRESET_DECKS[1].deck, 'player-2');
+    expect(cardsP2.length).toBe(50);
+    expect(cardsP2[0].id).toContain('player-2-');
+  });
+
+  it('should not return default-cgh-deck in loadSavedDecks', async () => {
+    const store = new Map<string, string>();
+    const mockStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+      removeItem: (k: string) => store.delete(k),
+      clear: () => store.clear(),
+    };
+    const { vi } = await import('vitest');
+    vi.stubGlobal('localStorage', mockStorage);
+
+    const { loadSavedDecks } = await import('../../utils/deckStorage');
+    const emptyDecks = loadSavedDecks();
+    expect(emptyDecks).toEqual([]);
+
+    mockStorage.setItem('union_arena_saved_decks', JSON.stringify([
+      { id: 'default-cgh-deck', name: 'Old Default', titleCode: 'CGH', items: [], updatedAt: Date.now() },
+      { id: 'my-custom-deck', name: 'My Deck', titleCode: 'HTR', items: [], updatedAt: Date.now() },
+    ]));
+    const filtered = loadSavedDecks();
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].id).toBe('my-custom-deck');
+
+    vi.unstubAllGlobals();
+  });
 });
 

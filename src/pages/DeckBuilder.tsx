@@ -89,6 +89,14 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
     setSavedDecks(decks);
     if (decks.length > 0) {
       setActiveDeck(decks[0]);
+    } else {
+      setActiveDeck({
+        id: `deck-${Date.now()}`,
+        name: '新規デッキ',
+        titleCode: 'CGH',
+        items: [],
+        updatedAt: Date.now(),
+      });
     }
   }, []);
 

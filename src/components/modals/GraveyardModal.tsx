@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Skull, Hand, ArrowUp, ArrowDown, ArrowUpRight, Ban, X } from 'lucide-react';
+import { Skull, Hand, ArrowUp, ArrowDown, ArrowUpRight, Ban, X, ShieldAlert } from 'lucide-react';
 
 interface GraveyardModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface GraveyardModalProps {
   hasEmptyEnergySlot?: boolean;
   onMoveCard: (
     cardId: string,
-    destination: 'hand' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'removed'
+    destination: 'hand' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
   ) => void;
   onInspectCard: (card: Card) => void;
   onClose: () => void;
@@ -113,6 +113,25 @@ export const GraveyardModal: React.FC<GraveyardModalProps> = ({
                       >
                         <ArrowDown className="w-3 h-3 text-indigo-400" />
                         山札下
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        onClick={() => onMoveCard(card.id, 'lifeFaceUp')}
+                        className="flex items-center justify-center gap-0.5 py-1 px-1 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold transition-colors"
+                        title="ライフに表向きで置く（ニアール等の退場時効果）"
+                      >
+                        <ShieldAlert className="w-3 h-3 text-amber-400" />
+                        ライフ(表)
+                      </button>
+                      <button
+                        onClick={() => onMoveCard(card.id, 'life')}
+                        className="flex items-center justify-center gap-0.5 py-1 px-1 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 rounded text-rose-300 font-bold transition-colors"
+                        title="ライフに裏向きで置く"
+                      >
+                        <ShieldAlert className="w-3 h-3 text-rose-400" />
+                        ライフ(裏)
                       </button>
                     </div>
 

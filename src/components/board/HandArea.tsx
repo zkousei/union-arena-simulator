@@ -11,7 +11,10 @@ interface HandAreaProps {
   isOpponent?: boolean;
   selectedCardId?: string | null;
   onSelectCard?: (card: Card) => void;
-  onMoveTo?: (cardIndex: number, dest: 'graveyard' | 'removed' | 'deckTop' | 'deckBottom') => void;
+  onMoveTo?: (
+    cardIndex: number,
+    dest: 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp'
+  ) => void;
   onInspect?: (card: Card) => void;
   onDropToHand?: (from: CardLocation) => void;
   onDiscardRandom?: () => void;
@@ -187,7 +190,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
                   onClick={() => onSelectCard && onSelectCard(card)}
                   onInspect={onInspect}
                   onMoveTo={(dest) => {
-                    if (onMoveTo && (dest === 'graveyard' || dest === 'removed' || dest === 'deckTop' || dest === 'deckBottom')) {
+                    if (onMoveTo && (dest === 'graveyard' || dest === 'removed' || dest === 'deckTop' || dest === 'deckBottom' || dest === 'life' || dest === 'lifeFaceUp')) {
                       onMoveTo(idx, dest);
                     }
                   }}

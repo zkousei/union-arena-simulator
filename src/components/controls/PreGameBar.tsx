@@ -7,7 +7,7 @@ interface PreGameBarProps {
   opponentPlayer: PlayerState;
   firstPlayerId: string | null;
   onSetFirstPlayer: (playerId: string) => void;
-  onSetupDeck: () => void;
+  onOpenDeckPicker: () => void;
   onMulligan: () => void;
   onKeepHand: () => void;
   onPlaceLife: () => void;
@@ -21,7 +21,7 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
   opponentPlayer,
   firstPlayerId,
   onSetFirstPlayer,
-  onSetupDeck,
+  onOpenDeckPicker,
   onMulligan,
   onKeepHand,
   onPlaceLife,
@@ -86,14 +86,23 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {!hasHand ? (
             <button
-              onClick={onSetupDeck}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition"
+              onClick={onOpenDeckPicker}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition animate-pulse"
             >
               <Layers className="w-3.5 h-3.5" />
-              ① デッキセット（手札7枚ドロー）
+              ① デッキを選択・セット
             </button>
           ) : (
             <>
+              {/* デッキ変更ボタン */}
+              <button
+                onClick={onOpenDeckPicker}
+                className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] border border-slate-700 transition"
+                title="別のデッキを選択して再読み込み"
+              >
+                <Layers className="w-3 h-3 text-indigo-400" />
+                デッキ変更
+              </button>
               {/* マリガン判断（キープ または 引き直し） */}
               {!isHandDetermined ? (
                 <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-indigo-500/40">

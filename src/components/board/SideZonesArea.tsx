@@ -15,6 +15,8 @@ import {
   HeartPulse,
   Hand,
   MoreVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { GraveyardModal } from '../modals/GraveyardModal';
 import { RemovedModal } from '../modals/RemovedModal';
@@ -25,9 +27,10 @@ interface SideZonesAreaProps {
   onDraw?: () => void;
   onShuffle?: () => void;
   onCheckLife?: (index?: number) => void;
-  onRecoverLife?: () => void;
-  onTakeLife?: (destination: 'hand' | 'graveyard', index?: number) => void;
+  onRecoverLife?: (isFaceDown?: boolean) => void;
+  onTakeLife?: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', index?: number) => void;
   onFlipLife?: (index?: number) => void;
+  onOpenLifeReorder?: () => void;
   onUseAp?: () => void;
   onRecoverAp?: () => void;
   onLookAtTopDeck?: (count: number) => void;
@@ -40,12 +43,14 @@ interface SideZonesAreaProps {
   onDropToRemoved?: (from: CardLocation) => void;
   onMoveFromGraveyard?: (
     cardId: string,
-    destination: 'hand' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'removed'
+    destination: 'hand' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
   ) => void;
   onMoveFromRemoved?: (
     cardId: string,
-    destination: 'hand' | 'graveyard' | 'deckBottom' | 'frontLine' | 'energyLine'
+    destination: 'hand' | 'graveyard' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
   ) => void;
+  onOpenDeckPicker?: () => void;
+  onDropToLife?: (from: CardLocation, isFaceDown?: boolean) => void;
 }
 
 export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
@@ -57,6 +62,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   onRecoverLife,
   onTakeLife,
   onFlipLife,
+  onOpenLifeReorder,
   onUseAp,
   onRecoverAp,
   onLookAtTopDeck,
@@ -69,6 +75,8 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   onDropToRemoved,
   onMoveFromGraveyard,
   onMoveFromRemoved,
+  onOpenDeckPicker,
+  onDropToLife,
 }) => {
   const [showGraveyardModal, setShowGraveyardModal] = useState(false);
   const [showRemovedModal, setShowRemovedModal] = useState(false);
@@ -116,7 +124,36 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
       </div>
 
       {/* ライフエリア */}
-      <div className="flex flex-col gap-1.5 bg-slate-950/80 p-2 rounded-lg border border-rose-500/30 relative">
+      <div
+        onDragOver={(e) => {
+          if (isOpponent) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(e) => {
+          if (isOpponent) return;
+          e.preventDefault();
+          try {
+            const raw = e.dataTransfer.getData('application/x-union-arena-card');
+            if (!raw) return;
+            const payload = JSON.parse(raw);
+            if (onDropToLife) {
+              const choice = window.prompt(
+                '【ライフ配置の選択】\nカードをライフエリアに置きます。\n配置方法を選択してください:\n1: 表向きで置く（レディ・ブラック等の効果）\n2: 裏向きで置く\n（キャンセルを押すと中止します）',
+                '1'
+              );
+              if (choice === '1') {
+                onDropToLife(payload.from, false);
+              } else if (choice === '2') {
+                onDropToLife(payload.from, true);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to parse dropped card to life:', err);
+          }
+        }}
+        className="flex flex-col gap-1.5 bg-slate-950/80 p-2 rounded-lg border border-rose-500/30 relative hover:border-rose-500/60 transition-colors"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-bold text-rose-400">
             <ShieldAlert className="w-4 h-4" />
@@ -210,6 +247,20 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                       <span className="text-[7px] opacity-60">{!isFaceDown ? '表' : '裏'}</span>
                     </button>
 
+                    {/* 相手の表向きライフの「詳細確認」ボタン */}
+                    {isOpponent && !isFaceDown && onInspectCard && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectCard(card);
+                        }}
+                        className="absolute -top-2 -left-1 bg-slate-900 hover:bg-slate-800 border border-amber-400 rounded px-1 text-[7px] text-amber-300 font-bold shadow z-20"
+                        title="表向きライフカードの効果を確認"
+                      >
+                        詳細
+                      </button>
+                    )}
+
                     {/* 相手ライフのホバー時「直接場外送り（-1ダメ）」ボタン */}
                     {isOpponent && onTakeLife && (
                       <button
@@ -224,15 +275,41 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                       </button>
                     )}
 
+                    {/* 相手ライフのホバー時「表/裏切替」ボタン（眞霜平助等） */}
+                    {isOpponent && onFlipLife && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFlipLife(idx);
+                        }}
+                        className="hidden group-hover:flex absolute -bottom-2 -left-1 bg-amber-950 hover:bg-amber-900 border border-amber-500 rounded px-1 text-[7px] text-amber-200 font-bold shadow z-20 whitespace-nowrap"
+                        title="相手のライフの表/裏を切り替える（眞霜平助等）"
+                      >
+                        表裏
+                      </button>
+                    )}
+
                     {/* 自分ライフの個別操作ポップアップ */}
                     {!isOpponent && selectedMyLifeIndex === idx && (
                       <div
-                        className="absolute left-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-32 text-[10px]"
+                        className="absolute left-0 bottom-full mb-1 z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 text-[10px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="text-[9px] text-slate-400 font-bold px-1 border-b border-slate-800 pb-0.5 truncate">
                           ライフ #{idx + 1} {!isFaceDown ? `(${card.name})` : ''}
                         </div>
+                        {onInspectCard && !isFaceDown && (
+                          <button
+                            onClick={() => {
+                              onInspectCard(card);
+                              setSelectedMyLifeIndex(null);
+                            }}
+                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-2.5 h-2.5" />
+                            カード詳細を見る
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             onCheckLife?.(idx);
@@ -262,6 +339,28 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                         >
                           <Skull className="w-2.5 h-2.5" />
                           自傷で場外へ
+                        </button>
+                        <button
+                          onClick={() => {
+                            onTakeLife?.('deckTop', idx);
+                            setSelectedMyLifeIndex(null);
+                          }}
+                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-emerald-300 flex items-center gap-1"
+                          title="山札の一番上に戻す"
+                        >
+                          <ArrowUp className="w-2.5 h-2.5 text-emerald-400" />
+                          山札の上へ戻す
+                        </button>
+                        <button
+                          onClick={() => {
+                            onTakeLife?.('deckBottom', idx);
+                            setSelectedMyLifeIndex(null);
+                          }}
+                          className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-emerald-400 flex items-center gap-1"
+                          title="仮面ライダーオーズ等の効果"
+                        >
+                          <ArrowDown className="w-2.5 h-2.5 text-emerald-400" />
+                          山札の下へ送る
                         </button>
                         {onFlipLife && (
                           <button
@@ -298,7 +397,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
         {!isOpponent && (
           <div className="flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px] relative">
             <button
-              onClick={onRecoverLife}
+              onClick={() => onRecoverLife?.()}
               disabled={player.deck.length === 0}
               className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-600/30 rounded text-emerald-300 font-semibold transition-colors"
               title="山札の上から1枚をライフに追加（ライフ回復）"
@@ -339,6 +438,26 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                     <Skull className="w-3 h-3" />
                     自傷で場外へ
                   </button>
+                  <button
+                    onClick={() => onRecoverLife && onRecoverLife(false)}
+                    disabled={player.deck.length === 0}
+                    className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1.5"
+                    title="山札の上から1枚を表向きでライフに置く（ランカ・リー、オベリスク等）"
+                  >
+                    <HeartPulse className="w-3 h-3 text-amber-400" />
+                    山札から表向きでライフへ
+                  </button>
+                  {onOpenLifeReorder && (
+                    <button
+                      onClick={onOpenLifeReorder}
+                      disabled={player.life.length === 0}
+                      className="px-2 py-1.5 hover:bg-slate-800 rounded text-left text-indigo-300 flex items-center gap-1.5"
+                      title="ライフを全て確認し、望む順序に並び替える（サー・ナイトアイ等）"
+                    >
+                      <Layers className="w-3 h-3 text-indigo-400" />
+                      ライフ確認・並び替え
+                    </button>
+                  )}
                   {onFlipLife && (
                     <button
                       onClick={() => onFlipLife(0)}
@@ -368,8 +487,26 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
             <span className="text-xs font-bold text-indigo-200">
               {player.deck.length} 枚
             </span>
-            {isOpponent ? (
+            {player.deck.length === 0 && player.hand.length === 0 && onOpenDeckPicker ? (
+              <button
+                onClick={onOpenDeckPicker}
+                className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-500 rounded text-[10px] font-bold text-white shadow transition animate-pulse"
+                title="保存済みデッキまたはプリセットデッキを選択してセット"
+              >
+                デッキをセット
+              </button>
+            ) : isOpponent ? (
               <div className="flex items-center gap-1">
+                {onRevealTopDeck && (
+                  <button
+                    onClick={() => onRevealTopDeck()}
+                    disabled={player.deck.length === 0}
+                    className="px-1.5 py-1 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 rounded text-[9px] font-bold text-amber-300 shadow transition-colors"
+                    title="相手の山札の一番上を表向き/裏向きにする（朝倉シン等）"
+                  >
+                    {player.revealedTopDeckCard ? 'トップ裏' : 'トップ表'}
+                  </button>
+                )}
                 {onMillTopDeck && (
                   <button
                     onClick={onMillTopDeck}

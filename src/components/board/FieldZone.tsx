@@ -16,7 +16,19 @@ interface FieldZoneProps {
   onModifyBp?: (slotIndex: FieldSlotIndex, delta: number) => void;
   onToggleFreeze?: (slotIndex: FieldSlotIndex) => void;
   onAddMarker?: (slotIndex: FieldSlotIndex, from: 'deckTop' | 'hand') => void;
-  onMoveTo?: (slotIndex: FieldSlotIndex, dest: 'frontLine' | 'energyLine' | 'graveyard' | 'hand' | 'removed' | 'deckTop' | 'deckBottom') => void;
+  onMoveTo?: (
+    slotIndex: FieldSlotIndex,
+    dest:
+      | 'frontLine'
+      | 'energyLine'
+      | 'graveyard'
+      | 'hand'
+      | 'removed'
+      | 'deckTop'
+      | 'deckBottom'
+      | 'life'
+      | 'lifeFaceUp'
+  ) => void;
   onInspect?: (card: Card) => void;
   onDropCard?: (from: CardLocation, targetZone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => void;
   onDeclareAttack?: (slotIndex: FieldSlotIndex) => void;

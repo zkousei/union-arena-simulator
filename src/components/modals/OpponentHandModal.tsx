@@ -1,13 +1,17 @@
 import React from 'react';
 import { Card } from '../../types/card';
 import { CardView } from '../board/CardView';
-import { Hand, Trash2, X, Eye } from 'lucide-react';
+import { Hand, Trash2, X, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface OpponentHandModalProps {
   isOpen: boolean;
   cards: Card[];
   opponentName: string;
   onDiscardCard: (cardIndex: number) => void;
+  onMoveOpponentHandCard?: (
+    cardIndex: number,
+    destination: 'deckTopFaceUp' | 'deckTop' | 'deckBottom' | 'graveyard'
+  ) => void;
   onClose: () => void;
 }
 
@@ -16,6 +20,7 @@ export const OpponentHandModal: React.FC<OpponentHandModalProps> = ({
   cards,
   opponentName,
   onDiscardCard,
+  onMoveOpponentHandCard,
   onClose,
 }) => {
   if (!isOpen) return null;
@@ -65,15 +70,49 @@ export const OpponentHandModal: React.FC<OpponentHandModalProps> = ({
                 </div>
                 <CardView card={card} />
 
-                {/* 捨てる（ハンデス）ボタン */}
-                <button
-                  onClick={() => onDiscardCard(index)}
-                  className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-rose-700/80 hover:bg-rose-600 rounded text-white text-[11px] font-bold transition-colors shadow"
-                  title="このカードを場外に捨てる（ハンデス）"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  場外へ捨てる
-                </button>
+                {/* アクションボタングループ */}
+                <div className="flex flex-col gap-1 w-full text-[10px]">
+                  <button
+                    onClick={() => onDiscardCard(index)}
+                    className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-rose-700/80 hover:bg-rose-600 rounded text-white font-bold transition-colors shadow"
+                    title="このカードを場外に捨てる（ハンデス）"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    場外へ捨てる
+                  </button>
+
+                  {onMoveOpponentHandCard && (
+                    <>
+                      <button
+                        onClick={() => onMoveOpponentHandCard(index, 'deckTopFaceUp')}
+                        className="w-full flex items-center justify-center gap-1 py-1 px-1.5 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 rounded text-amber-300 font-bold transition-colors shadow"
+                        title="相手の山札の上に表向きで置く（朝倉シン等の効果）"
+                      >
+                        <Eye className="w-3 h-3 text-amber-400" />
+                        山札上に表向きで置く
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          onClick={() => onMoveOpponentHandCard(index, 'deckTop')}
+                          className="flex items-center justify-center gap-0.5 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-semibold transition-colors"
+                          title="相手の山札の上に戻す"
+                        >
+                          <ArrowUp className="w-2.5 h-2.5 text-indigo-400" />
+                          山札上
+                        </button>
+                        <button
+                          onClick={() => onMoveOpponentHandCard(index, 'deckBottom')}
+                          className="flex items-center justify-center gap-0.5 py-1 px-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-semibold transition-colors"
+                          title="相手の山札の下に戻す"
+                        >
+                          <ArrowDown className="w-2.5 h-2.5 text-indigo-400" />
+                          山札下
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             ))
           )}

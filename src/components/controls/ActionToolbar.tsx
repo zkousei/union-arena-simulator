@@ -40,10 +40,10 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
         <button
           onClick={onSetupDeck}
           className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition"
-          title="50枚サンプルデッキを読み込み、ライフ7枚・手札7枚・APを自動セットアップします"
+          title="保存済みデッキまたはプリセットデッキを選択して盤面にセットします"
         >
           <Layers className="w-3.5 h-3.5" />
-          デッキセットアップ
+          デッキ選択
         </button>
 
         <button
