@@ -1,0 +1,63 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createInitialGameState } from '../initialState';
+import { createAuthoritativeTransition, isNewerSnapshot } from '../peerSync';
+import { gameReducer } from '../reducer';
+import { Card } from '../../types/card';
+
+function createCard(index: number): Card {
+  return {
+    id: `card-${index}`,
+    code: `TEST-${index}`,
+    name: `Card ${index}`,
+    cardType: 'CHARACTER',
+    color: 'PURPLE',
+    bp: 1000,
+    apCost: 1,
+    reqEnergy: 0,
+    genEnergy: 1,
+    traits: [],
+    triggers: [],
+    effectText: '',
+    isRested: false,
+    bpModifier: 0,
+    underCards: [],
+  };
+}
+
+describe('authoritative P2P synchronization', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shares the host-resolved shuffle instead of recomputing randomness on the guest', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    state.players.p1.deck = Array.from({ length: 12 }, (_, index) => createCard(index));
+
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const action = { type: 'SHUFFLE_DECK', payload: { playerId: 'p1' } } as const;
+    const transition = createAuthoritativeTransition(
+      state,
+      action,
+      4
+    );
+
+    const hostDeckIds = transition.snapshot.state.players.p1.deck.map((card) => card.id);
+    random.mockReturnValue(0.999);
+    const independentlyReducedDeckIds = gameReducer(state, action).players.p1.deck.map((card) => card.id);
+    const guestDeckIds = transition.snapshot.state.players.p1.deck.map((card) => card.id);
+
+    expect(transition.changed).toBe(true);
+    expect(transition.snapshot.revision).toBe(5);
+    expect(independentlyReducedDeckIds).not.toEqual(hostDeckIds);
+    expect(guestDeckIds).toEqual(hostDeckIds);
+  });
+
+  it('rejects duplicate and out-of-order state snapshots', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    const snapshot = { state, revision: 8 };
+
+    expect(isNewerSnapshot(snapshot, 7)).toBe(true);
+    expect(isNewerSnapshot(snapshot, 8)).toBe(false);
+    expect(isNewerSnapshot(snapshot, 9)).toBe(false);
+  });
+});

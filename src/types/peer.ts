@@ -2,7 +2,9 @@ import { GameAction } from './actions';
 import { GameState } from './game';
 
 export type PeerMessageType =
-  | 'ACTION'
+  | 'ACTION_REQUEST'
+  | 'UNDO_REQUEST'
+  | 'STATE_COMMIT'
   | 'SYNC_REQUEST'
   | 'SYNC_RESPONSE'
   | 'CHAT'
@@ -17,14 +19,25 @@ export interface PeerMessage {
   timestamp: number;
 }
 
-export interface PeerActionMessage extends PeerMessage {
-  type: 'ACTION';
+export interface PeerActionRequestMessage extends PeerMessage {
+  type: 'ACTION_REQUEST';
   payload: GameAction;
+}
+
+export interface PeerStateSnapshot {
+  state: GameState;
+  revision: number;
+  action?: GameAction;
+}
+
+export interface PeerStateCommitMessage extends PeerMessage {
+  type: 'STATE_COMMIT';
+  payload: PeerStateSnapshot;
 }
 
 export interface PeerSyncResponseMessage extends PeerMessage {
   type: 'SYNC_RESPONSE';
-  payload: GameState;
+  payload: PeerStateSnapshot;
 }
 
 export interface PeerChatMessage extends PeerMessage {
