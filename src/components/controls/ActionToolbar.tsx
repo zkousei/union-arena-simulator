@@ -38,9 +38,9 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onToggleFitMode,
 }) => {
   return (
-    <div className={`flex items-center justify-between flex-wrap gap-2 px-3 border-b border-slate-800 text-xs ${isFitMode ? 'py-1 bg-slate-900/95' : 'py-2 bg-slate-900'}`}>
+    <div className={`flex items-center justify-start lg:justify-between flex-nowrap lg:flex-wrap gap-2 px-2 sm:px-3 border-b border-slate-800 text-xs overflow-x-auto shrink-0 ${isFitMode ? 'py-1 bg-slate-900/95' : 'py-2 bg-slate-900'}`}>
       {/* プレイ操作ボタングループ */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1.5 flex-nowrap lg:flex-wrap shrink-0">
         <button
           onClick={onSetupDeck}
           className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition"
@@ -146,7 +146,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
       </div>
 
       {/* P2P通信ステータス & 接続ボタン */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-slate-950 rounded-lg border border-slate-800">
           <div
             className={`w-2 h-2 rounded-full ${

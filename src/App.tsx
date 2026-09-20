@@ -163,7 +163,7 @@ function AppNavigation({
             }`}
           >
             <Home className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">ホーム</span>
+            <span className="hidden xl:inline">ホーム</span>
           </Link>
           <Link
             to="/deck-builder"
@@ -175,7 +175,7 @@ function AppNavigation({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">デッキ構築</span>
+            <span className="hidden xl:inline">デッキ構築</span>
           </Link>
           <Link
             to="/game?mode=solo"
@@ -187,7 +187,7 @@ function AppNavigation({
             }`}
           >
             <Swords className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">対戦盤面</span>
+            <span className="hidden xl:inline">対戦盤面</span>
           </Link>
         </nav>
 
@@ -202,7 +202,7 @@ function AppNavigation({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition"
           >
             <Play className="w-3 h-3 fill-white" />
-            <span className="hidden sm:inline">対戦メニュー</span>
+            <span className="hidden xl:inline">対戦メニュー</span>
             <ChevronDown className={`w-3 h-3 transition-transform ${isPlayMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -289,7 +289,7 @@ function AppNavigation({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-[11px] font-bold">
                   <Wifi className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span>P2P接続中 ({isHost ? 'ホスト' : 'ゲスト'})</span>
+                  <span className="hidden xl:inline">P2P接続中 ({isHost ? 'ホスト' : 'ゲスト'})</span>
                 </div>
                 <button
                   onClick={handleDisconnect}
@@ -297,7 +297,7 @@ function AppNavigation({
                   title="P2P接続を切断してソロへ戻る"
                 >
                   <LogOut className="w-3 h-3" />
-                  <span className="hidden sm:inline">切断</span>
+                  <span className="hidden xl:inline">切断</span>
                 </button>
               </div>
             ) : currentRoomId && isHost ? (
@@ -305,7 +305,7 @@ function AppNavigation({
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/50 border border-amber-700/50 text-amber-300 text-[11px] font-semibold animate-pulse">
                   <Radio className="w-3 h-3" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden xl:inline">
                     {peer.status === 'reconnecting' ? '再接続待機中' : '相手待機中'}
                   </span>
                 </div>
@@ -315,7 +315,7 @@ function AppNavigation({
                   title="友達への招待リンクをコピー"
                 >
                   {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copied ? 'コピー済' : 'URL招待'}</span>
+                  <span className="hidden xl:inline">{copied ? 'コピー済' : 'URL招待'}</span>
                 </button>
               </div>
             ) : peer.role === 'guest' ? (
@@ -324,18 +324,18 @@ function AppNavigation({
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[11px] font-bold"
               >
                 <RefreshCw className="w-3 h-3 animate-spin" />
-                <span>再接続中</span>
+                <span className="hidden xl:inline">再接続中</span>
               </button>
             ) : (
               /* ソロプレイ中 */
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-700/60 text-indigo-300 text-[11px] font-bold">
                   <span>🎮</span>
-                  <span className="hidden sm:inline">ソロプレイ（反転なし）</span>
+                  <span className="hidden xl:inline">ソロプレイ（反転なし）</span>
                 </div>
 
                 {/* 現在手番の表示 */}
-                <div className="flex items-center bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 text-xs gap-1.5">
+                <div className="hidden xl:flex items-center bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 text-xs gap-1.5">
                   <span className="text-slate-400 flex items-center gap-1 text-[11px]">
                     <UserCheck className="w-3 h-3 text-amber-400" />
                     <span className="hidden md:inline">現在手番:</span>
@@ -353,7 +353,7 @@ function AppNavigation({
                   title="P2Pオンライン対戦に切り替える"
                 >
                   <Users className="w-3 h-3" />
-                  <span className="hidden sm:inline">P2P切替</span>
+                  <span className="hidden xl:inline">P2P切替</span>
                 </button>
               </div>
             )}
@@ -416,7 +416,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   const isHost = hostParam === 'true' || peer.role === 'host';
 
   const navigate = useNavigate();
-  const [isLogCollapsed, setIsLogCollapsed] = useState(false);
+  const [isLogCollapsed, setIsLogCollapsed] = useState(
+    () => window.matchMedia('(max-width: 1023px)').matches
+  );
   const [isDeckPickerOpen, setIsDeckPickerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isFitMode, setIsFitMode] = useState<boolean>(() => {
@@ -628,9 +630,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
       )}
 
       {/* メイン対戦盤面 & ログパネル */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 min-h-0 flex overflow-hidden relative">
         {/* ボード領域 */}
-        <div className="flex-1 h-full overflow-y-auto">
+        <div className="flex-1 min-w-0 h-full overflow-y-auto">
           <Board
             gameState={gameState}
             myPlayerId={myPlayerId}
@@ -645,8 +647,10 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
 
         {/* 対戦行動ログサイドバー */}
         <div
-          className={`transition-all duration-300 ease-in-out border-l border-slate-800 bg-slate-900/95 flex flex-col h-full ${
-            isLogCollapsed ? 'w-10' : 'w-72 sm:w-80 md:w-96'
+          className={`inset-y-0 right-0 z-30 transition-all duration-300 ease-in-out border-l border-slate-800 bg-slate-900/95 flex flex-col h-full ${
+            isLogCollapsed
+              ? 'relative w-10 shrink-0'
+              : 'absolute lg:relative w-[min(20rem,calc(100vw-2rem))] lg:w-96 shadow-2xl lg:shadow-none'
           }`}
         >
           <div className="flex items-center justify-between p-2 border-b border-slate-800">

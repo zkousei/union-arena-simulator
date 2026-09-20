@@ -1200,7 +1200,7 @@ export const Board: React.FC<BoardProps> = ({
   const isBottomActive = gameState.activePlayerId === bottomPlayerId;
 
   return (
-    <div className={`w-full h-full max-w-7xl mx-auto flex flex-col justify-between overflow-y-auto ${
+    <div className={`w-full h-full max-w-7xl mx-auto flex flex-col justify-between overflow-y-auto overflow-x-hidden ${
       isFitMode ? 'p-1 gap-1 select-none' : 'p-2 gap-2'
     }`}>
       {/* 相手 / 対面プレイヤーエリア (ソロプレイ時はP2で固定) */}
@@ -1210,7 +1210,7 @@ export const Board: React.FC<BoardProps> = ({
             ? () => handleAttackPlayer(topPlayerId)
             : undefined
         }
-        className={`flex ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 items-center'} rounded-2xl border transition-all ${
+        className={`flex flex-col sm:flex-row ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 sm:items-center'} rounded-2xl border transition-all ${
           attackingState !== null && attackingState.attackerPlayerId !== topPlayerId
             ? 'border-rose-500/80 bg-rose-950/20 cursor-crosshair ring-2 ring-rose-500/50 animate-pulse'
             : isTopActive
@@ -1264,7 +1264,7 @@ export const Board: React.FC<BoardProps> = ({
           onDropToLife={handleDropToLife}
           onDropToDeck={handleDropToDeck}
         />
-        <div className={`flex-1 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
+        <div className={`flex-1 min-w-0 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
           <HandArea
             cards={topPlayer.hand}
             playerId={topPlayerId}
@@ -1372,7 +1372,7 @@ export const Board: React.FC<BoardProps> = ({
             ? () => handleAttackPlayer(bottomPlayerId)
             : undefined
         }
-        className={`flex ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 items-center'} rounded-2xl border transition-all ${
+        className={`flex flex-col sm:flex-row ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 sm:items-center'} rounded-2xl border transition-all ${
           attackingState !== null && attackingState.attackerPlayerId !== bottomPlayerId
             ? 'border-rose-500/80 bg-rose-950/20 cursor-crosshair ring-2 ring-rose-500/50 animate-pulse'
             : isBottomActive
@@ -1380,7 +1380,7 @@ export const Board: React.FC<BoardProps> = ({
             : 'bg-slate-900/60 border-indigo-500/20 shadow-xl'
         }`}
       >
-        <div className={`flex-1 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
+        <div className={`flex-1 min-w-0 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
           <FieldZone
             title={`${bottomPlayer.name}: フロントライン`}
             zone="frontLine"

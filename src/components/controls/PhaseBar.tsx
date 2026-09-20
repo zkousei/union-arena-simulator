@@ -111,6 +111,7 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
           return (
             <button
               key={p.id}
+              aria-label={`${p.label}${isAttackBlocked ? ' (不可)' : ''}`}
               onClick={() => {
                 if (isAttackBlocked) {
                   alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
@@ -131,7 +132,7 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
               }`}
             >
               {p.icon}
-              <span>{p.label}{isAttackBlocked ? ' (不可)' : ''}</span>
+              <span className="hidden sm:inline">{p.label}{isAttackBlocked ? ' (不可)' : ''}</span>
             </button>
           );
         })}

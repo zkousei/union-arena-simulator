@@ -1,0 +1,109 @@
+import { expect, test } from '@playwright/test';
+
+const setPresetDeck = async (page: import('@playwright/test').Page, playerName: string) => {
+  await page.getByRole('button', { name: 'デッキ選択・セット' }).click();
+  await page.getByRole('button', { name: `${playerName}にセット` }).first().click();
+};
+
+const expectNoHorizontalOverflow = async (page: import('@playwright/test').Page) => {
+  const viewport = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth);
+};
+
+const expectFieldSlotsWithinViewport = async (page: import('@playwright/test').Page) => {
+  const firstSlot = await page.locator('#slot-player-1-frontLine-0').boundingBox();
+  const lastSlot = await page.locator('#slot-player-1-frontLine-3').boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(firstSlot).not.toBeNull();
+  expect(lastSlot).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(firstSlot!.x).toBeGreaterThanOrEqual(0);
+  expect(lastSlot!.x + lastSlot!.width).toBeLessThanOrEqual(viewport!.width);
+};
+
+const expectCompactHeader = async (page: import('@playwright/test').Page) => {
+  const header = await page.locator('header').boundingBox();
+
+  expect(header).not.toBeNull();
+  expect(header!.height).toBeLessThanOrEqual(64);
+};
+
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'portrait tablet', width: 768, height: 1024 },
+]) {
+  test(`keeps the preparing board usable on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/game?mode=solo');
+
+    await expect(page.getByTitle('ログを開く')).toBeVisible();
+    await expectCompactHeader(page);
+    await expectFieldSlotsWithinViewport(page);
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+test('keeps the existing desktop log layout', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/game?mode=solo');
+
+  await expect(page.getByTitle('ログを閉じる')).toBeVisible();
+  await expectCompactHeader(page);
+  await expectFieldSlotsWithinViewport(page);
+  await expectNoHorizontalOverflow(page);
+});
+
+test('uses the desktop-style board on a landscape tablet', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto('/game?mode=solo');
+
+  await expect(page.getByTitle('ログを閉じる')).toBeVisible();
+  await expectCompactHeader(page);
+  await expectFieldSlotsWithinViewport(page);
+  await expectNoHorizontalOverflow(page);
+});
+
+test('opens the action log as a drawer on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/game?mode=solo');
+
+  await page.getByTitle('ログを開く').click();
+  await expect(page.getByTitle('ログを閉じる')).toBeVisible();
+  await expect(page.getByText('行動ログ')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByTitle('ログを閉じる').click();
+  await expect(page.getByTitle('ログを開く')).toBeVisible();
+});
+
+test('starts a solo game and advances the phase on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/game?mode=solo');
+
+  await setPresetDeck(page, 'あなた');
+  await setPresetDeck(page, '対戦相手');
+
+  const keepButtons = page.getByRole('button', { name: 'キープ' });
+  await keepButtons.first().click();
+  await keepButtons.first().click();
+  await page.getByRole('button', { name: /両者のライフ7枚を一括配置/ }).click();
+  await page.getByRole('button', { name: /対戦開始/ }).click();
+
+  await expect(page.getByText('TURN 1')).toBeVisible();
+  for (const phaseName of ['スタート', '移動', 'メイン', 'アタック (不可)', 'エンド']) {
+    const phaseButton = page.getByRole('button', { name: phaseName, exact: true });
+    const phaseBox = await phaseButton.boundingBox();
+    expect(phaseBox).not.toBeNull();
+    expect(phaseBox!.height).toBeLessThanOrEqual(36);
+  }
+  const advanceButton = page.getByRole('button', { name: /移動へ/ });
+  await expect(advanceButton).toBeVisible();
+  await advanceButton.click();
+  await expect(page.getByRole('button', { name: /メインへ/ })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});

@@ -104,8 +104,8 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   return (
     <div className={`flex flex-col rounded-xl border border-slate-800/80 bg-slate-900/40 ${
       isCompact
-        ? 'w-40 sm:w-44 p-1.5 gap-1 text-[11px] shrink-0 justify-between'
-        : 'w-48 sm:w-52 p-2 gap-2 text-xs'
+        ? 'w-full sm:w-44 p-1.5 gap-1 text-[11px] shrink-0 justify-between'
+        : 'w-full sm:w-52 p-2 gap-2 text-xs'
     }`}>
       {/* APエリア */}
       <div className={`flex items-center justify-between bg-slate-950/80 rounded-lg border border-amber-500/30 ${isCompact ? 'p-1' : 'p-2'}`}>
