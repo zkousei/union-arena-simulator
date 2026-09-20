@@ -42,10 +42,10 @@ interface AppNavigationProps {
   onOpenHelp: () => void;
   onOpenPeerModal: () => void;
   peer: ReturnType<typeof useGame>['peer'];
-  myPlayerId: string;
-  setMyPlayerId: (id: string) => void;
   isHost: boolean;
   currentRoomId: string | null;
+  activePlayerId?: string;
+  activePlayerName?: string;
 }
 
 function AppNavigation({
@@ -57,10 +57,10 @@ function AppNavigation({
   onOpenHelp,
   onOpenPeerModal,
   peer,
-  myPlayerId,
-  setMyPlayerId,
   isHost,
   currentRoomId,
+  activePlayerId,
+  activePlayerName,
 }: AppNavigationProps) {
   const location = useLocation();
   const isHome = location.pathname === '/';
@@ -310,35 +310,20 @@ function AppNavigation({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-700/60 text-indigo-300 text-[11px] font-bold">
                   <span>🎮</span>
-                  <span className="hidden sm:inline">ソロプレイ</span>
+                  <span className="hidden sm:inline">ソロプレイ（反転なし）</span>
                 </div>
 
-                {/* 視点切り替え */}
-                <div className="flex items-center bg-slate-950 px-1.5 py-0.5 rounded-lg border border-slate-800 text-xs">
-                  <span className="text-slate-400 mr-1.5 flex items-center gap-1 text-[11px]">
-                    <UserCheck className="w-3 h-3 text-indigo-400" />
-                    <span className="hidden md:inline">操作:</span>
+                {/* 現在手番の表示 */}
+                <div className="flex items-center bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 text-xs gap-1.5">
+                  <span className="text-slate-400 flex items-center gap-1 text-[11px]">
+                    <UserCheck className="w-3 h-3 text-amber-400" />
+                    <span className="hidden md:inline">現在手番:</span>
                   </span>
-                  <button
-                    onClick={() => setMyPlayerId('player-1')}
-                    className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                      myPlayerId === 'player-1'
-                        ? 'bg-indigo-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    P1
-                  </button>
-                  <button
-                    onClick={() => setMyPlayerId('player-2')}
-                    className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                      myPlayerId === 'player-2'
-                        ? 'bg-indigo-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    P2
-                  </button>
+                  <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                    activePlayerId === 'player-1' ? 'bg-indigo-600 text-white shadow' : 'bg-amber-600 text-white shadow'
+                  }`}>
+                    {activePlayerName || (activePlayerId === 'player-1' ? 'Player 1 (下)' : 'Player 2 (上)')}
+                  </span>
                 </div>
 
                 <button
@@ -410,6 +395,18 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [isDeckPickerOpen, setIsDeckPickerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isFitMode, setIsFitMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ua_fit_mode');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const handleToggleFitMode = () => {
+    setIsFitMode((prev) => {
+      const next = !prev;
+      localStorage.setItem('ua_fit_mode', String(next));
+      return next;
+    });
+  };
 
   // URLにゲスト用roomがある場合、自動的に部屋参加を試行
   useEffect(() => {
@@ -450,31 +447,34 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     sound.playPlace();
   };
 
+  const isSoloMode = !peer.status || peer.status === 'disconnected';
+  const toolbarTargetPlayerId = isSoloMode ? gameState.activePlayerId : myPlayerId;
+
   const handleSetAllActive = () => {
     dispatchAction({
       type: 'SET_ALL_ACTIVE',
-      payload: { playerId: myPlayerId },
+      payload: { playerId: toolbarTargetPlayerId },
     });
   };
 
   const handleRecoverAp = () => {
     dispatchAction({
       type: 'RECOVER_AP',
-      payload: { playerId: myPlayerId },
+      payload: { playerId: toolbarTargetPlayerId },
     });
   };
 
   const handleDrawCard = () => {
     dispatchAction({
       type: 'DRAW_CARD',
-      payload: { playerId: myPlayerId, count: 1 },
+      payload: { playerId: toolbarTargetPlayerId, count: 1 },
     });
   };
 
   const handleRollDice = () => {
     dispatchAction({
       type: 'ROLL_DICE',
-      payload: { playerId: myPlayerId },
+      payload: { playerId: toolbarTargetPlayerId },
     });
   };
 
@@ -570,12 +570,13 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
           firstPlayerId={gameState.firstPlayerId}
           onSetFirstPlayer={handleSetFirstPlayer}
           onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
-          onMulligan={() => handleMulligan(myPlayerId)}
-          onKeepHand={() => handleKeepHand(myPlayerId)}
-          onPlaceLife={() => handlePlaceInitialLife(myPlayerId)}
-          onToggleReady={() => handleToggleReady(myPlayerId)}
+          onMulligan={(targetPlayerId) => handleMulligan(targetPlayerId || myPlayerId)}
+          onKeepHand={(targetPlayerId) => handleKeepHand(targetPlayerId || myPlayerId)}
+          onPlaceLife={(targetPlayerId) => handlePlaceInitialLife(targetPlayerId || myPlayerId)}
+          onToggleReady={(targetPlayerId) => handleToggleReady(targetPlayerId || myPlayerId)}
           onStartGame={handleStartGame}
           onRollDice={handleRollDice}
+          isSoloMode={isSoloMode}
         />
       ) : (
         <ActionToolbar
@@ -592,6 +593,8 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
           onOpenPeerModal={onOpenPeerModal}
           peerStatus={peer.status}
           isHost={peer.isHost}
+          isFitMode={isFitMode}
+          onToggleFitMode={handleToggleFitMode}
         />
       )}
 
@@ -605,6 +608,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
             dispatchAction={dispatchAction}
             onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
             isSoloMode={!peer.status || peer.status === 'disconnected'}
+            isFitMode={isFitMode}
           />
         </div>
 
@@ -670,7 +674,6 @@ export function App() {
   const game = useGame();
   const {
     myPlayerId,
-    setMyPlayerId,
     dispatchAction,
     peer,
     createRoom,
@@ -755,10 +758,10 @@ export function App() {
         onOpenHelp={() => setShowHelpModal(true)}
         onOpenPeerModal={() => setIsPeerModalOpen(true)}
         peer={peer}
-        myPlayerId={myPlayerId}
-        setMyPlayerId={setMyPlayerId}
         isHost={isHost}
         currentRoomId={currentRoomId}
+        activePlayerId={game.gameState.activePlayerId}
+        activePlayerName={game.gameState.players[game.gameState.activePlayerId]?.name || (game.gameState.activePlayerId === 'player-1' ? 'Player 1' : 'Player 2')}
       />
 
       {/* URLルーティング (React Router) */}

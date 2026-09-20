@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, RotateCcw, Sparkles, Dices, Users, RotateCw, PlusCircle, Undo2, Volume2, VolumeX } from 'lucide-react';
+import { Layers, RotateCcw, Sparkles, Dices, Users, RotateCw, PlusCircle, Undo2, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
 import { ConnectionStatus } from '../../types/peer';
 
 interface ActionToolbarProps {
@@ -16,6 +16,8 @@ interface ActionToolbarProps {
   onOpenPeerModal: () => void;
   peerStatus: ConnectionStatus;
   isHost: boolean;
+  isFitMode?: boolean;
+  onToggleFitMode?: () => void;
 }
 
 export const ActionToolbar: React.FC<ActionToolbarProps> = ({
@@ -32,9 +34,11 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onOpenPeerModal,
   peerStatus,
   isHost,
+  isFitMode = true,
+  onToggleFitMode,
 }) => {
   return (
-    <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-2 bg-slate-900 border-b border-slate-800 text-xs">
+    <div className={`flex items-center justify-between flex-wrap gap-2 px-3 border-b border-slate-800 text-xs ${isFitMode ? 'py-1 bg-slate-900/95' : 'py-2 bg-slate-900'}`}>
       {/* プレイ操作ボタングループ */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <button
@@ -92,6 +96,35 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
           <Undo2 className="w-3.5 h-3.5" />
           Undo
         </button>
+
+        {/* 画面フィット / 拡大表示切替ボタン */}
+        {onToggleFitMode && (
+          <button
+            onClick={onToggleFitMode}
+            className={`flex items-center gap-1 px-2.5 py-1.5 font-bold rounded-lg border transition ${
+              isFitMode
+                ? 'bg-indigo-950/70 border-indigo-500/60 text-indigo-300 hover:bg-indigo-900/60 shadow-sm'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+            title={
+              isFitMode
+                ? '現在「画面フィット（スクロール不要）」です。クリックで拡大スクロール表示に切り替えます'
+                : '現在「拡大スクロール表示」です。クリックで全体表示（スクロール不要）に切り替えます'
+            }
+          >
+            {isFitMode ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5 text-indigo-400" />
+                <span>画面フィット</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>拡大表示</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* サウンドトグルボタン */}
         <button

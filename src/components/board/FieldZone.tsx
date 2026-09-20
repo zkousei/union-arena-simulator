@@ -10,6 +10,7 @@ interface FieldZoneProps {
   slots: (Card | null)[];
   playerId: string;
   isOpponent?: boolean;
+  isControllable?: boolean;
   selectedCardId?: string | null;
   onSlotClick?: (slotIndex: FieldSlotIndex) => void;
   onToggleRest?: (slotIndex: FieldSlotIndex) => void;
@@ -34,6 +35,7 @@ interface FieldZoneProps {
   onDeclareAttack?: (slotIndex: FieldSlotIndex) => void;
   onOpenUnderCards?: (slotIndex: FieldSlotIndex, card: Card) => void;
   extraHeaderBadge?: React.ReactNode;
+  isCompact?: boolean;
 }
 
 export const FieldZone: React.FC<FieldZoneProps> = ({
@@ -42,6 +44,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   slots,
   playerId,
   isOpponent = false,
+  isControllable = false,
   selectedCardId,
   onSlotClick,
   onToggleRest,
@@ -54,11 +57,13 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   onDeclareAttack,
   onOpenUnderCards,
   extraHeaderBadge,
+  isCompact = false,
 }) => {
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  const canControl = isControllable || !isOpponent;
 
   const handleDragOver = (e: React.DragEvent, slotIdx: number) => {
-    if (isOpponent) return;
+    if (!canControl) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverSlot !== slotIdx) {
@@ -73,7 +78,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   };
 
   const handleDrop = (e: React.DragEvent, slotIdx: FieldSlotIndex) => {
-    if (isOpponent) return;
+    if (!canControl) return;
     e.preventDefault();
     setDragOverSlot(null);
 
@@ -90,9 +95,9 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full max-w-4xl mx-auto">
-      <div className="flex items-center justify-between px-2">
-        <span className="text-xs font-semibold text-slate-400 tracking-wider">
+    <div className={`flex flex-col w-full max-w-4xl mx-auto ${isCompact ? 'gap-0.5 shrink-0' : 'gap-1'}`}>
+      <div className={`flex items-center justify-between px-2 ${isCompact ? 'h-5 py-0' : 'py-0.5'}`}>
+        <span className={`${isCompact ? 'text-[11px]' : 'text-xs'} font-semibold text-slate-400 tracking-wider`}>
           {title}
         </span>
         {extraHeaderBadge && (
@@ -100,7 +105,9 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:gap-3 p-2 bg-slate-900/60 rounded-xl border border-slate-800/80 shadow-inner">
+      <div className={`grid grid-cols-4 p-1 bg-slate-900/60 rounded-xl border border-slate-800/80 shadow-inner ${
+        isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-3 p-2'
+      }`}>
         {slots.map((card, index) => {
           const slotIdx = index as FieldSlotIndex;
           const isOver = dragOverSlot === index;
@@ -113,7 +120,11 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={(e) => handleDragLeave(e, index)}
               onDrop={(e) => handleDrop(e, slotIdx)}
-              className={`min-h-[116px] sm:min-h-[140px] md:min-h-[164px] rounded-lg border-2 border-dashed flex items-center justify-center relative transition-all ${
+              className={`rounded-lg border-2 border-dashed flex items-center justify-center relative transition-all ${
+                isCompact
+                  ? 'h-[82px] min-h-[82px] lg:h-[88px] lg:min-h-[88px]'
+                  : 'min-h-[116px] sm:min-h-[140px] md:min-h-[164px]'
+              } ${
                 isOver
                   ? 'border-indigo-400 bg-indigo-900/40 ring-2 ring-indigo-400 scale-105 shadow-xl'
                   : card
@@ -127,7 +138,8 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
                 <CardView
                   card={card}
                   location={{ playerId, zone, slotIndex: slotIdx }}
-                  isOpponent={isOpponent}
+                  isOpponent={!canControl}
+                  isCompact={isCompact}
                   onToggleRest={() => onToggleRest && onToggleRest(slotIdx)}
                   onModifyBp={(delta) => onModifyBp && onModifyBp(slotIdx, delta)}
                   onToggleFreeze={() => onToggleFreeze && onToggleFreeze(slotIdx)}
@@ -139,12 +151,12 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xs font-bold text-slate-600">枠 {index + 1}</span>
+                  <span className={`${isCompact ? 'text-[10px]' : 'text-xs'} font-bold text-slate-600`}>枠 {index + 1}</span>
                   {selectedCardId && (
-                    <span className="text-[10px] text-indigo-400 mt-1">ここへ配置</span>
+                    <span className="text-[9px] text-indigo-400 mt-0.5">ここへ配置</span>
                   )}
                   {isOver && (
-                    <span className="text-[10px] text-indigo-300 font-bold mt-1">ドロップで配置</span>
+                    <span className="text-[9px] text-indigo-300 font-bold mt-0.5">ドロップ</span>
                   )}
                 </div>
               )}

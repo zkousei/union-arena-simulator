@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 import { GraveyardModal } from '../modals/GraveyardModal';
 import { RemovedModal } from '../modals/RemovedModal';
+import { LifePlacementModal } from '../modals/LifePlacementModal';
 
 interface SideZonesAreaProps {
   player: PlayerState;
   isOpponent?: boolean;
+  isSoloMode?: boolean;
   onDraw?: () => void;
   onShuffle?: () => void;
   onCheckLife?: (index?: number) => void;
@@ -51,11 +53,14 @@ interface SideZonesAreaProps {
   ) => void;
   onOpenDeckPicker?: () => void;
   onDropToLife?: (from: CardLocation, isFaceDown?: boolean) => void;
+  isCompact?: boolean;
 }
 
 export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   player,
   isOpponent = false,
+  isSoloMode = false,
+  isCompact = false,
   onDraw,
   onShuffle,
   onCheckLife,
@@ -84,23 +89,28 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
   const [showBottomDeckDropdown, setShowBottomDeckDropdown] = useState(false);
   const [showLifeMenu, setShowLifeMenu] = useState(false);
   const [selectedMyLifeIndex, setSelectedMyLifeIndex] = useState<number | null>(null);
+  const [pendingLifeDrop, setPendingLifeDrop] = useState<CardLocation | null>(null);
 
   const hasEmptyFrontSlot = player.frontLine.some((c) => c === null);
   const hasEmptyEnergySlot = player.energyLine.some((c) => c === null);
 
   return (
-    <div className="flex flex-col gap-2 p-2 bg-slate-900/40 rounded-xl border border-slate-800/80 text-xs w-48 sm:w-52">
+    <div className={`flex flex-col rounded-xl border border-slate-800/80 bg-slate-900/40 ${
+      isCompact
+        ? 'w-40 sm:w-44 p-1.5 gap-1 text-[11px] shrink-0 justify-between'
+        : 'w-48 sm:w-52 p-2 gap-2 text-xs'
+    }`}>
       {/* APエリア */}
-      <div className="flex items-center justify-between bg-slate-950/80 p-2 rounded-lg border border-amber-500/30">
+      <div className={`flex items-center justify-between bg-slate-950/80 rounded-lg border border-amber-500/30 ${isCompact ? 'p-1' : 'p-2'}`}>
         <div className="flex items-center gap-1.5 font-bold text-amber-400">
-          <Zap className="w-4 h-4" />
+          <Zap className={`${isCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
           <span>AP</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-base font-extrabold text-white px-2 py-0.5 bg-amber-950/80 rounded border border-amber-500/50">
+          <span className={`${isCompact ? 'text-sm px-1.5' : 'text-base px-2'} font-extrabold text-white py-0.5 bg-amber-950/80 rounded border border-amber-500/50`}>
             {player.apCurrent} / {player.apMax}
           </span>
-          {!isOpponent && (
+          {(!isOpponent || isSoloMode) && (
             <div className="flex items-center gap-0.5 ml-1">
               <button
                 onClick={onUseAp}
@@ -126,33 +136,27 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
       {/* ライフエリア */}
       <div
         onDragOver={(e) => {
-          if (isOpponent) return;
+          if (isOpponent && !isSoloMode) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }}
         onDrop={(e) => {
-          if (isOpponent) return;
+          if (isOpponent && !isSoloMode) return;
           e.preventDefault();
           try {
             const raw = e.dataTransfer.getData('application/x-union-arena-card');
             if (!raw) return;
             const payload = JSON.parse(raw);
-            if (onDropToLife) {
-              const choice = window.prompt(
-                '【ライフ配置の選択】\nカードをライフエリアに置きます。\n配置方法を選択してください:\n1: 表向きで置く（レディ・ブラック等の効果）\n2: 裏向きで置く\n（キャンセルを押すと中止します）',
-                '1'
-              );
-              if (choice === '1') {
-                onDropToLife(payload.from, false);
-              } else if (choice === '2') {
-                onDropToLife(payload.from, true);
-              }
+            if (onDropToLife && payload.from) {
+              setPendingLifeDrop(payload.from);
             }
           } catch (err) {
             console.error('Failed to parse dropped card to life:', err);
           }
         }}
-        className="flex flex-col gap-1.5 bg-slate-950/80 p-2 rounded-lg border border-rose-500/30 relative hover:border-rose-500/60 transition-colors"
+        className={`flex flex-col bg-slate-950/80 rounded-lg border border-rose-500/30 relative hover:border-rose-500/60 transition-colors ${
+          isCompact ? 'p-1 gap-0.5' : 'p-2 gap-1.5'
+        }`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-bold text-rose-400">
@@ -223,7 +227,9 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                           setSelectedMyLifeIndex(selectedMyLifeIndex === idx ? null : idx);
                         }
                       }}
-                      className={`w-7 h-10 rounded border text-[9px] font-bold flex flex-col items-center justify-between p-0.5 transition-all transform hover:scale-105 hover:z-10 shadow-sm ${
+                      className={`${
+                        isCompact ? 'w-5 h-7 text-[8px] p-0' : 'w-7 h-10 text-[9px] p-0.5'
+                      } rounded border font-bold flex flex-col items-center justify-between transition-all transform hover:scale-105 hover:z-10 shadow-sm ${
                         !isFaceDown
                           ? 'bg-amber-950/90 border-amber-400/80 text-amber-200 ring-1 ring-amber-400/50'
                           : isOpponent
@@ -394,7 +400,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
         )}
 
         {/* ライフ高度操作 (回復・自傷コスト・手札回収・表向き化) */}
-        {!isOpponent && (
+        {(!isOpponent || isSoloMode) && (
           <div className="flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px] relative">
             <button
               onClick={() => onRecoverLife?.()}
@@ -477,7 +483,9 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
       </div>
 
       {/* 山札 (Deck) */}
-      <div className="flex flex-col gap-1.5 bg-slate-950/80 p-2 rounded-lg border border-indigo-500/30 relative">
+      <div className={`flex flex-col bg-slate-950/80 rounded-lg border border-indigo-500/30 relative ${
+        isCompact ? 'p-1 gap-0.5' : 'p-2 gap-1.5'
+      }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-bold text-indigo-400">
             <Layers className="w-4 h-4" />
@@ -558,8 +566,8 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
           </div>
         )}
 
-        {/* 山札確認・サーチボタングループ (自分のみ) */}
-        {!isOpponent && (
+        {/* 山札確認・サーチボタングループ (自分のみ、またはソロモード) */}
+        {(!isOpponent || isSoloMode) && (
           <div className="flex items-center gap-1 pt-1 border-t border-slate-800 text-[10px]">
             {/* 上からN枚見るボタン */}
             <div className="relative flex-1">
@@ -656,16 +664,16 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
       </div>
 
       {/* 場外 (Graveyard) & 除外 (Removed) */}
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className={`grid grid-cols-2 ${isCompact ? 'gap-1' : 'gap-1.5'}`}>
         <button
           onClick={() => setShowGraveyardModal(true)}
           onDragOver={(e) => {
-            if (isOpponent) return;
+            if (isOpponent && !isSoloMode) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
           }}
           onDrop={(e) => {
-            if (isOpponent) return;
+            if (isOpponent && !isSoloMode) return;
             e.preventDefault();
             try {
               const raw = e.dataTransfer.getData('application/x-union-arena-card');
@@ -678,25 +686,27 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
               console.error('Failed to parse dropped graveyard card:', err);
             }
           }}
-          className="flex flex-col items-center justify-center p-1.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-700 rounded-lg text-slate-300 transition hover:border-rose-500/80 hover:ring-1 hover:ring-rose-500 cursor-pointer"
+          className={`flex flex-col items-center justify-center bg-slate-950/80 hover:bg-slate-900 border border-slate-700 rounded-lg text-slate-300 transition hover:border-rose-500/80 hover:ring-1 hover:ring-rose-500 cursor-pointer ${
+            isCompact ? 'p-1' : 'p-1.5'
+          }`}
           title="クリックで一覧確認・回収 / ドロップで場外へ送る"
         >
           <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             <Skull className="w-3 h-3 text-rose-400" />
             <span>場外</span>
           </div>
-          <span className="font-bold text-sm text-white">{player.graveyard.length}</span>
+          <span className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-white`}>{player.graveyard.length}</span>
         </button>
 
         <button
           onClick={() => setShowRemovedModal(true)}
           onDragOver={(e) => {
-            if (isOpponent) return;
+            if (isOpponent && !isSoloMode) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
           }}
           onDrop={(e) => {
-            if (isOpponent) return;
+            if (isOpponent && !isSoloMode) return;
             e.preventDefault();
             try {
               const raw = e.dataTransfer.getData('application/x-union-arena-card');
@@ -709,14 +719,16 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
               console.error('Failed to parse dropped removed card:', err);
             }
           }}
-          className="flex flex-col items-center justify-center p-1.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-700 rounded-lg text-slate-300 transition hover:border-purple-500/80 hover:ring-1 hover:ring-purple-500 cursor-pointer"
+          className={`flex flex-col items-center justify-center bg-slate-950/80 hover:bg-slate-900 border border-slate-700 rounded-lg text-slate-300 transition hover:border-purple-500/80 hover:ring-1 hover:ring-purple-500 cursor-pointer ${
+            isCompact ? 'p-1' : 'p-1.5'
+          }`}
           title="クリックで一覧確認・回収 / ドロップで除外（リムーブ）へ送る"
         >
           <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             <Ban className="w-3 h-3 text-purple-400" />
             <span>除外</span>
           </div>
-          <span className="font-bold text-sm text-white">{player.removed.length}</span>
+          <span className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-white`}>{player.removed.length}</span>
         </button>
       </div>
 
@@ -752,6 +764,18 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
         }}
         onInspectCard={(card) => onInspectCard && onInspectCard(card)}
         onClose={() => setShowRemovedModal(false)}
+      />
+
+      {/* ライフ配置方法選択モーダル */}
+      <LifePlacementModal
+        isOpen={pendingLifeDrop !== null}
+        onConfirm={(isFaceDown) => {
+          if (pendingLifeDrop && onDropToLife) {
+            onDropToLife(pendingLifeDrop, isFaceDown);
+          }
+          setPendingLifeDrop(null);
+        }}
+        onClose={() => setPendingLifeDrop(null)}
       />
     </div>
   );

@@ -9,6 +9,9 @@ interface PhaseBarProps {
   activePlayerName: string;
   canExtraDraw: boolean;
   isFirstTurnFirstPlayer?: boolean;
+  isSoloMode?: boolean;
+  activePlayerId?: string;
+  isCompact?: boolean;
   onSetPhase: (phase: Phase) => void;
   onPassTurn: () => void;
   onExtraDraw?: () => void;
@@ -30,25 +33,38 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
   activePlayerName,
   canExtraDraw,
   isFirstTurnFirstPlayer = false,
+  isSoloMode = false,
+  activePlayerId,
+  isCompact = false,
   onSetPhase,
   onPassTurn,
   onExtraDraw,
 }) => {
   return (
-    <div className="flex items-center justify-between bg-slate-900/90 border-y border-slate-800 px-4 py-2 shadow-md w-full flex-wrap gap-2">
+    <div className={`flex items-center justify-between bg-slate-900/90 border-y border-slate-800 w-full flex-wrap gap-2 shrink-0 ${
+      isCompact ? 'px-3 py-0.5 shadow-sm text-xs' : 'px-4 py-2 shadow-md text-xs'
+    }`}>
       {/* ターン情報 */}
-      <div className="flex items-center gap-3">
-        <div className="bg-indigo-950 border border-indigo-500/50 px-3 py-1 rounded-lg">
-          <span className="text-xs text-indigo-300 font-bold tracking-wider">TURN {turn}</span>
+      <div className={`flex items-center ${isCompact ? 'gap-2' : 'gap-3'}`}>
+        <div className={`bg-indigo-950 border border-indigo-500/50 rounded-lg ${isCompact ? 'px-2 py-0.5' : 'px-3 py-1'}`}>
+          <span className={`${isCompact ? 'text-[11px]' : 'text-xs'} text-indigo-300 font-bold tracking-wider`}>TURN {turn}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div
             className={`w-2.5 h-2.5 rounded-full ${
-              isActivePlayer ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'
+              isSoloMode
+                ? 'bg-amber-400 animate-pulse'
+                : isActivePlayer
+                ? 'bg-emerald-400 animate-ping'
+                : 'bg-slate-500'
             }`}
           />
           <span className="text-xs font-bold text-slate-200">
-            {isActivePlayer ? 'あなたの手番' : `${activePlayerName} の手番`}
+            {isSoloMode
+              ? `${activePlayerName} の手番 (${activePlayerId === 'player-1' ? '下側' : '上側'})`
+              : isActivePlayer
+              ? 'あなたの手番'
+              : `${activePlayerName} の手番`}
           </span>
         </div>
       </div>
@@ -71,7 +87,9 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
               }}
               disabled={isAttackBlocked}
               title={isAttackBlocked ? '公式ルール: 先攻1ターン目はアタック不可' : undefined}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 rounded-lg font-bold transition-all ${
+                isCompact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 sm:px-3 py-1 text-xs'
+              } ${
                 isAttackBlocked
                   ? 'opacity-30 cursor-not-allowed text-slate-500 bg-slate-900/50 line-through'
                   : isActive
@@ -92,7 +110,9 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
           <button
             onClick={onExtraDraw}
             disabled={!canExtraDraw}
-            className="flex items-center gap-1 px-3 py-1.5 bg-amber-600/90 hover:bg-amber-500 disabled:opacity-40 text-white text-xs font-bold rounded-lg shadow transition"
+            className={`flex items-center gap-1 bg-amber-600/90 hover:bg-amber-500 disabled:opacity-40 text-white font-bold rounded-lg shadow transition ${
+              isCompact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+            }`}
             title="スタートフェイズ中、1APを支払って追加で1枚カードを引きます（各ターン1回まで）"
           >
             <PlusCircle className="w-3.5 h-3.5" />
@@ -102,7 +122,9 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
 
         <button
           onClick={onPassTurn}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-extrabold rounded-lg shadow-lg shadow-amber-600/20 transition-transform active:scale-95"
+          className={`flex items-center gap-1.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold rounded-lg shadow-lg shadow-amber-600/20 transition-transform active:scale-95 ${
+            isCompact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
+          }`}
         >
           <span>ターン終了</span>
           <ArrowRight className="w-3.5 h-3.5" />

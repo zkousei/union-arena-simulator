@@ -29,6 +29,7 @@ interface CardViewProps {
   onClick?: () => void;
   onDeclareAttack?: () => void;
   onOpenUnderCards?: () => void;
+  isCompact?: boolean;
 }
 
 const COLOR_BORDER_MAP: Record<CardColor, string> = {
@@ -65,6 +66,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onClick,
   onDeclareAttack,
   onOpenUnderCards,
+  isCompact = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -72,15 +74,19 @@ export const CardView: React.FC<CardViewProps> = ({
   const [imgError, setImgError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const cardDimensions = isCompact
+    ? 'w-[58px] h-[80px] lg:w-[62px] lg:h-[86px]'
+    : 'w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40';
+
   // 裏向き表示 (revealFaceDown が true の場合は表面を表示しつつ裏向きバッジを表示)
   if (card.isFaceDown && !revealFaceDown) {
     return (
       <div
-        className="w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown"
+        className={`${cardDimensions} rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown`}
         onClick={onClick}
       >
-        <div className="w-12 h-16 rounded border border-indigo-500/30 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-indigo-400/80 tracking-wider">UA</span>
+        <div className={`${isCompact ? 'w-7 h-10' : 'w-12 h-16'} rounded border border-indigo-500/30 flex items-center justify-center`}>
+          <span className={`${isCompact ? 'text-[8px]' : 'text-[10px]'} font-bold text-indigo-400/80 tracking-wider`}>UA</span>
         </div>
         {onInspect && (
           <button
@@ -89,10 +95,10 @@ export const CardView: React.FC<CardViewProps> = ({
               e.stopPropagation();
               onInspect(card);
             }}
-            className="absolute bottom-1 px-1.5 py-0.5 rounded bg-black/80 border border-amber-500/40 text-[9px] text-amber-300 opacity-0 group-hover/facedown:opacity-100 transition-opacity flex items-center gap-0.5 shadow"
+            className={`absolute bottom-0.5 ${isCompact ? 'px-1 py-0 text-[7px]' : 'px-1.5 py-0.5 text-[9px]'} rounded bg-black/80 border border-amber-500/40 text-amber-300 opacity-0 group-hover/facedown:opacity-100 transition-opacity flex items-center gap-0.5 shadow`}
             title="自分のみ表面を確認"
           >
-            <Eye className="w-2.5 h-2.5 text-amber-400" />
+            <Eye className={`${isCompact ? 'w-2 h-2' : 'w-2.5 h-2.5'} text-amber-400`} />
             確認
           </button>
         )}
@@ -151,8 +157,10 @@ export const CardView: React.FC<CardViewProps> = ({
     <>
       {/* カードスタックコンテナ (重なりカードとレスト回転を一体化) */}
       <div
-        className={`relative group/card select-none w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 transition-all ${
-          card.isRested ? 'card-rested shadow-amber-500/20' : 'card-active hover:-translate-y-1'
+        className={`relative group/card select-none ${cardDimensions} transition-all ${
+          card.isRested
+            ? (isCompact ? 'card-rested-compact shadow-amber-500/20' : 'card-rested shadow-amber-500/20')
+            : 'card-active hover:-translate-y-0.5'
         }`}
       >
         {/* レイド / マーカーの重なり視覚効果 (underCards > 0 の時、背後にずらして立体表示) */}
@@ -299,23 +307,23 @@ export const CardView: React.FC<CardViewProps> = ({
         )}
 
         {/* ヘッダー: エナジー / AP */}
-        <div className={`relative z-10 flex items-center justify-between gap-0.5 text-[9px] sm:text-[10px] font-bold leading-none p-1 pointer-events-none ${
-          card.isFaceDown ? 'pt-3.5' : ''
+        <div className={`relative z-10 flex items-center justify-between gap-0.5 ${isCompact ? 'text-[8px] p-0.5' : 'text-[9px] sm:text-[10px] p-1'} font-bold leading-none pointer-events-none ${
+          card.isFaceDown ? (isCompact ? 'pt-2.5' : 'pt-3.5') : ''
         }`}>
           <div className="flex items-center gap-0.5">
             {card.reqEnergy > 0 && (
-              <span className="bg-slate-900/90 px-1 py-0.5 rounded text-amber-300 border border-amber-500/40" title={`必要エナジー: ${card.reqEnergy}`}>
+              <span className={`bg-slate-900/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-amber-300 border border-amber-500/40`} title={`必要エナジー: ${card.reqEnergy}`}>
                 ⚡{card.reqEnergy}
               </span>
             )}
             {card.genEnergy > 0 && (
-              <span className="bg-emerald-950/90 px-1 py-0.5 rounded text-emerald-300 border border-emerald-500/40" title={`発生エナジー: ${card.genEnergy}`}>
+              <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${card.genEnergy}`}>
                 +{card.genEnergy}
               </span>
             )}
           </div>
           {card.apCost > 0 && (
-            <span className="bg-sky-950/90 px-1 py-0.5 rounded text-sky-300 border border-sky-500/40" title={`APコスト: ${card.apCost}`}>
+            <span className={`bg-sky-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-sky-300 border border-sky-500/40`} title={`APコスト: ${card.apCost}`}>
               AP{card.apCost}
             </span>
           )}
@@ -324,11 +332,11 @@ export const CardView: React.FC<CardViewProps> = ({
         {/* カード名 & タイプ (画像なし時または画像下部の名前強調) */}
         {!hasValidImage && (
           <div className="my-auto text-center px-0.5 pointer-events-none relative z-10">
-            <div className="text-[10px] sm:text-xs font-bold truncate leading-tight drop-shadow">
+            <div className={`${isCompact ? 'text-[9px]' : 'text-[10px] sm:text-xs'} font-bold truncate leading-tight drop-shadow`}>
               {card.name}
             </div>
             {card.cardType !== 'CHARACTER' && (
-              <div className="text-[8px] sm:text-[9px] text-slate-400 font-semibold">
+              <div className={`${isCompact ? 'text-[7px]' : 'text-[8px] sm:text-[9px]'} text-slate-400 font-semibold`}>
                 [{card.cardType}]
               </div>
             )}
@@ -336,10 +344,10 @@ export const CardView: React.FC<CardViewProps> = ({
         )}
 
         {/* フッター: BP / トリガー */}
-        <div className="relative z-10 flex items-center justify-between text-[9px] sm:text-[10px] font-bold p-1 pointer-events-none mt-auto">
+        <div className={`relative z-10 flex items-center justify-between ${isCompact ? 'text-[8px] p-0.5' : 'text-[9px] sm:text-[10px] p-1'} font-bold pointer-events-none mt-auto`}>
           {card.bp !== null ? (
             <div
-              className={`px-1 py-0.5 rounded text-xs leading-none border shadow-md font-black ${
+              className={`${isCompact ? 'px-0.5 py-0 text-[10px]' : 'px-1 py-0.5 text-xs'} rounded leading-none border shadow-md font-black ${
                 card.bpModifier > 0
                   ? 'bg-emerald-600 text-white border-emerald-400 scale-105'
                   : card.bpModifier < 0
@@ -358,7 +366,7 @@ export const CardView: React.FC<CardViewProps> = ({
               {card.triggers.map((t, idx) => (
                 <span
                   key={idx}
-                  className={`${TRIGGER_BADGE_MAP[t]?.bg || 'bg-slate-700'} text-white text-[8px] px-1 py-0.5 rounded shadow`}
+                  className={`${TRIGGER_BADGE_MAP[t]?.bg || 'bg-slate-700'} text-white ${isCompact ? 'text-[7px] px-0.5 py-0.2' : 'text-[8px] px-1 py-0.5'} rounded shadow`}
                 >
                   {TRIGGER_BADGE_MAP[t]?.text || t}
                 </span>

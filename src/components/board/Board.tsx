@@ -12,6 +12,7 @@ import { CardSearchModal } from '../modals/CardSearchModal';
 import { UnderCardsModal } from '../modals/UnderCardsModal';
 import { OpponentHandModal } from '../modals/OpponentHandModal';
 import { LifeReorderModal } from '../modals/LifeReorderModal';
+import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
 
 interface BoardProps {
@@ -20,6 +21,7 @@ interface BoardProps {
   dispatchAction: (action: GameAction) => void;
   onOpenDeckPicker?: (targetPlayerId?: string) => void;
   isSoloMode?: boolean;
+  isFitMode?: boolean;
 }
 
 export const Board: React.FC<BoardProps> = ({
@@ -28,14 +30,18 @@ export const Board: React.FC<BoardProps> = ({
   dispatchAction,
   onOpenDeckPicker,
   isSoloMode = false,
+  isFitMode = true,
 }) => {
-  // 相手IDを判定
+  // プレイヤーIDと各プレイヤー状態の決定 (ソロモードでは P1が下・P2が上で固定)
   const playerIds = Object.keys(gameState.players);
   const opponentId = playerIds.find((id) => id !== myPlayerId) || 'player-2';
 
-  const myPlayer = gameState.players[myPlayerId] || {
-    id: myPlayerId,
-    name: '自分',
+  const bottomPlayerId = isSoloMode ? 'player-1' : myPlayerId;
+  const topPlayerId = isSoloMode ? 'player-2' : opponentId;
+
+  const defaultPlayer = (id: string, name: string) => ({
+    id,
+    name,
     deck: [],
     hand: [],
     frontLine: [null, null, null, null],
@@ -46,29 +52,30 @@ export const Board: React.FC<BoardProps> = ({
     apArea: [],
     apCurrent: 3,
     apMax: 3,
-  };
+  });
 
-  const opponentPlayer = gameState.players[opponentId] || {
-    id: opponentId,
-    name: '相手',
-    deck: [],
-    hand: [],
-    frontLine: [null, null, null, null],
-    energyLine: [null, null, null, null],
-    life: [],
-    graveyard: [],
-    removed: [],
-    apArea: [],
-    apCurrent: 3,
-    apMax: 3,
-  };
+  const bottomPlayer = gameState.players[bottomPlayerId] || defaultPlayer(bottomPlayerId, 'Player 1');
+  const topPlayer = gameState.players[topPlayerId] || defaultPlayer(topPlayerId, 'Player 2');
 
-  // 手札からフィールドへ配置するための選択状態
-  const [selectedHandCard, setSelectedHandCard] = useState<Card | null>(null);
+  // 手札からフィールドへ配置するための選択状態 (選択カードと所持プレイヤーID)
+  const [selectedHandCard, setSelectedHandCard] = useState<{
+    card: Card;
+    playerId: string;
+  } | null>(null);
   const [inspectCard, setInspectCard] = useState<Card | null>(null);
   const [isCardSearchOpen, setIsCardSearchOpen] = useState(false);
+  const [searchPlayerId, setSearchPlayerId] = useState<string>(bottomPlayerId);
   const [isOpponentHandOpen, setIsOpponentHandOpen] = useState(false);
   const [isLifeReorderOpen, setIsLifeReorderOpen] = useState(false);
+  const [lifeReorderPlayerId, setLifeReorderPlayerId] = useState<string>(bottomPlayerId);
+  const [pendingRaidOrMarker, setPendingRaidOrMarker] = useState<{
+    targetPlayerId: string;
+    incomingCard: Card;
+    existingCard: Card;
+    targetZone: 'frontLine' | 'energyLine';
+    targetSlotIndex: FieldSlotIndex;
+    fromLocation: CardLocation;
+  } | null>(null);
 
   // レイド下敷きカード確認モーダル状態
   const [underCardsTarget, setUnderCardsTarget] = useState<{
@@ -77,18 +84,12 @@ export const Board: React.FC<BoardProps> = ({
     slotIndex: FieldSlotIndex;
   } | null>(null);
 
-  // アタックモード状態
+  // アタックモード状態 (アタッカープレイヤーID、ゾーン、枠)
   const [attackingState, setAttackingState] = useState<{
+    attackerPlayerId: string;
     zone: 'frontLine' | 'energyLine';
     slotIndex: FieldSlotIndex;
   } | null>(null);
-
-  // レイドカード判定ヘルパー
-  const isRaidCard = (card: Card): boolean => {
-    if (card.triggers && card.triggers.includes('RAID')) return true;
-    if (card.effectText && (card.effectText.includes('【レイド】') || card.effectText.includes('[レイド]'))) return true;
-    return false;
-  };
 
   // 発生エナジー計算ヘルパー (公式ルール: エナジーラインのアクティブ状態のキャラから発生)
   const calculateGeneratedEnergy = (slots: (Card | null)[]) => {
@@ -141,33 +142,45 @@ export const Board: React.FC<BoardProps> = ({
   };
 
   // アタック宣言
-  const handleDeclareAttack = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
+  const handleDeclareAttack = (
+    attackerPlayerId: string,
+    zone: 'frontLine' | 'energyLine',
+    slotIndex: FieldSlotIndex
+  ) => {
+    const attackerPlayer = gameState.players[attackerPlayerId];
+    if (!attackerPlayer) return;
     // 公式ルール P10: 先攻第1ターンはアタックできない
-    if (gameState.turn === 1 && myPlayer.isFirst) {
+    if (gameState.turn === 1 && attackerPlayer.isFirst) {
       alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
       return;
     }
-    setAttackingState({ zone, slotIndex });
+    setAttackingState({ attackerPlayerId, zone, slotIndex });
   };
 
-  // 相手プレイヤーへのアタック解決
-  const handleAttackPlayer = () => {
+  // プレイヤーへのアタック解決
+  const handleAttackPlayer = (targetPlayerId: string) => {
     if (attackingState === null) return;
-    const { zone, slotIndex } = attackingState;
-    const attacker = myPlayer[zone][slotIndex];
+    const { attackerPlayerId, zone, slotIndex } = attackingState;
+    if (attackerPlayerId === targetPlayerId) return; // 自分の本体への攻撃は不可
+
+    const attackerPlayer = gameState.players[attackerPlayerId];
+    const targetPlayer = gameState.players[targetPlayerId];
+    if (!attackerPlayer || !targetPlayer) return;
+
+    const attacker = attackerPlayer[zone][slotIndex];
     if (!attacker) return;
 
     // アタッカーをレストに
     dispatchAction({
       type: 'TOGGLE_REST',
-      payload: { playerId: myPlayerId, zone, slotIndex },
+      payload: { playerId: attackerPlayerId, zone, slotIndex },
     });
 
     dispatchAction({
       type: 'ADD_LOG',
       payload: {
-        message: `⚔️【プレイヤーアタック】「${attacker.name}」が相手プレイヤーにアタックしました！相手ライフのトリガーチェックを行ってください。`,
-        playerId: myPlayerId,
+        message: `⚔️【プレイヤーアタック】${attackerPlayer.name}の「${attacker.name}」が ${targetPlayer.name} にアタックしました！相手ライフのトリガーチェックを行ってください。`,
+        playerId: attackerPlayerId,
         type: 'action',
       },
     });
@@ -175,18 +188,24 @@ export const Board: React.FC<BoardProps> = ({
     setAttackingState(null);
   };
 
-  // 相手キャラへのアタック（バトル）解決
-  const handleAttackOpponentCard = (oppSlotIndex: FieldSlotIndex) => {
+  // キャラへのアタック（バトル）解決
+  const handleAttackOpponentCard = (targetPlayerId: string, oppSlotIndex: FieldSlotIndex) => {
     if (attackingState === null) return;
-    const { zone, slotIndex } = attackingState;
-    const attacker = myPlayer[zone][slotIndex];
-    const defender = opponentPlayer.frontLine[oppSlotIndex];
+    const { attackerPlayerId, zone, slotIndex } = attackingState;
+    if (attackerPlayerId === targetPlayerId) return;
+
+    const attackerPlayer = gameState.players[attackerPlayerId];
+    const targetPlayer = gameState.players[targetPlayerId];
+    if (!attackerPlayer || !targetPlayer) return;
+
+    const attacker = attackerPlayer[zone][slotIndex];
+    const defender = targetPlayer.frontLine[oppSlotIndex];
     if (!attacker || !defender) return;
 
     // アタッカーをレストに
     dispatchAction({
       type: 'TOGGLE_REST',
-      payload: { playerId: myPlayerId, zone, slotIndex },
+      payload: { playerId: attackerPlayerId, zone, slotIndex },
     });
 
     const attackerBp = (attacker.bp ?? 0) + attacker.bpModifier;
@@ -198,106 +217,74 @@ export const Board: React.FC<BoardProps> = ({
     dispatchAction({
       type: 'ADD_LOG',
       payload: {
-        message: `⚔️【バトル解決】「${attacker.name}」(BP${attackerBp}) VS 「${defender.name}」(BP${defenderBp}) ➔ ${
+        message: `⚔️【バトル解決】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) VS ${targetPlayer.name}の「${defender.name}」(BP${defenderBp}) ➔ ${
           isAttackerWin
             ? `勝者: 「${attacker.name}」！「${defender.name}」は退場（場外）です。`
             : `勝者: 「${defender.name}」！「${attacker.name}」は防御を突破できませんでした。`
         }`,
-        playerId: myPlayerId,
+        playerId: attackerPlayerId,
         type: 'action',
       },
     });
 
     if (isAttackerWin) {
-      if (window.confirm(`「${defender.name}」を場外へ送りますか？`)) {
-        dispatchAction({
-          type: 'MOVE_CARD',
-          payload: {
-            cardId: defender.id,
-            from: { playerId: opponentId, zone: 'frontLine', slotIndex: oppSlotIndex },
-            to: { playerId: opponentId, zone: 'graveyard' },
-          },
-        });
-      }
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: defender.id,
+          from: { playerId: targetPlayerId, zone: 'frontLine', slotIndex: oppSlotIndex },
+          to: { playerId: targetPlayerId, zone: 'graveyard' },
+        },
+      });
     }
 
     setAttackingState(null);
   };
 
-  // 手札カード選択ハンドラ
-  const handleSelectHandCard = (card: Card) => {
-    if (selectedHandCard?.id === card.id) {
+  // 手札カード選択ハンドラ (所持プレイヤーID付き)
+  const handleSelectHandCard = (playerId: string, card: Card) => {
+    if (selectedHandCard?.card.id === card.id) {
       setSelectedHandCard(null); // 解除
     } else {
-      setSelectedHandCard(card);
+      setSelectedHandCard({ card, playerId });
     }
   };
 
   // フィールド枠クリック時の配置 / レイド
-  const handleSlotClick = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
+  const handleSlotClick = (
+    targetPlayerId: string,
+    zone: 'frontLine' | 'energyLine',
+    slotIndex: FieldSlotIndex
+  ) => {
     if (!selectedHandCard) return;
+    if (selectedHandCard.playerId !== targetPlayerId) return; // 自陣枠のみ配置可能
 
-    const existingCard = zone === 'frontLine' ? myPlayer.frontLine[slotIndex] : myPlayer.energyLine[slotIndex];
-    const handIndex = myPlayer.hand.findIndex((c) => c.id === selectedHandCard.id);
+    const targetPlayer = gameState.players[targetPlayerId];
+    if (!targetPlayer) return;
+
+    const existingCard = zone === 'frontLine' ? targetPlayer.frontLine[slotIndex] : targetPlayer.energyLine[slotIndex];
+    const handIndex = targetPlayer.hand.findIndex((c) => c.id === selectedHandCard.card.id);
     if (handIndex === -1) return;
 
     if (existingCard) {
-      // レイド能力チェック
-      if (!isRaidCard(selectedHandCard)) {
-        alert(
-          `「${selectedHandCard.name}」はレイド能力を持たない通常カードです。\n既存のキャラの上に重ねることはできません。空いている枠に配置してください。\n（配置したい場合は、元のキャラを別の枠へ移動するか、場外へ送ってください）`
-        );
-        setSelectedHandCard(null);
-        return;
-      }
-
-      const confirmRaid = window.confirm(
-        `【レイド登場】「${selectedHandCard.name}」を「${existingCard.name}」の上にレイドさせますか？`
-      );
-      if (!confirmRaid) {
-        setSelectedHandCard(null);
-        return;
-      }
-
-      // エナジーラインの場合はフロントライン移動または残留の選択
-      let moveToFront = false;
-      if (zone === 'energyLine') {
-        const hasEmptyFront = myPlayer.frontLine.some((c) => c === null);
-        if (!hasEmptyFront) {
-          alert('フロントラインに空き枠がないため、エナジーラインにとどまります（アクティブ状態になります）。');
-          moveToFront = false;
-        } else {
-          const choice = window.prompt(
-            '【レイド配置の選択】\nエナジーラインのキャラにレイドしました。\n配置場所を選択してください:\n1: フロントラインの空き枠へ移動する\n2: エナジーラインにとどまる（アクティブ化）\n（キャンセルを押すとレイドを中止します）',
-            '1'
-          );
-          if (choice === null) {
-            setSelectedHandCard(null);
-            return;
-          }
-          moveToFront = choice.trim() === '1';
-        }
-      }
-
-      dispatchAction({
-        type: 'RAID_CARD',
-        payload: {
-          playerId: myPlayerId,
-          targetZone: zone,
-          targetSlotIndex: slotIndex,
-          raidCard: selectedHandCard,
-          fromLocation: { playerId: myPlayerId, zone: 'hand', index: handIndex },
-          moveToFront,
-        },
+      setPendingRaidOrMarker({
+        targetPlayerId,
+        incomingCard: selectedHandCard.card,
+        existingCard,
+        targetZone: zone,
+        targetSlotIndex: slotIndex,
+        fromLocation: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
       });
+      setSelectedHandCard(null);
+      return;
     } else {
       // 空き枠への通常配置
       dispatchAction({
         type: 'MOVE_CARD',
         payload: {
-          cardId: selectedHandCard.id,
-          from: { playerId: myPlayerId, zone: 'hand', index: handIndex },
-          to: { playerId: myPlayerId, zone, slotIndex },
+          cardId: selectedHandCard.card.id,
+          from: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
+          to: { playerId: targetPlayerId, zone, slotIndex },
         },
       });
     }
@@ -306,43 +293,45 @@ export const Board: React.FC<BoardProps> = ({
   };
 
   // レスト切り替え
-  const handleToggleRest = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
+  const handleToggleRest = (playerId: string, zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
     dispatchAction({
       type: 'TOGGLE_REST',
-      payload: { playerId: myPlayerId, zone, slotIndex },
+      payload: { playerId, zone, slotIndex },
     });
   };
 
   // BP修正
-  const handleModifyBp = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex, delta: number) => {
+  const handleModifyBp = (playerId: string, zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex, delta: number) => {
     dispatchAction({
       type: 'MODIFY_BP',
-      payload: { playerId: myPlayerId, zone, slotIndex, delta },
+      payload: { playerId, zone, slotIndex, delta },
     });
   };
 
   // フリーズ状態の切り替え
-  const handleToggleFreeze = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
+  const handleToggleFreeze = (playerId: string, zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
     dispatchAction({
       type: 'TOGGLE_FREEZE',
-      payload: { playerId: myPlayerId, zone, slotIndex },
+      payload: { playerId, zone, slotIndex },
     });
   };
 
   // マーカー追加（山札の上または手札から）
   const handleAddMarker = (
+    playerId: string,
     zone: 'frontLine' | 'energyLine',
     slotIndex: FieldSlotIndex,
     from: 'deckTop' | 'hand' = 'deckTop'
   ) => {
-    if (from === 'deckTop' && myPlayer.deck.length === 0) {
+    const player = gameState.players[playerId];
+    if (from === 'deckTop' && (!player || player.deck.length === 0)) {
       alert('山札がありません。');
       return;
     }
     dispatchAction({
       type: 'ADD_MARKER',
       payload: {
-        playerId: myPlayerId,
+        playerId,
         targetZone: zone,
         targetSlotIndex: slotIndex,
         from: 'topDeck',
@@ -352,6 +341,7 @@ export const Board: React.FC<BoardProps> = ({
 
   // フィールドからの移動
   const handleFieldMoveTo = (
+    playerId: string,
     fromZone: 'frontLine' | 'energyLine',
     fromSlot: FieldSlotIndex,
     destination:
@@ -365,7 +355,9 @@ export const Board: React.FC<BoardProps> = ({
       | 'life'
       | 'lifeFaceUp'
   ) => {
-    const card = fromZone === 'frontLine' ? myPlayer.frontLine[fromSlot] : myPlayer.energyLine[fromSlot];
+    const player = gameState.players[playerId];
+    if (!player) return;
+    const card = fromZone === 'frontLine' ? player.frontLine[fromSlot] : player.energyLine[fromSlot];
     if (!card) return;
 
     if (destination === 'life' || destination === 'lifeFaceUp') {
@@ -373,20 +365,20 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: myPlayerId, zone: 'life', isFaceDown: destination === 'life' },
+          from: { playerId, zone: fromZone, slotIndex: fromSlot },
+          to: { playerId, zone: 'life', isFaceDown: destination === 'life' },
         },
       });
     } else if (destination === 'frontLine' || destination === 'energyLine') {
-      const targetSlots = destination === 'frontLine' ? myPlayer.frontLine : myPlayer.energyLine;
+      const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot !== -1) {
         dispatchAction({
           type: 'MOVE_CARD',
           payload: {
             cardId: card.id,
-            from: { playerId: myPlayerId, zone: fromZone, slotIndex: fromSlot },
-            to: { playerId: myPlayerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
+            from: { playerId, zone: fromZone, slotIndex: fromSlot },
+            to: { playerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
           },
         });
       } else {
@@ -397,8 +389,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: myPlayerId, zone: 'deck', index: 0 },
+          from: { playerId, zone: fromZone, slotIndex: fromSlot },
+          to: { playerId, zone: 'deck', index: 0 },
         },
       });
     } else if (destination === 'deckBottom') {
@@ -406,8 +398,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: myPlayerId, zone: 'deck' },
+          from: { playerId, zone: fromZone, slotIndex: fromSlot },
+          to: { playerId, zone: 'deck' },
         },
       });
     } else {
@@ -415,101 +407,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: myPlayerId, zone: destination },
-        },
-      });
-    }
-  };
-
-  // 相手フィールド操作ハンドラ
-  const handleOpponentToggleRest = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
-    dispatchAction({
-      type: 'TOGGLE_REST',
-      payload: { playerId: opponentId, zone, slotIndex },
-    });
-  };
-
-  const handleOpponentModifyBp = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex, delta: number) => {
-    dispatchAction({
-      type: 'MODIFY_BP',
-      payload: { playerId: opponentId, zone, slotIndex, delta },
-    });
-  };
-
-  const handleOpponentToggleFreeze = (zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
-    dispatchAction({
-      type: 'TOGGLE_FREEZE',
-      payload: { playerId: opponentId, zone, slotIndex },
-    });
-  };
-
-  const handleOpponentFieldMoveTo = (
-    fromZone: 'frontLine' | 'energyLine',
-    fromSlot: FieldSlotIndex,
-    destination:
-      | 'frontLine'
-      | 'energyLine'
-      | 'graveyard'
-      | 'hand'
-      | 'removed'
-      | 'deckTop'
-      | 'deckBottom'
-      | 'life'
-      | 'lifeFaceUp'
-  ) => {
-    const card = fromZone === 'frontLine' ? opponentPlayer.frontLine[fromSlot] : opponentPlayer.energyLine[fromSlot];
-    if (!card) return;
-
-    if (destination === 'life' || destination === 'lifeFaceUp') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: opponentId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: opponentId, zone: 'life', isFaceDown: destination === 'life' },
-        },
-      });
-    } else if (destination === 'frontLine' || destination === 'energyLine') {
-      const targetSlots = destination === 'frontLine' ? opponentPlayer.frontLine : opponentPlayer.energyLine;
-      const emptySlot = targetSlots.findIndex((c) => c === null);
-      if (emptySlot !== -1) {
-        dispatchAction({
-          type: 'MOVE_CARD',
-          payload: {
-            cardId: card.id,
-            from: { playerId: opponentId, zone: fromZone, slotIndex: fromSlot },
-            to: { playerId: opponentId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
-          },
-        });
-      } else {
-        alert('相手フィールドの移動先に空き枠がありません。');
-      }
-    } else if (destination === 'deckTop') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: opponentId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: opponentId, zone: 'deck', index: 0 },
-        },
-      });
-    } else if (destination === 'deckBottom') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: opponentId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: opponentId, zone: 'deck' },
-        },
-      });
-    } else {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: opponentId, zone: fromZone, slotIndex: fromSlot },
-          to: { playerId: opponentId, zone: destination },
+          from: { playerId, zone: fromZone, slotIndex: fromSlot },
+          to: { playerId, zone: destination },
         },
       });
     }
@@ -517,83 +416,30 @@ export const Board: React.FC<BoardProps> = ({
 
   // DnD: フィールドスロットへのドロップハンドラ
   const handleDropCardOnSlot = (
+    targetPlayerId: string,
     from: CardLocation,
     targetZone: 'frontLine' | 'energyLine',
     slotIndex: FieldSlotIndex
   ) => {
-    const existingCard = targetZone === 'frontLine' ? myPlayer.frontLine[slotIndex] : myPlayer.energyLine[slotIndex];
+    const targetPlayer = gameState.players[targetPlayerId];
+    if (!targetPlayer) return;
+    const existingCard = targetZone === 'frontLine' ? targetPlayer.frontLine[slotIndex] : targetPlayer.energyLine[slotIndex];
 
     if (from.zone === 'hand') {
       const handIndex = from.index !== undefined ? from.index : 0;
-      const card = myPlayer.hand[handIndex];
+      const card = targetPlayer.hand[handIndex];
       if (!card) return;
 
       if (existingCard) {
-        // レイドカードの場合
-        if (isRaidCard(card)) {
-          const actionChoice = window.prompt(
-            `「${card.name}」を「${existingCard.name}」の上にドロップしました。\n操作を選択してください:\n1: レイド登場させる\n2: 裏向きでマーカーとして下に置く\n（キャンセルを押すと中止します）`,
-            '1'
-          );
-          if (actionChoice === '1') {
-            let moveToFront = false;
-            if (targetZone === 'energyLine') {
-              const hasEmptyFront = myPlayer.frontLine.some((c) => c === null);
-              if (!hasEmptyFront) {
-                alert('フロントラインに空き枠がないため、エナジーラインにとどまります（アクティブ状態になります）。');
-                moveToFront = false;
-              } else {
-                const choice = window.prompt(
-                  '【レイド配置の選択】\nエナジーラインのキャラにレイドしました。\n配置場所を選択してください:\n1: フロントラインの空き枠へ移動する\n2: エナジーラインにとどまる（アクティブ化）\n（キャンセルを押すとレイドを中止します）',
-                  '1'
-                );
-                if (choice === null) return;
-                moveToFront = choice.trim() === '1';
-              }
-            }
-            dispatchAction({
-              type: 'RAID_CARD',
-              payload: {
-                playerId: myPlayerId,
-                targetZone,
-                targetSlotIndex: slotIndex,
-                raidCard: card,
-                fromLocation: from,
-                moveToFront,
-              },
-            });
-          } else if (actionChoice === '2') {
-            dispatchAction({
-              type: 'ADD_MARKER',
-              payload: {
-                playerId: myPlayerId,
-                targetZone,
-                targetSlotIndex: slotIndex,
-                from: { zone: 'hand', index: handIndex },
-                isFaceDown: true,
-              },
-            });
-          }
-          return;
-        } else {
-          // 通常キャラカードの場合: マーカー配置の確認
-          const confirmMarker = window.confirm(
-            `「${card.name}」を「${existingCard.name}」の下に裏向きでマーカーとして置きますか？\n（ファットガム、ホークス、天喰環等のカード効果）`
-          );
-          if (confirmMarker) {
-            dispatchAction({
-              type: 'ADD_MARKER',
-              payload: {
-                playerId: myPlayerId,
-                targetZone,
-                targetSlotIndex: slotIndex,
-                from: { zone: 'hand', index: handIndex },
-                isFaceDown: true,
-              },
-            });
-          }
-          return;
-        }
+        setPendingRaidOrMarker({
+          targetPlayerId,
+          incomingCard: card,
+          existingCard,
+          targetZone,
+          targetSlotIndex: slotIndex,
+          fromLocation: from,
+        });
+        return;
       } else {
         // 通常登場
         dispatchAction({
@@ -601,7 +447,7 @@ export const Board: React.FC<BoardProps> = ({
           payload: {
             cardId: card.id,
             from,
-            to: { playerId: myPlayerId, zone: targetZone, slotIndex },
+            to: { playerId: targetPlayerId, zone: targetZone, slotIndex },
           },
         });
       }
@@ -609,7 +455,7 @@ export const Board: React.FC<BoardProps> = ({
       const fromSlot = (from.slotIndex ?? 0) as FieldSlotIndex;
       if (from.zone === targetZone && fromSlot === slotIndex) return;
 
-      const card = from.zone === 'frontLine' ? myPlayer.frontLine[fromSlot] : myPlayer.energyLine[fromSlot];
+      const card = from.zone === 'frontLine' ? targetPlayer.frontLine[fromSlot] : targetPlayer.energyLine[fromSlot];
       if (!card) return;
 
       dispatchAction({
@@ -617,7 +463,7 @@ export const Board: React.FC<BoardProps> = ({
         payload: {
           cardId: card.id,
           from,
-          to: { playerId: myPlayerId, zone: targetZone, slotIndex },
+          to: { playerId: targetPlayerId, zone: targetZone, slotIndex },
         },
       });
     }
@@ -625,13 +471,14 @@ export const Board: React.FC<BoardProps> = ({
 
   // DnD: 場外へのドロップ
   const handleDropToGraveyard = (from: CardLocation) => {
+    const ownerPlayer = gameState.players[from.playerId] || bottomPlayer;
     let card: Card | null = null;
     if (from.zone === 'hand') {
-      card = myPlayer.hand[from.index ?? 0];
+      card = ownerPlayer.hand[from.index ?? 0];
     } else if (from.zone === 'frontLine') {
-      card = myPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     } else if (from.zone === 'energyLine') {
-      card = myPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     }
     if (!card) return;
 
@@ -640,7 +487,7 @@ export const Board: React.FC<BoardProps> = ({
       payload: {
         cardId: card.id,
         from,
-        to: { playerId: myPlayerId, zone: 'graveyard' },
+        to: { playerId: from.playerId, zone: 'graveyard' },
       },
     });
   };
@@ -648,8 +495,9 @@ export const Board: React.FC<BoardProps> = ({
   // DnD: 手札へのドロップ（フィールドから手札へ戻す）
   const handleDropToHand = (from: CardLocation) => {
     if (from.zone !== 'frontLine' && from.zone !== 'energyLine') return;
+    const ownerPlayer = gameState.players[from.playerId] || bottomPlayer;
     const fromSlot = (from.slotIndex ?? 0) as FieldSlotIndex;
-    const card = from.zone === 'frontLine' ? myPlayer.frontLine[fromSlot] : myPlayer.energyLine[fromSlot];
+    const card = from.zone === 'frontLine' ? ownerPlayer.frontLine[fromSlot] : ownerPlayer.energyLine[fromSlot];
     if (!card) return;
 
     dispatchAction({
@@ -657,17 +505,20 @@ export const Board: React.FC<BoardProps> = ({
       payload: {
         cardId: card.id,
         from,
-        to: { playerId: myPlayerId, zone: 'hand' },
+        to: { playerId: from.playerId, zone: 'hand' },
       },
     });
   };
 
   // 手札からの移動（ディスカード・除外・山札戻し・ライフ配置）
   const handleHandMoveTo = (
+    playerId: string,
     cardIndex: number,
     dest: 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp'
   ) => {
-    const card = myPlayer.hand[cardIndex];
+    const player = gameState.players[playerId];
+    if (!player) return;
+    const card = player.hand[cardIndex];
     if (!card) return;
 
     if (dest === 'life' || dest === 'lifeFaceUp') {
@@ -675,8 +526,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: myPlayerId, zone: 'life', isFaceDown: dest === 'life' },
+          from: { playerId, zone: 'hand', index: cardIndex },
+          to: { playerId, zone: 'life', isFaceDown: dest === 'life' },
         },
       });
     } else if (dest === 'deckTop') {
@@ -684,8 +535,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: myPlayerId, zone: 'deck', index: 0 },
+          from: { playerId, zone: 'hand', index: cardIndex },
+          to: { playerId, zone: 'deck', index: 0 },
         },
       });
     } else if (dest === 'deckBottom') {
@@ -693,8 +544,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: myPlayerId, zone: 'deck' },
+          from: { playerId, zone: 'hand', index: cardIndex },
+          to: { playerId, zone: 'deck' },
         },
       });
     } else {
@@ -702,8 +553,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: myPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: myPlayerId, zone: dest },
+          from: { playerId, zone: 'hand', index: cardIndex },
+          to: { playerId, zone: dest },
         },
       });
     }
@@ -711,13 +562,14 @@ export const Board: React.FC<BoardProps> = ({
 
   // DnD: ライフエリアへのドロップ
   const handleDropToLife = (from: CardLocation, isFaceDown: boolean = false) => {
+    const ownerPlayer = gameState.players[from.playerId] || bottomPlayer;
     let card: Card | null = null;
     if (from.zone === 'hand') {
-      card = myPlayer.hand[from.index ?? 0];
+      card = ownerPlayer.hand[from.index ?? 0];
     } else if (from.zone === 'frontLine') {
-      card = myPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     } else if (from.zone === 'energyLine') {
-      card = myPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     }
     if (!card) return;
 
@@ -726,22 +578,23 @@ export const Board: React.FC<BoardProps> = ({
       payload: {
         cardId: card.id,
         from,
-        to: { playerId: myPlayerId, zone: 'life', isFaceDown },
+        to: { playerId: from.playerId, zone: 'life', isFaceDown },
       },
     });
   };
 
   // DnD: リムーブエリアへのドロップ
   const handleDropToRemoved = (from: CardLocation) => {
+    const ownerPlayer = gameState.players[from.playerId] || bottomPlayer;
     let card: Card | null = null;
     if (from.zone === 'hand') {
-      card = myPlayer.hand[from.index ?? 0];
+      card = ownerPlayer.hand[from.index ?? 0];
     } else if (from.zone === 'frontLine') {
-      card = myPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.frontLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     } else if (from.zone === 'energyLine') {
-      card = myPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
+      card = ownerPlayer.energyLine[(from.slotIndex ?? 0) as FieldSlotIndex];
     } else if (from.zone === 'graveyard') {
-      card = myPlayer.graveyard[from.index ?? 0];
+      card = ownerPlayer.graveyard[from.index ?? 0];
     }
     if (!card) return;
 
@@ -750,18 +603,20 @@ export const Board: React.FC<BoardProps> = ({
       payload: {
         cardId: card.id,
         from,
-        to: { playerId: myPlayerId, zone: 'removed' },
+        to: { playerId: from.playerId, zone: 'removed' },
       },
     });
   };
 
   // 墓地モーダルからのカード移動
   const handleMoveFromGraveyard = (
+    playerId: string,
     cardId: string,
     destination: 'hand' | 'deckTop' | 'deckBottom' | 'frontLine' | 'energyLine' | 'removed' | 'life' | 'lifeFaceUp'
   ) => {
+    const player = gameState.players[playerId] || bottomPlayer;
     if (destination === 'frontLine' || destination === 'energyLine') {
-      const targetSlots = destination === 'frontLine' ? myPlayer.frontLine : myPlayer.energyLine;
+      const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
         alert('フィールドに空き枠がありません。');
@@ -771,8 +626,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'graveyard' },
-          to: { playerId: myPlayerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
+          from: { playerId, zone: 'graveyard' },
+          to: { playerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
         },
       });
     } else if (destination === 'deckTop') {
@@ -780,8 +635,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'graveyard' },
-          to: { playerId: myPlayerId, zone: 'deck', index: 0 },
+          from: { playerId, zone: 'graveyard' },
+          to: { playerId, zone: 'deck', index: 0 },
         },
       });
     } else if (destination === 'deckBottom') {
@@ -789,8 +644,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'graveyard' },
-          to: { playerId: myPlayerId, zone: 'deck' },
+          from: { playerId, zone: 'graveyard' },
+          to: { playerId, zone: 'deck' },
         },
       });
     } else if (destination === 'life' || destination === 'lifeFaceUp') {
@@ -798,8 +653,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'graveyard' },
-          to: { playerId: myPlayerId, zone: 'life', isFaceDown: destination === 'life' },
+          from: { playerId, zone: 'graveyard' },
+          to: { playerId, zone: 'life', isFaceDown: destination === 'life' },
         },
       });
     } else {
@@ -807,8 +662,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'graveyard' },
-          to: { playerId: myPlayerId, zone: destination },
+          from: { playerId, zone: 'graveyard' },
+          to: { playerId, zone: destination },
         },
       });
     }
@@ -816,11 +671,13 @@ export const Board: React.FC<BoardProps> = ({
 
   // リムーブエリアからのカード移動
   const handleMoveFromRemoved = (
+    playerId: string,
     cardId: string,
     destination: 'hand' | 'graveyard' | 'deckBottom' | 'frontLine' | 'energyLine' | 'life' | 'lifeFaceUp'
   ) => {
+    const player = gameState.players[playerId] || bottomPlayer;
     if (destination === 'frontLine' || destination === 'energyLine') {
-      const targetSlots = destination === 'frontLine' ? myPlayer.frontLine : myPlayer.energyLine;
+      const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
         alert('フィールドに空き枠がありません。');
@@ -830,8 +687,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'removed' },
-          to: { playerId: myPlayerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
+          from: { playerId, zone: 'removed' },
+          to: { playerId, zone: destination, slotIndex: emptySlot as FieldSlotIndex },
         },
       });
     } else if (destination === 'deckBottom') {
@@ -839,8 +696,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'removed' },
-          to: { playerId: myPlayerId, zone: 'deck' },
+          from: { playerId, zone: 'removed' },
+          to: { playerId, zone: 'deck' },
         },
       });
     } else if (destination === 'life' || destination === 'lifeFaceUp') {
@@ -848,8 +705,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'removed' },
-          to: { playerId: myPlayerId, zone: 'life', isFaceDown: destination === 'life' },
+          from: { playerId, zone: 'removed' },
+          to: { playerId, zone: 'life', isFaceDown: destination === 'life' },
         },
       });
     } else {
@@ -857,8 +714,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId,
-          from: { playerId: myPlayerId, zone: 'removed' },
-          to: { playerId: myPlayerId, zone: destination },
+          from: { playerId, zone: 'removed' },
+          to: { playerId, zone: destination },
         },
       });
     }
@@ -905,7 +762,7 @@ export const Board: React.FC<BoardProps> = ({
     dispatchAction({
       type: 'REORDER_LIFE',
       payload: {
-        playerId: myPlayerId,
+        playerId: lifeReorderPlayerId,
         newLifeCards,
       },
     });
@@ -917,7 +774,7 @@ export const Board: React.FC<BoardProps> = ({
     cardIndex: number,
     destination: 'deckTopFaceUp' | 'deckTop' | 'deckBottom' | 'graveyard'
   ) => {
-    const card = opponentPlayer.hand[cardIndex];
+    const card = topPlayer.hand[cardIndex];
     if (!card) return;
 
     if (destination === 'deckTopFaceUp') {
@@ -925,21 +782,21 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: opponentId, zone: 'hand', index: cardIndex },
-          to: { playerId: opponentId, zone: 'deck', index: 0 },
+          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
+          to: { playerId: topPlayerId, zone: 'deck', index: 0 },
         },
       });
       dispatchAction({
         type: 'REVEAL_TOP_DECK_CARD',
-        payload: { playerId: opponentId, reveal: true },
+        payload: { playerId: topPlayerId, reveal: true },
       });
     } else if (destination === 'deckTop') {
       dispatchAction({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: opponentId, zone: 'hand', index: cardIndex },
-          to: { playerId: opponentId, zone: 'deck', index: 0 },
+          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
+          to: { playerId: topPlayerId, zone: 'deck', index: 0 },
         },
       });
     } else if (destination === 'deckBottom') {
@@ -947,8 +804,8 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: opponentId, zone: 'hand', index: cardIndex },
-          to: { playerId: opponentId, zone: 'deck' },
+          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
+          to: { playerId: topPlayerId, zone: 'deck' },
         },
       });
     } else if (destination === 'graveyard') {
@@ -956,114 +813,198 @@ export const Board: React.FC<BoardProps> = ({
         type: 'MOVE_CARD',
         payload: {
           cardId: card.id,
-          from: { playerId: opponentId, zone: 'hand', index: cardIndex },
-          to: { playerId: opponentId, zone: 'graveyard' },
+          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
+          to: { playerId: topPlayerId, zone: 'graveyard' },
         },
       });
     }
   };
 
+  const handleExecuteRaid = (moveToFront: boolean) => {
+    if (!pendingRaidOrMarker) return;
+    dispatchAction({
+      type: 'RAID_CARD',
+      payload: {
+        playerId: pendingRaidOrMarker.targetPlayerId,
+        targetZone: pendingRaidOrMarker.targetZone,
+        targetSlotIndex: pendingRaidOrMarker.targetSlotIndex,
+        raidCard: pendingRaidOrMarker.incomingCard,
+        fromLocation: pendingRaidOrMarker.fromLocation,
+        moveToFront,
+      },
+    });
+    setPendingRaidOrMarker(null);
+  };
+
+  const handleExecuteMarker = () => {
+    if (!pendingRaidOrMarker) return;
+    const fromLoc = pendingRaidOrMarker.fromLocation;
+    dispatchAction({
+      type: 'ADD_MARKER',
+      payload: {
+        playerId: pendingRaidOrMarker.targetPlayerId,
+        targetZone: pendingRaidOrMarker.targetZone,
+        targetSlotIndex: pendingRaidOrMarker.targetSlotIndex,
+        from:
+          fromLoc.zone === 'hand'
+            ? { zone: 'hand', index: fromLoc.index ?? 0 }
+            : 'topDeck',
+        isFaceDown: true,
+      },
+    });
+    setPendingRaidOrMarker(null);
+  };
+
   const targetUnderCardsPlayer = underCardsTarget?.playerId
-    ? (gameState.players[underCardsTarget.playerId] || myPlayer)
-    : myPlayer;
+    ? (gameState.players[underCardsTarget.playerId] || bottomPlayer)
+    : bottomPlayer;
   const activeUnderCardsParent =
     underCardsTarget && targetUnderCardsPlayer
       ? targetUnderCardsPlayer[underCardsTarget.zone][underCardsTarget.slotIndex]
       : null;
   const underCardsFrontEmpty = (targetUnderCardsPlayer?.frontLine || []).some((c) => c === null);
   const underCardsEnergyEmpty = (targetUnderCardsPlayer?.energyLine || []).some((c) => c === null);
-  const hasEmptyFrontSlot = myPlayer.frontLine.some((c) => c === null);
-  const hasEmptyEnergySlot = myPlayer.energyLine.some((c) => c === null);
+  const pendingTargetPlayer = pendingRaidOrMarker
+    ? (gameState.players[pendingRaidOrMarker.targetPlayerId] || bottomPlayer)
+    : bottomPlayer;
+  const hasEmptyFrontSlot = pendingTargetPlayer.frontLine.some((c) => c === null);
+  const hasEmptyEnergySlot = pendingTargetPlayer.energyLine.some((c) => c === null);
+
+  const isTopActive = gameState.activePlayerId === topPlayerId;
+  const isBottomActive = gameState.activePlayerId === bottomPlayerId;
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full p-2 max-w-7xl mx-auto overflow-y-auto">
-      {/* 相手プレイヤーエリア */}
+    <div className={`w-full h-full max-w-7xl mx-auto flex flex-col justify-between overflow-y-auto ${
+      isFitMode ? 'p-1 gap-1 select-none' : 'p-2 gap-2'
+    }`}>
+      {/* 相手 / 対面プレイヤーエリア (ソロプレイ時はP2で固定) */}
       <div
-        onClick={attackingState !== null ? handleAttackPlayer : undefined}
-        className={`flex gap-3 items-center bg-slate-900/40 p-2.5 rounded-2xl border transition-all ${
-          attackingState !== null
+        onClick={
+          attackingState !== null && attackingState.attackerPlayerId !== topPlayerId
+            ? () => handleAttackPlayer(topPlayerId)
+            : undefined
+        }
+        className={`flex ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 items-center'} rounded-2xl border transition-all ${
+          attackingState !== null && attackingState.attackerPlayerId !== topPlayerId
             ? 'border-rose-500/80 bg-rose-950/20 cursor-crosshair ring-2 ring-rose-500/50 animate-pulse'
-            : 'border-slate-800/80'
+            : isTopActive
+            ? 'border-amber-500/70 bg-slate-900/70 ring-2 ring-amber-500/30 shadow-xl'
+            : 'bg-slate-900/40 border-slate-800/80'
         }`}
       >
         <SideZonesArea
-          player={opponentPlayer}
-          isOpponent={true}
-          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: opponentId } })}
-          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: opponentId, lifeIndex: index } })}
-          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: opponentId, destination: dest, lifeIndex: index } })}
-          onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: opponentId, lifeIndex: index } })}
-          onRevealTopDeck={(reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: opponentId, reveal } })}
-          onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: opponentId, action } })}
+          player={topPlayer}
+          isOpponent={!isSoloMode}
+          isSoloMode={isSoloMode}
+          isCompact={isFitMode}
+          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: topPlayerId } })}
+          onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: topPlayerId } })}
+          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })}
+          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } })}
+          onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: topPlayerId, lifeIndex: index } })}
+          onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: topPlayerId, isFaceDown } })}
+          onOpenLifeReorder={() => {
+            setLifeReorderPlayerId(topPlayerId);
+            setIsLifeReorderOpen(true);
+          }}
+          onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: topPlayerId } })}
+          onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: topPlayerId, amount: 1 } })}
+          onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: topPlayerId, count } })}
+          onOpenSearchDeck={() => {
+            setSearchPlayerId(topPlayerId);
+            setIsCardSearchOpen(true);
+          }}
+          onRevealTopDeck={(reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: topPlayerId, reveal } })}
+          onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: topPlayerId, action } })}
           onMillTopDeck={() => {
-            const topCard = opponentPlayer.deck[0];
+            const topCard = topPlayer.deck[0];
             if (!topCard) return;
             dispatchAction({
               type: 'MOVE_CARD',
               payload: {
                 cardId: topCard.id,
-                from: { playerId: opponentId, zone: 'deck', index: 0 },
-                to: { playerId: opponentId, zone: 'graveyard' },
+                from: { playerId: topPlayerId, zone: 'deck', index: 0 },
+                to: { playerId: topPlayerId, zone: 'graveyard' },
               },
             });
           }}
           onInspectCard={setInspectCard}
-          onMoveFromGraveyard={handleMoveFromGraveyard}
-          onMoveFromRemoved={handleMoveFromRemoved}
-          onOpenDeckPicker={() => onOpenDeckPicker?.(opponentId)}
+          onDropToGraveyard={handleDropToGraveyard}
+          onDropToRemoved={handleDropToRemoved}
+          onMoveFromGraveyard={(cardId, dest) => handleMoveFromGraveyard(topPlayerId, cardId, dest)}
+          onMoveFromRemoved={(cardId, dest) => handleMoveFromRemoved(topPlayerId, cardId, dest)}
+          onOpenDeckPicker={() => onOpenDeckPicker?.(topPlayerId)}
+          onDropToLife={handleDropToLife}
         />
-        <div className="flex-1 flex flex-col gap-2">
+        <div className={`flex-1 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
           <HandArea
-            cards={opponentPlayer.hand}
-            playerId={opponentId}
-            isOpponent={true}
-            onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: opponentId } })}
-            onDiscardHandIndex={(index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: opponentId, index } })}
+            cards={topPlayer.hand}
+            playerId={topPlayerId}
+            isOpponent={!isSoloMode}
+            isOpenHand={isSoloMode ? true : undefined}
+            canToggleHide={isSoloMode}
+            isCompact={isFitMode}
+            title={isSoloMode ? `${topPlayer.name} の手札` : undefined}
+            selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
+            onSelectCard={(card) => handleSelectHandCard(topPlayerId, card)}
+            onMoveTo={(cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
+            onInspect={setInspectCard}
+            onDropToHand={handleDropToHand}
+            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
+            onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
+            onDiscardHandIndex={(index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
             onOpenOpponentHandModal={() => setIsOpponentHandOpen(true)}
           />
           <FieldZone
-            title="相手: エナジーライン"
+            title={`${topPlayer.name}: エナジーライン`}
             zone="energyLine"
-            slots={opponentPlayer.energyLine}
-            playerId={opponentId}
-            isOpponent={true}
-            extraHeaderBadge={renderEnergyBadge(opponentPlayer.energyLine)}
-            onToggleRest={(slotIdx) => handleOpponentToggleRest('energyLine', slotIdx)}
-            onModifyBp={(slotIdx, delta) => handleOpponentModifyBp('energyLine', slotIdx, delta)}
-            onToggleFreeze={(slotIdx) => handleOpponentToggleFreeze('energyLine', slotIdx)}
-            onMoveTo={(slotIdx, dest) => handleOpponentFieldMoveTo('energyLine', slotIdx, dest)}
+            slots={topPlayer.energyLine}
+            playerId={topPlayerId}
+            isOpponent={!isSoloMode}
+            isControllable={isSoloMode}
+            isCompact={isFitMode}
+            selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
+            extraHeaderBadge={renderEnergyBadge(topPlayer.energyLine)}
+            onSlotClick={(slotIdx) => handleSlotClick(topPlayerId, 'energyLine', slotIdx)}
+            onToggleRest={(slotIdx) => handleToggleRest(topPlayerId, 'energyLine', slotIdx)}
+            onModifyBp={(slotIdx, delta) => handleModifyBp(topPlayerId, 'energyLine', slotIdx, delta)}
+            onToggleFreeze={(slotIdx) => handleToggleFreeze(topPlayerId, 'energyLine', slotIdx)}
+            onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'energyLine', slotIdx, from)}
+            onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onOpenUnderCards={
-              isSoloMode
-                ? (slotIdx) => setUnderCardsTarget({ playerId: opponentId, zone: 'energyLine', slotIndex: slotIdx })
-                : undefined
-            }
+            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
+            onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'energyLine', slotIdx)}
+            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <FieldZone
-            title="相手: フロントライン"
+            title={`${topPlayer.name}: フロントライン`}
             zone="frontLine"
-            slots={opponentPlayer.frontLine}
-            playerId={opponentId}
-            isOpponent={true}
-            onToggleRest={(slotIdx) => handleOpponentToggleRest('frontLine', slotIdx)}
-            onModifyBp={(slotIdx, delta) => handleOpponentModifyBp('frontLine', slotIdx, delta)}
-            onToggleFreeze={(slotIdx) => handleOpponentToggleFreeze('frontLine', slotIdx)}
-            onMoveTo={(slotIdx, dest) => handleOpponentFieldMoveTo('frontLine', slotIdx, dest)}
-            onInspect={setInspectCard}
-            onOpenUnderCards={
-              isSoloMode
-                ? (slotIdx) => setUnderCardsTarget({ playerId: opponentId, zone: 'frontLine', slotIndex: slotIdx })
-                : undefined
-            }
+            slots={topPlayer.frontLine}
+            playerId={topPlayerId}
+            isOpponent={!isSoloMode}
+            isControllable={isSoloMode}
+            isCompact={isFitMode}
+            selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
             onSlotClick={(slotIdx) => {
-              if (attackingState !== null) {
-                if (opponentPlayer.frontLine[slotIdx]) {
-                  handleAttackOpponentCard(slotIdx);
+              if (attackingState !== null && attackingState.attackerPlayerId !== topPlayerId) {
+                if (topPlayer.frontLine[slotIdx]) {
+                  handleAttackOpponentCard(topPlayerId, slotIdx);
                 } else {
-                  handleAttackPlayer();
+                  handleAttackPlayer(topPlayerId);
                 }
+              } else {
+                handleSlotClick(topPlayerId, 'frontLine', slotIdx);
               }
             }}
+            onToggleRest={(slotIdx) => handleToggleRest(topPlayerId, 'frontLine', slotIdx)}
+            onModifyBp={(slotIdx, delta) => handleModifyBp(topPlayerId, 'frontLine', slotIdx, delta)}
+            onToggleFreeze={(slotIdx) => handleToggleFreeze(topPlayerId, 'frontLine', slotIdx)}
+            onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'frontLine', slotIdx, from)}
+            onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'frontLine', slotIdx, dest)}
+            onInspect={setInspectCard}
+            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
+            onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'frontLine', slotIdx)}
+            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
           />
         </div>
       </div>
@@ -1072,87 +1013,135 @@ export const Board: React.FC<BoardProps> = ({
       <PhaseBar
         currentPhase={gameState.phase}
         turn={gameState.turn}
-        isActivePlayer={gameState.activePlayerId === myPlayerId}
-        activePlayerName={gameState.players[gameState.activePlayerId]?.name || '相手'}
-        canExtraDraw={myPlayer.apCurrent >= 1 && !myPlayer.hasExtraDrawn && myPlayer.deck.length > 0}
+        isCompact={isFitMode}
+        isActivePlayer={isSoloMode ? true : gameState.activePlayerId === myPlayerId}
+        activePlayerName={gameState.players[gameState.activePlayerId]?.name || (gameState.activePlayerId === 'player-1' ? 'Player 1' : 'Player 2')}
+        isSoloMode={isSoloMode}
+        activePlayerId={gameState.activePlayerId}
+        canExtraDraw={
+          (gameState.players[gameState.activePlayerId]?.apCurrent ?? 0) >= 1 &&
+          !gameState.players[gameState.activePlayerId]?.hasExtraDrawn &&
+          (gameState.players[gameState.activePlayerId]?.deck.length ?? 0) > 0
+        }
         isFirstTurnFirstPlayer={gameState.turn === 1 && !!gameState.players[gameState.activePlayerId]?.isFirst}
         onSetPhase={(phase) => dispatchAction({ type: 'SET_PHASE', payload: { phase } })}
-        onPassTurn={() => dispatchAction({ type: 'PASS_TURN', payload: { playerId: myPlayerId } })}
-        onExtraDraw={() => dispatchAction({ type: 'EXTRA_DRAW', payload: { playerId: myPlayerId } })}
+        onPassTurn={() => dispatchAction({ type: 'PASS_TURN', payload: { playerId: gameState.activePlayerId } })}
+        onExtraDraw={() => dispatchAction({ type: 'EXTRA_DRAW', payload: { playerId: gameState.activePlayerId } })}
       />
 
-      {/* 自分プレイヤーエリア */}
-      <div className="flex gap-3 items-center bg-slate-900/60 p-2.5 rounded-2xl border border-indigo-500/20 shadow-xl">
-        <div className="flex-1 flex flex-col gap-2">
+      {/* 自分 / 手前プレイヤーエリア (ソロプレイ時はP1で固定) */}
+      <div
+        onClick={
+          attackingState !== null && attackingState.attackerPlayerId !== bottomPlayerId
+            ? () => handleAttackPlayer(bottomPlayerId)
+            : undefined
+        }
+        className={`flex ${isFitMode ? 'gap-1.5 p-1 shrink-0' : 'gap-3 p-2.5 items-center'} rounded-2xl border transition-all ${
+          attackingState !== null && attackingState.attackerPlayerId !== bottomPlayerId
+            ? 'border-rose-500/80 bg-rose-950/20 cursor-crosshair ring-2 ring-rose-500/50 animate-pulse'
+            : isBottomActive
+            ? 'border-amber-500/70 bg-slate-900/80 ring-2 ring-amber-500/30 shadow-xl'
+            : 'bg-slate-900/60 border-indigo-500/20 shadow-xl'
+        }`}
+      >
+        <div className={`flex-1 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
           <FieldZone
-            title="自分: フロントライン"
+            title={`${bottomPlayer.name}: フロントライン`}
             zone="frontLine"
-            slots={myPlayer.frontLine}
-            playerId={myPlayerId}
-            selectedCardId={selectedHandCard?.id}
-            onSlotClick={(slotIdx) => handleSlotClick('frontLine', slotIdx)}
-            onToggleRest={(slotIdx) => handleToggleRest('frontLine', slotIdx)}
-            onModifyBp={(slotIdx, delta) => handleModifyBp('frontLine', slotIdx, delta)}
-            onToggleFreeze={(slotIdx) => handleToggleFreeze('frontLine', slotIdx)}
-            onAddMarker={(slotIdx, from) => handleAddMarker('frontLine', slotIdx, from)}
-            onMoveTo={(slotIdx, dest) => handleFieldMoveTo('frontLine', slotIdx, dest)}
+            slots={bottomPlayer.frontLine}
+            playerId={bottomPlayerId}
+            isOpponent={false}
+            isControllable={true}
+            isCompact={isFitMode}
+            selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
+            onSlotClick={(slotIdx) => {
+              if (attackingState !== null && attackingState.attackerPlayerId !== bottomPlayerId) {
+                if (bottomPlayer.frontLine[slotIdx]) {
+                  handleAttackOpponentCard(bottomPlayerId, slotIdx);
+                } else {
+                  handleAttackPlayer(bottomPlayerId);
+                }
+              } else {
+                handleSlotClick(bottomPlayerId, 'frontLine', slotIdx);
+              }
+            }}
+            onToggleRest={(slotIdx) => handleToggleRest(bottomPlayerId, 'frontLine', slotIdx)}
+            onModifyBp={(slotIdx, delta) => handleModifyBp(bottomPlayerId, 'frontLine', slotIdx, delta)}
+            onToggleFreeze={(slotIdx) => handleToggleFreeze(bottomPlayerId, 'frontLine', slotIdx)}
+            onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'frontLine', slotIdx, from)}
+            onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'frontLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={handleDropCardOnSlot}
-            onDeclareAttack={(slotIdx) => handleDeclareAttack('frontLine', slotIdx)}
-            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ zone: 'frontLine', slotIndex: slotIdx })}
+            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
+            onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'frontLine', slotIdx)}
+            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
           />
           <FieldZone
-            title="自分: エナジーライン"
+            title={`${bottomPlayer.name}: エナジーライン`}
             zone="energyLine"
-            slots={myPlayer.energyLine}
-            playerId={myPlayerId}
-            selectedCardId={selectedHandCard?.id}
-            extraHeaderBadge={renderEnergyBadge(myPlayer.energyLine)}
-            onSlotClick={(slotIdx) => handleSlotClick('energyLine', slotIdx)}
-            onToggleRest={(slotIdx) => handleToggleRest('energyLine', slotIdx)}
-            onModifyBp={(slotIdx, delta) => handleModifyBp('energyLine', slotIdx, delta)}
-            onToggleFreeze={(slotIdx) => handleToggleFreeze('energyLine', slotIdx)}
-            onAddMarker={(slotIdx, from) => handleAddMarker('energyLine', slotIdx, from)}
-            onMoveTo={(slotIdx, dest) => handleFieldMoveTo('energyLine', slotIdx, dest)}
+            slots={bottomPlayer.energyLine}
+            playerId={bottomPlayerId}
+            isOpponent={false}
+            isControllable={true}
+            isCompact={isFitMode}
+            selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
+            extraHeaderBadge={renderEnergyBadge(bottomPlayer.energyLine)}
+            onSlotClick={(slotIdx) => handleSlotClick(bottomPlayerId, 'energyLine', slotIdx)}
+            onToggleRest={(slotIdx) => handleToggleRest(bottomPlayerId, 'energyLine', slotIdx)}
+            onModifyBp={(slotIdx, delta) => handleModifyBp(bottomPlayerId, 'energyLine', slotIdx, delta)}
+            onToggleFreeze={(slotIdx) => handleToggleFreeze(bottomPlayerId, 'energyLine', slotIdx)}
+            onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'energyLine', slotIdx, from)}
+            onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={handleDropCardOnSlot}
-            onDeclareAttack={(slotIdx) => handleDeclareAttack('energyLine', slotIdx)}
-            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ zone: 'energyLine', slotIndex: slotIdx })}
+            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
+            onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'energyLine', slotIdx)}
+            onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <HandArea
-            cards={myPlayer.hand}
-            playerId={myPlayerId}
-            selectedCardId={selectedHandCard?.id}
-            onSelectCard={handleSelectHandCard}
-            onMoveTo={handleHandMoveTo}
+            cards={bottomPlayer.hand}
+            playerId={bottomPlayerId}
+            isOpponent={false}
+            isOpenHand={true}
+            isCompact={isFitMode}
+            title={isSoloMode ? `${bottomPlayer.name} の手札` : undefined}
+            selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
+            onSelectCard={(card) => handleSelectHandCard(bottomPlayerId, card)}
+            onMoveTo={(cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
             onDropToHand={handleDropToHand}
-            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: myPlayerId } })}
+            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
           />
         </div>
 
         <SideZonesArea
-          player={myPlayer}
+          player={bottomPlayer}
           isOpponent={false}
-          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: myPlayerId } })}
-          onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: myPlayerId } })}
-          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: myPlayerId, lifeIndex: index } })}
-          onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: myPlayerId, isFaceDown } })}
-          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: myPlayerId, destination: dest, lifeIndex: index } })}
-          onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: myPlayerId, lifeIndex: index } })}
-          onOpenLifeReorder={() => setIsLifeReorderOpen(true)}
-          onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: myPlayerId } })}
-          onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: myPlayerId, amount: 1 } })}
-          onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: myPlayerId, count } })}
-          onOpenSearchDeck={() => setIsCardSearchOpen(true)}
-          onRevealTopDeck={(reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: myPlayerId, reveal } })}
-          onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: myPlayerId, action } })}
+          isSoloMode={isSoloMode}
+          isCompact={isFitMode}
+          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: bottomPlayerId } })}
+          onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: bottomPlayerId } })}
+          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: bottomPlayerId, lifeIndex: index } })}
+          onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: bottomPlayerId, isFaceDown } })}
+          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: bottomPlayerId, destination: dest, lifeIndex: index } })}
+          onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: bottomPlayerId, lifeIndex: index } })}
+          onOpenLifeReorder={() => {
+            setLifeReorderPlayerId(bottomPlayerId);
+            setIsLifeReorderOpen(true);
+          }}
+          onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: bottomPlayerId } })}
+          onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: bottomPlayerId, amount: 1 } })}
+          onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: bottomPlayerId, count } })}
+          onOpenSearchDeck={() => {
+            setSearchPlayerId(bottomPlayerId);
+            setIsCardSearchOpen(true);
+          }}
+          onRevealTopDeck={(reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: bottomPlayerId, reveal } })}
+          onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: bottomPlayerId, action } })}
           onInspectCard={setInspectCard}
           onDropToGraveyard={handleDropToGraveyard}
           onDropToRemoved={handleDropToRemoved}
-          onMoveFromGraveyard={handleMoveFromGraveyard}
-          onMoveFromRemoved={handleMoveFromRemoved}
-          onOpenDeckPicker={() => onOpenDeckPicker?.(myPlayerId)}
+          onMoveFromGraveyard={(cardId, dest) => handleMoveFromGraveyard(bottomPlayerId, cardId, dest)}
+          onMoveFromRemoved={(cardId, dest) => handleMoveFromRemoved(bottomPlayerId, cardId, dest)}
+          onOpenDeckPicker={() => onOpenDeckPicker?.(bottomPlayerId)}
           onDropToLife={handleDropToLife}
         />
       </div>
@@ -1170,19 +1159,19 @@ export const Board: React.FC<BoardProps> = ({
       {/* 山札の上からN枚確認モーダル */}
       <TopDeckModal
         revealedDeck={gameState.revealedDeckCards}
-        myPlayerId={myPlayerId}
+        myPlayerId={gameState.revealedDeckCards?.playerId || bottomPlayerId}
         hasEmptyFrontSlot={hasEmptyFrontSlot}
         hasEmptyEnergySlot={hasEmptyEnergySlot}
         onResolveCard={(cardId, destination) =>
           dispatchAction({
             type: 'RESOLVE_TOP_DECK_CARD',
-            payload: { playerId: myPlayerId, cardId, destination },
+            payload: { playerId: gameState.revealedDeckCards?.playerId || bottomPlayerId, cardId, destination },
           })
         }
         onClose={(shuffleRemaining) =>
           dispatchAction({
             type: 'CLOSE_TOP_DECK',
-            payload: { playerId: myPlayerId, shuffleRemaining },
+            payload: { playerId: gameState.revealedDeckCards?.playerId || bottomPlayerId, shuffleRemaining },
           })
         }
       />
@@ -1190,16 +1179,16 @@ export const Board: React.FC<BoardProps> = ({
       {/* 山札サーチモーダル */}
       <CardSearchModal
         isOpen={isCardSearchOpen}
-        cards={myPlayer.deck}
+        cards={gameState.players[searchPlayerId]?.deck || []}
         onSelectCard={(cardId, destination) =>
           dispatchAction({
             type: 'SEARCH_DECK_CARD',
-            payload: { playerId: myPlayerId, cardId, destination },
+            payload: { playerId: searchPlayerId, cardId, destination },
           })
         }
         onClose={(shuffleDeck) => {
           if (shuffleDeck) {
-            dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: myPlayerId } });
+            dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: searchPlayerId } });
           }
           setIsCardSearchOpen(false);
         }}
@@ -1221,14 +1210,14 @@ export const Board: React.FC<BoardProps> = ({
       <AttackLineOverlay
         sourceElement={
           attackingState !== null
-            ? document.getElementById(`slot-${myPlayerId}-${attackingState.zone}-${attackingState.slotIndex}`)
+            ? document.getElementById(`slot-${attackingState.attackerPlayerId}-${attackingState.zone}-${attackingState.slotIndex}`)
             : null
         }
         targetElement={null}
         isActive={attackingState !== null}
         attackerName={
-          attackingState !== null && myPlayer[attackingState.zone][attackingState.slotIndex]
-            ? myPlayer[attackingState.zone][attackingState.slotIndex]!.name
+          attackingState !== null && gameState.players[attackingState.attackerPlayerId]?.[attackingState.zone][attackingState.slotIndex]
+            ? gameState.players[attackingState.attackerPlayerId][attackingState.zone][attackingState.slotIndex]!.name
             : 'アタッカー'
         }
         onCancel={() => setAttackingState(null)}
@@ -1237,12 +1226,12 @@ export const Board: React.FC<BoardProps> = ({
       {/* 相手手札確認・ハンデスモーダル */}
       <OpponentHandModal
         isOpen={isOpponentHandOpen}
-        cards={opponentPlayer.hand}
-        opponentName={opponentPlayer.name}
+        cards={topPlayer.hand}
+        opponentName={topPlayer.name}
         onDiscardCard={(cardIndex: number) => {
           dispatchAction({
             type: 'DISCARD_HAND_CARD',
-            payload: { playerId: opponentId, index: cardIndex },
+            payload: { playerId: topPlayerId, index: cardIndex },
           });
         }}
         onMoveOpponentHandCard={handleMoveOpponentHandCard}
@@ -1252,10 +1241,23 @@ export const Board: React.FC<BoardProps> = ({
       {/* ライフ確認・並び替えモーダル */}
       <LifeReorderModal
         isOpen={isLifeReorderOpen}
-        lifeCards={myPlayer.life}
-        playerName={myPlayer.name}
+        lifeCards={gameState.players[lifeReorderPlayerId]?.life || []}
+        playerName={gameState.players[lifeReorderPlayerId]?.name || ''}
         onConfirmReorder={handleConfirmLifeReorder}
         onClose={() => setIsLifeReorderOpen(false)}
+      />
+
+      {/* レイド登場・マーカー配置モーダル */}
+      <RaidOrMarkerModal
+        isOpen={pendingRaidOrMarker !== null}
+        incomingCard={pendingRaidOrMarker?.incomingCard || null}
+        existingCard={pendingRaidOrMarker?.existingCard || null}
+        targetZone={pendingRaidOrMarker?.targetZone || 'frontLine'}
+        targetSlotIndex={pendingRaidOrMarker?.targetSlotIndex ?? 0}
+        hasEmptyFrontSlot={hasEmptyFrontSlot}
+        onSelectRaid={handleExecuteRaid}
+        onSelectMarker={handleExecuteMarker}
+        onClose={() => setPendingRaidOrMarker(null)}
       />
     </div>
   );
