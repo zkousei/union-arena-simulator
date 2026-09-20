@@ -27,7 +27,12 @@ export const DeckBuilderMyDecksModal: React.FC<DeckBuilderMyDecksModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-xs">
-      <div className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="マイデッキ一覧"
+        className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2">
@@ -39,6 +44,7 @@ export const DeckBuilderMyDecksModal: React.FC<DeckBuilderMyDecksModalProps> = (
           <button
             onClick={onClose}
             className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+            title="閉じる"
           >
             <X className="w-5 h-5" />
           </button>

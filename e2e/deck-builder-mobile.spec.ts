@@ -49,3 +49,61 @@ test('saves and restores a deck from the mobile deck pane', async ({ page }) => 
   await page.getByRole('button', { name: /現在のデッキ/ }).click();
   await expect(deckName).toHaveValue('モバイル保存テスト');
 });
+
+test('rejects invalid JSON and persists a valid imported deck on mobile', async ({ page }) => {
+  await page.goto('/deck-builder');
+  await page.getByRole('button', { name: /現在のデッキ/ }).click();
+  await page.getByRole('button', { name: '一覧', exact: true }).click();
+  await page.getByRole('button', { name: 'JSONインポート' }).click();
+
+  const importDialog = page.getByRole('dialog', { name: 'デッキJSONインポート' });
+  const jsonInput = importDialog.getByPlaceholder('{"name": "...", "items": [...]}');
+  await expect(importDialog).toBeVisible();
+
+  await jsonInput.fill('{broken');
+  await importDialog.getByRole('button', { name: 'インポート', exact: true }).click();
+  await expect(importDialog.getByRole('alert')).toHaveText('JSONの解析に失敗しました。');
+
+  await jsonInput.fill(JSON.stringify({ name: '不正デッキ', titleCode: 'TEST', items: [{ count: 1 }] }));
+  await importDialog.getByRole('button', { name: 'インポート', exact: true }).click();
+  await expect(importDialog.getByRole('alert')).toHaveText('無効なデッキJSONフォーマットです');
+
+  const validDeck = {
+    name: 'モバイルインポートテスト',
+    titleCode: 'TEST',
+    items: [
+      {
+        count: 1,
+        card: {
+          code: 'TEST-001',
+          name: 'インポートカード',
+          title: 'テスト作品',
+          titleCode: 'TEST',
+          cardType: 'CHARACTER',
+          color: 'PURPLE',
+          bp: 1000,
+          apCost: 1,
+          reqEnergy: 1,
+          genEnergy: 1,
+          traits: [],
+          triggers: [],
+          effectText: '',
+        },
+      },
+    ],
+  };
+  await jsonInput.fill(JSON.stringify(validDeck));
+  await importDialog.getByRole('button', { name: 'インポート', exact: true }).click();
+
+  await expect(importDialog).toBeHidden();
+  await expect(page.getByPlaceholder('デッキ名を入力...')).toHaveValue('モバイルインポートテスト');
+  await expect(page.getByText('1 / 50 枚')).toBeVisible();
+
+  await page.reload();
+  await page.getByRole('button', { name: /現在のデッキ/ }).click();
+  await expect(page.getByPlaceholder('デッキ名を入力...')).toHaveValue('モバイルインポートテスト');
+
+  await page.getByRole('button', { name: '一覧', exact: true }).click();
+  await page.getByRole('button', { name: 'JSONインポート' }).click();
+  await expect(page.getByRole('dialog', { name: 'デッキJSONインポート' }).getByPlaceholder('{"name": "...", "items": [...]}')).toHaveValue('');
+});

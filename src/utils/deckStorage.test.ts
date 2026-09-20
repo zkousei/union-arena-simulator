@@ -65,6 +65,10 @@ describe('deckStorage', () => {
     expect(() => importDeckFromJson(json)).toThrow('無効なデッキJSONフォーマットです');
   });
 
+  it('returns a stable Japanese error for malformed JSON syntax', () => {
+    expect(() => importDeckFromJson('{broken')).toThrow('JSONの解析に失敗しました。');
+  });
+
   it('creates, updates, and deletes saved decks', () => {
     vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(200);
     saveDeck(createDeck());

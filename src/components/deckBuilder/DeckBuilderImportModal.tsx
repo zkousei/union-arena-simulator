@@ -19,26 +19,37 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    setJsonText('');
+    setError(null);
+    onClose();
+  };
+
   const handleImport = () => {
     try {
       setError(null);
       const deck = importDeckFromJson(jsonText);
       onImportSuccess(deck);
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'JSONの解析に失敗しました。');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-xs">
-      <div className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 text-xs overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="デッキJSONインポート"
+        className="bg-slate-900 border-2 border-indigo-500/80 rounded-2xl max-w-md w-full max-h-[calc(100dvh-1.5rem)] p-4 shadow-2xl space-y-3 overflow-y-auto animate-in fade-in zoom-in-95 duration-200 my-auto"
+      >
         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-indigo-400" />
             <h3 className="font-bold text-base text-white">デッキJSONインポート</h3>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white">
+          <button onClick={handleClose} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white" title="閉じる">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -56,7 +67,7 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
         />
 
         {error && (
-          <div className="flex items-center gap-1.5 text-rose-400 bg-rose-950/40 p-2 rounded-lg text-[11px] border border-rose-800/40">
+          <div role="alert" className="flex items-center gap-1.5 text-rose-400 bg-rose-950/40 p-2 rounded-lg text-[11px] border border-rose-800/40">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -64,7 +75,7 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-semibold"
           >
             キャンセル

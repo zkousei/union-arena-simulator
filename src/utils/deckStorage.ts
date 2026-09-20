@@ -125,7 +125,12 @@ function isValidImportedCard(value: unknown): boolean {
 
 // JSONインポート
 export function importDeckFromJson(jsonStr: string): UserDeck {
-  const parsed: unknown = JSON.parse(jsonStr);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('JSONの解析に失敗しました。');
+  }
   if (
     !isRecord(parsed) ||
     typeof parsed.name !== 'string' ||
