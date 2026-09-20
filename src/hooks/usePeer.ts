@@ -6,6 +6,23 @@ const RECONNECT_DELAY_MS = 1_000;
 const CONNECTION_TIMEOUT_MS = 10_000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
+function createPeerClient(): Peer {
+  const host = import.meta.env.VITE_PEER_HOST;
+
+  if (!host) {
+    return new Peer({ debug: 1 });
+  }
+
+  return new Peer({
+    host,
+    port: Number(import.meta.env.VITE_PEER_PORT || 9000),
+    path: import.meta.env.VITE_PEER_PATH || '/',
+    key: import.meta.env.VITE_PEER_KEY || 'peerjs',
+    secure: import.meta.env.VITE_PEER_SECURE === 'true',
+    debug: 1,
+  });
+}
+
 export interface UsePeerReturn {
   peerId: string | null;
   remotePeerId: string | null;
@@ -182,7 +199,7 @@ export function usePeer(): UsePeerReturn {
           reject(reason);
         };
 
-        const peer = new Peer({ debug: 1 });
+        const peer = createPeerClient();
         peerRef.current = peer;
 
         const peerOpenTimeout = setTimeout(() => {
@@ -240,7 +257,7 @@ export function usePeer(): UsePeerReturn {
 
       return new Promise((resolve, reject) => {
         let settled = false;
-        const peer = new Peer({ debug: 1 });
+        const peer = createPeerClient();
         peerRef.current = peer;
         const peerOpenTimeout = setTimeout(() => {
           if (peerRef.current !== peer || settled) return;

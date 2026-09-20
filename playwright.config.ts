@@ -18,9 +18,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'npx peerjs --host 127.0.0.1 --port 9000 --path /',
+      url: 'http://127.0.0.1:9000/',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        'VITE_PEER_HOST=127.0.0.1 VITE_PEER_PORT=9000 VITE_PEER_PATH=/ npm run dev -- --host 127.0.0.1 --port 4173',
+      url: 'http://127.0.0.1:4173',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });
