@@ -78,6 +78,14 @@ export const CardView: React.FC<CardViewProps> = ({
     ? 'w-[58px] h-[80px] lg:w-[62px] lg:h-[86px]'
     : 'w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40';
 
+  useEffect(() => {
+    const handleOutsideClick = () => setShowMenu(false);
+    if (showMenu) {
+      window.addEventListener('click', handleOutsideClick);
+    }
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, [showMenu]);
+
   // 裏向き表示 (revealFaceDown が true の場合は表面を表示しつつ裏向きバッジを表示)
   if (card.isFaceDown && !revealFaceDown) {
     return (
@@ -144,14 +152,6 @@ export const CardView: React.FC<CardViewProps> = ({
     setMenuPos({ x: e.clientX, y: e.clientY });
     setShowMenu(true);
   };
-
-  useEffect(() => {
-    const handleOutsideClick = () => setShowMenu(false);
-    if (showMenu) {
-      window.addEventListener('click', handleOutsideClick);
-    }
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, [showMenu]);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameAction } from '../types/actions';
 import { GameState } from '../types/game';
 import { PeerMessage, PeerStateSnapshot } from '../types/peer';
@@ -27,10 +27,14 @@ export function useGame() {
   const lastAppliedRevisionRef = useRef(-1);
 
   const peer = usePeer();
-  const sendMessageRef = useRef(peer.sendMessage);
-  const peerStatusRef = useRef(peer.status);
-  sendMessageRef.current = peer.sendMessage;
-  peerStatusRef.current = peer.status;
+  const { sendMessage, status: peerStatus, createRoom, joinRoom } = peer;
+  const sendMessageRef = useRef(sendMessage);
+  const peerStatusRef = useRef(peerStatus);
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+    peerStatusRef.current = peerStatus;
+  }, [peerStatus, sendMessage]);
 
   // サウンド効果の再生
   const triggerActionSound = useCallback((action: GameAction) => {
@@ -173,8 +177,8 @@ export function useGame() {
     myPlayerIdRef.current = 'player-1';
     hostRevisionRef.current = 0;
     setMyPlayerId('player-1');
-    return peer.createRoom(handlePeerMessage);
-  }, [peer.createRoom, handlePeerMessage]);
+    return createRoom(handlePeerMessage);
+  }, [createRoom, handlePeerMessage]);
 
   // ゲストとして部屋参加
   const handleJoinRoom = useCallback(async (roomId: string) => {
@@ -182,7 +186,7 @@ export function useGame() {
     myPlayerIdRef.current = 'player-2';
     lastAppliedRevisionRef.current = -1;
     setMyPlayerId('player-2');
-    await peer.joinRoom(roomId, handlePeerMessage);
+    await joinRoom(roomId, handlePeerMessage);
 
     setTimeout(() => {
       sendMessageRef.current({
@@ -191,7 +195,7 @@ export function useGame() {
         timestamp: Date.now(),
       });
     }, 500);
-  }, [peer.joinRoom, handlePeerMessage]);
+  }, [joinRoom, handlePeerMessage]);
 
   // アクション発行関数。接続中のゲストはホストへ実行要求だけを送る。
   const dispatchAction = useCallback((action: GameAction) => {

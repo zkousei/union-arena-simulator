@@ -92,8 +92,9 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
       } else {
         setFetchErrorMsg('カードを取得できませんでした。');
       }
-    } catch (err: any) {
-      setFetchErrorMsg(`取得エラー: ${err.message || '通信に失敗しました'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '通信に失敗しました';
+      setFetchErrorMsg(`取得エラー: ${message}`);
     } finally {
       setIsFetchingSeries(false);
     }
@@ -127,8 +128,9 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
       setHtmlSuccessMsg(`カード「${parsed.name} (${parsed.code})」をパースして追加しました！`);
       setHtmlInput('');
       setHtmlCardNoInput('');
-    } catch (e: any) {
-      alert(`パースに失敗しました: ${e.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '不明なエラー';
+      alert(`パースに失敗しました: ${message}`);
     }
   };
 

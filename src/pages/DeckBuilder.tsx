@@ -112,7 +112,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
   const handleAddCard = (card: CardMaster) => {
     if (!activeDeck) return;
     const existingIndex = activeDeck.items.findIndex((i) => i.card.code === card.code);
-    let newItems = [...activeDeck.items];
+    const newItems = [...activeDeck.items];
 
     if (existingIndex >= 0) {
       if (newItems[existingIndex].count >= 4) return;

@@ -25,8 +25,8 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
       const deck = importDeckFromJson(jsonText);
       onImportSuccess(deck);
       onClose();
-    } catch (e: any) {
-      setError(e.message || 'JSONの解析に失敗しました。');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'JSONの解析に失敗しました。');
     }
   };
 

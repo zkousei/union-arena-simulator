@@ -15,7 +15,7 @@ export interface PeerMessage {
   type: PeerMessageType;
   senderId: string;
   senderName?: string;
-  payload?: any;
+  payload?: unknown;
   timestamp: number;
 }
 
