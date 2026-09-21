@@ -77,7 +77,7 @@ describe('LifeSelectModal', () => {
       />
     );
 
-    expect(screen.getByRole('dialog', { name: '相手ライフの指定・操作' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '相手ライフの選択' })).toBeTruthy();
     expect(screen.getByText('ライフ #1')).toBeDefined();
     expect(screen.getByText('ライフ #2')).toBeDefined();
     expect(screen.getByText('ライフ #3')).toBeDefined();
@@ -110,9 +110,8 @@ describe('LifeSelectModal', () => {
     expect(handleClose).toHaveBeenCalled();
   });
 
-  it('calls onTakeLife with graveyard when discard button is clicked', () => {
+  it('does not offer direct discard for an opponent life', () => {
     const handleTakeLife = vi.fn();
-    const handleClose = vi.fn();
 
     render(
       <LifeSelectModal
@@ -123,15 +122,12 @@ describe('LifeSelectModal', () => {
         onCheckLife={vi.fn()}
         onTakeLife={handleTakeLife}
         onFlipLife={vi.fn()}
-        onClose={handleClose}
+        onClose={vi.fn()}
       />
     );
 
-    const discardButtons = screen.getAllByRole('button', { name: /場外へ/i });
-    fireEvent.click(discardButtons[0]);
-
-    expect(handleTakeLife).toHaveBeenCalledWith('graveyard', 0);
-    expect(handleClose).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /場外へ/i })).toBeNull();
+    expect(handleTakeLife).not.toHaveBeenCalled();
   });
 
   it('calls onTakeLife with hand when hand button is clicked for own life', () => {

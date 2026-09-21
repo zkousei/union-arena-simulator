@@ -12,6 +12,7 @@ import {
   shuffleCards,
 } from './deck';
 import { createInitialGameState } from './initialState';
+import { calculateBattleResult } from './battle';
 
 function getCardAtLocation(player: PlayerState, loc: CardLocation, cardId?: string): Card | null {
   if (loc.zone === 'frontLine' || loc.zone === 'energyLine') {
@@ -926,6 +927,152 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         break;
       }
 
+      case 'DECLARE_PLAYER_ATTACK': {
+        const {
+          actorPlayerId,
+          attackerZone,
+          attackerSlotIndex,
+          defenderPlayerId,
+        } = action.payload;
+        const attackerPlayer = draft.players[actorPlayerId];
+        const defenderPlayer = draft.players[defenderPlayerId];
+        const attacker = attackerPlayer?.[attackerZone][attackerSlotIndex];
+        if (
+          draft.pendingCombat ||
+          draft.status !== 'PLAYING' ||
+          draft.phase !== 'ATTACK' ||
+          draft.activePlayerId !== actorPlayerId ||
+          actorPlayerId === defenderPlayerId ||
+          !attackerPlayer ||
+          !defenderPlayer ||
+          !attacker ||
+          attacker.isRested ||
+          (draft.turn === 1 && attackerPlayer.isFirst)
+        ) return;
+
+        attacker.isRested = true;
+        const attackerBp = (attacker.bp ?? 0) + attacker.bpModifier;
+        draft.pendingCombat = {
+          stage: 'BLOCK_DECISION',
+          attackerPlayerId: actorPlayerId,
+          attackerZone,
+          attackerSlotIndex,
+          defenderPlayerId,
+          attackerCardName: attacker.name,
+          attackerBp,
+        };
+        appendLog(
+          draft,
+          `⚔️【アタック宣言】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) が ${defenderPlayer.name} にアタックしました！相手はブロックするか選択してください。`,
+          actorPlayerId
+        );
+        break;
+      }
+
+      case 'PASS_BLOCK': {
+        const combat = draft.pendingCombat;
+        if (
+          !combat ||
+          combat.stage !== 'BLOCK_DECISION' ||
+          action.payload.actorPlayerId !== combat.defenderPlayerId
+        ) return;
+
+        const defender = draft.players[combat.defenderPlayerId];
+        if (!defender) return;
+        combat.stage = 'LIFE_SELECTION';
+        appendLog(
+          draft,
+          `🛡️【ノーブロック】${defender.name} はブロックせずアタックを通しました。攻撃側がライフを選択します。`,
+          combat.defenderPlayerId
+        );
+        break;
+      }
+
+      case 'BLOCK_ATTACK': {
+        const combat = draft.pendingCombat;
+        if (
+          !combat ||
+          combat.stage !== 'BLOCK_DECISION' ||
+          action.payload.actorPlayerId !== combat.defenderPlayerId
+        ) return;
+
+        const attackerPlayer = draft.players[combat.attackerPlayerId];
+        const blockerPlayer = draft.players[combat.defenderPlayerId];
+        const attacker = attackerPlayer?.[combat.attackerZone][combat.attackerSlotIndex];
+        const blocker = blockerPlayer?.frontLine[action.payload.blockerSlotIndex];
+        if (!attackerPlayer || !blockerPlayer || !attacker || !blocker || blocker.isRested) return;
+
+        blocker.isRested = true;
+        const blockerBp = (blocker.bp ?? 0) + blocker.bpModifier;
+        const battle = calculateBattleResult(
+          combat.attackerBp,
+          blockerBp,
+          combat.attackerCardName,
+          blocker.name
+        );
+        appendLog(
+          draft,
+          `🛡️【ブロック解決】${blockerPlayer.name}の「${blocker.name}」(BP${blockerBp}) がブロック！ VS ${attackerPlayer.name}の「${combat.attackerCardName}」(BP${combat.attackerBp}) ➔ ${battle.logMessage}`,
+          combat.defenderPlayerId
+        );
+        if (battle.shouldRetireDefender) {
+          const [retired] = blockerPlayer.frontLine.splice(action.payload.blockerSlotIndex, 1, null);
+          if (retired) blockerPlayer.graveyard.push(resetCardState(retired));
+        }
+        if (battle.shouldRetireAttacker) {
+          const [retired] = attackerPlayer[combat.attackerZone].splice(combat.attackerSlotIndex, 1, null);
+          if (retired) attackerPlayer.graveyard.push(resetCardState(retired));
+        }
+        draft.pendingCombat = null;
+        break;
+      }
+
+      case 'CANCEL_PLAYER_ATTACK': {
+        const combat = draft.pendingCombat;
+        if (!combat || action.payload.actorPlayerId !== combat.attackerPlayerId) return;
+        const attacker = draft.players[combat.attackerPlayerId]?.[combat.attackerZone][combat.attackerSlotIndex];
+        if (attacker) attacker.isRested = false;
+        draft.pendingCombat = null;
+        appendLog(draft, 'アタックを取り消しました。', combat.attackerPlayerId);
+        break;
+      }
+
+      case 'SELECT_LIFE_FOR_DAMAGE': {
+        const combat = draft.pendingCombat;
+        if (
+          !combat ||
+          combat.stage !== 'LIFE_SELECTION' ||
+          action.payload.actorPlayerId !== combat.attackerPlayerId ||
+          !Number.isInteger(action.payload.lifeIndex)
+        ) return;
+        const defender = draft.players[combat.defenderPlayerId];
+        if (
+          !defender ||
+          action.payload.lifeIndex < 0 ||
+          action.payload.lifeIndex >= defender.life.length
+        ) return;
+
+        const [selectedLife] = defender.life.splice(action.payload.lifeIndex, 1);
+        selectedLife.isFaceDown = false;
+        draft.revealedCard = {
+          card: selectedLife,
+          source: `ライフ${action.payload.lifeIndex + 1}枚目（トリガーチェック）`,
+          fromPlayerId: combat.defenderPlayerId,
+          isTrigger: true,
+        };
+        draft.pendingCombat = null;
+        const triggerStr = selectedLife.triggers.length > 0
+          ? `【トリガー: ${selectedLife.triggers.join(', ')}】`
+          : '（トリガーなし）';
+        appendLog(
+          draft,
+          `${draft.players[combat.attackerPlayerId]?.name ?? combat.attackerPlayerId} が ${defender.name} のライフ（${action.payload.lifeIndex + 1}枚目）を選択し、「${selectedLife.name}」をトリガーチェックしました！ ${triggerStr}`,
+          combat.attackerPlayerId,
+          'system'
+        );
+        break;
+      }
+
       case 'DISMISS_REVEALED_CARD': {
         const { destination } = action.payload;
         if (!draft.revealedCard) return;
@@ -996,6 +1143,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       case 'SET_PHASE': {
+        if (draft.pendingCombat) return;
         const { phase } = action.payload;
         draft.phase = phase;
 
@@ -1024,7 +1172,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       case 'PASS_TURN': {
         const { playerId } = action.payload;
-        if (playerId !== draft.activePlayerId || !draft.players[playerId]) return;
+        if (draft.pendingCombat || playerId !== draft.activePlayerId || !draft.players[playerId]) return;
         const playerIds = Object.keys(draft.players);
         const nextPlayerId = playerIds.find((id) => id !== playerId) || playerId;
         const prevPlayer = draft.players[playerId] || draft.players[draft.activePlayerId];

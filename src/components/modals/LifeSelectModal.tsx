@@ -8,7 +8,7 @@ export interface LifeSelectModalProps {
   playerName: string;
   isOpponent: boolean;
   onCheckLife: (lifeIndex: number) => void;
-  onTakeLife: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', lifeIndex: number) => void;
+  onTakeLife?: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', lifeIndex: number) => void;
   onFlipLife?: (lifeIndex: number) => void;
   onInspectCard?: (card: Card) => void;
   onClose: () => void;
@@ -35,7 +35,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={isOpponent ? '相手ライフの指定・操作' : '自分ライフの選択・操作'}
+        aria-label={isOpponent ? '相手ライフの選択' : '自分ライフの選択・操作'}
         className="bg-slate-900 border-2 border-rose-500/80 rounded-2xl max-w-4xl w-full p-3 sm:p-5 shadow-2xl flex flex-col gap-3 sm:gap-4 animate-in fade-in zoom-in-95 duration-200 text-slate-100 my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -45,7 +45,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
             <ShieldAlert className="w-5 h-5 text-rose-400" />
             <div>
               <h3 className="font-extrabold text-sm sm:text-base text-white flex flex-col sm:flex-row gap-1 sm:gap-2">
-                <span>{isOpponent ? '🎯 相手ライフの指定・操作' : '🛡️ 自分ライフの選択・操作'}</span>
+                <span>{isOpponent ? '🎯 相手ライフの選択' : '🛡️ 自分ライフの選択・操作'}</span>
                 <span className="text-xs font-normal text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-full border border-rose-500/40">
                   {playerName}（残り {lifeCards.length}枚）
                 </span>
@@ -180,21 +180,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
                         このライフでトリガーチェック
                       </button>
 
-                      {isOpponent ? (
-                        <div className="text-[10px]">
-                          <button
-                            onClick={() => {
-                              onTakeLife('graveyard', idx);
-                              onClose();
-                            }}
-                            className="py-1 bg-rose-950 hover:bg-rose-900 border border-rose-600/50 text-rose-200 rounded font-bold flex items-center justify-center gap-0.5 transition-colors"
-                            title="このカードを直接場外へ送る（ダメージ2、インパクト等）"
-                          >
-                            <Trash2 className="w-3 h-3 text-rose-400" />
-                            場外へ (-1)
-                          </button>
-                        </div>
-                      ) : (
+                      {!isOpponent && onTakeLife && (
                         <div className="flex flex-col gap-1 text-[10px]">
                           <div className="grid grid-cols-2 gap-1">
                             <button

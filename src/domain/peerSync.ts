@@ -8,6 +8,19 @@ export interface AuthoritativeTransition {
   snapshot: PeerStateSnapshot;
 }
 
+export function isActionRequestAllowed(senderId: string, action: GameAction): boolean {
+  switch (action.type) {
+    case 'DECLARE_PLAYER_ATTACK':
+    case 'PASS_BLOCK':
+    case 'BLOCK_ATTACK':
+    case 'CANCEL_PLAYER_ATTACK':
+    case 'SELECT_LIFE_FOR_DAMAGE':
+      return action.payload.actorPlayerId === senderId;
+    default:
+      return true;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

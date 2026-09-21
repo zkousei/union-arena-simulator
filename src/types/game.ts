@@ -54,6 +54,16 @@ export interface GameLogItem {
   type: 'action' | 'phase' | 'system' | 'chat';
 }
 
+export interface PendingCombat {
+  stage: 'BLOCK_DECISION' | 'LIFE_SELECTION';
+  attackerPlayerId: string;
+  attackerZone: 'frontLine' | 'energyLine';
+  attackerSlotIndex: FieldSlotIndex;
+  defenderPlayerId: string;
+  attackerCardName: string;
+  attackerBp: number;
+}
+
 export interface GameState {
   status: GameStatus;
   turn: number;
@@ -73,5 +83,6 @@ export interface GameState {
     playerId: string;
     cards: Card[];
   } | null;
+  pendingCombat: PendingCombat | null;
   logs: GameLogItem[];
 }

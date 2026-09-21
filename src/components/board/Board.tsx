@@ -104,27 +104,11 @@ export const Board: React.FC<BoardProps> = ({
     slotIndex: FieldSlotIndex;
   } | null>(null);
 
-  // ブロック選択状態 (防御側のブロック受付中)
-  const [pendingBlockState, setPendingBlockState] = useState<{
-    attackerPlayerId: string;
-    attackerZone: 'frontLine' | 'energyLine';
-    attackerSlotIndex: FieldSlotIndex;
-    targetPlayerId: string;
-    attackerCardName: string;
-    attackerBp: number;
-  } | null>(null);
-
-  // ノーブロック時のライフダメージ案内状態
-  const [pendingLifeDamageState, setPendingLifeDamageState] = useState<{
-    targetPlayerId: string;
-    attackerCardName: string;
-  } | null>(null);
+  const pendingCombat = gameState.pendingCombat;
 
   // フェイズ順次進行ハンドラ (START -> MOVE -> MAIN -> ATTACK(先攻1TはEND) -> END -> ターン終了)
   const handleAdvancePhase = useCallback(() => {
     setAttackingState(null);
-    setPendingBlockState(null);
-    setPendingLifeDamageState(null);
     if (gameState.phase === 'START') {
       dispatchAction({ type: 'SET_PHASE', payload: { phase: 'MOVE' } });
     } else if (gameState.phase === 'MOVE') {
@@ -141,19 +125,16 @@ export const Board: React.FC<BoardProps> = ({
     } else if (gameState.phase === 'END') {
       dispatchAction({ type: 'PASS_TURN', payload: { playerId: gameState.activePlayerId } });
     }
-  }, [gameState.phase, gameState.turn, gameState.activePlayerId, gameState.players, dispatchAction]);
+  }, [gameState.phase, gameState.turn, gameState.activePlayerId, gameState.players, dispatchAction, setAttackingState]);
 
   // アタック取り消し (巻き戻し)
   const handleCancelPendingBlock = useCallback(() => {
-    if (!pendingBlockState) return;
-    const { attackerPlayerId, attackerZone, attackerSlotIndex } = pendingBlockState;
-    // アタッカーをアクティブに戻す
+    if (!pendingCombat) return;
     dispatchAction({
-      type: 'TOGGLE_REST',
-      payload: { playerId: attackerPlayerId, zone: attackerZone, slotIndex: attackerSlotIndex },
+      type: 'CANCEL_PLAYER_ATTACK',
+      payload: { actorPlayerId: pendingCombat.attackerPlayerId },
     });
-    setPendingBlockState(null);
-  }, [pendingBlockState, dispatchAction]);
+  }, [pendingCombat, dispatchAction]);
 
   // キーボードショートカット管理 (Space: 次フェイズ/ターン終了, Escape: 選択・アタックキャンセル, Ctrl+Z/Cmd+Z: Undo)
   useEffect(() => {
@@ -172,10 +153,8 @@ export const Board: React.FC<BoardProps> = ({
       if (e.key === 'Escape') {
         if (attackingState !== null) {
           setAttackingState(null);
-        } else if (pendingBlockState !== null) {
+        } else if (pendingCombat?.attackerPlayerId === myPlayerId || isSoloMode) {
           handleCancelPendingBlock();
-        } else if (pendingLifeDamageState !== null) {
-          setPendingLifeDamageState(null);
         } else if (selectedHandCard !== null) {
           setSelectedHandCard(null);
         }
@@ -193,7 +172,7 @@ export const Board: React.FC<BoardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAdvancePhase, attackingState, pendingBlockState, pendingLifeDamageState, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
+  }, [handleAdvancePhase, attackingState, pendingCombat, myPlayerId, isSoloMode, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
 
   // 発生エナジー計算ヘルパー (公式ルール: エナジーラインのアクティブ状態のキャラから発生)
   const calculateGeneratedEnergy = (slots: (Card | null)[]) => {
@@ -281,32 +260,15 @@ export const Board: React.FC<BoardProps> = ({
       return;
     }
 
-    // アタッカーをレストに
     dispatchAction({
-      type: 'TOGGLE_REST',
-      payload: { playerId: attackerPlayerId, zone, slotIndex },
-    });
-
-    const attackerBp = getCardBaseBp(attacker) + attacker.bpModifier;
-
-    dispatchAction({
-      type: 'ADD_LOG',
+      type: 'DECLARE_PLAYER_ATTACK',
       payload: {
-        message: `⚔️【アタック宣言】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) が ${targetPlayer.name} にアタックしました！相手はブロックするか選択してください。`,
-        playerId: attackerPlayerId,
-        type: 'action',
+        actorPlayerId: attackerPlayerId,
+        attackerZone: zone,
+        attackerSlotIndex: slotIndex,
+        defenderPlayerId: targetPlayerId,
       },
     });
-
-    setPendingBlockState({
-      attackerPlayerId,
-      attackerZone: zone,
-      attackerSlotIndex: slotIndex,
-      targetPlayerId,
-      attackerCardName: attacker.name,
-      attackerBp,
-    });
-
     setAttackingState(null);
   };
 
@@ -392,80 +354,20 @@ export const Board: React.FC<BoardProps> = ({
 
   // ブロック宣言 (防御側フロントラインのキャラでブロック)
   const handleDeclareBlock = (blockerPlayerId: string, blockerSlotIndex: FieldSlotIndex) => {
-    if (!pendingBlockState) return;
-    const { attackerPlayerId, attackerZone, attackerSlotIndex, targetPlayerId, attackerCardName, attackerBp } =
-      pendingBlockState;
-    if (blockerPlayerId !== targetPlayerId) return;
-
-    const blockerPlayer = gameState.players[blockerPlayerId];
-    const attackerPlayer = gameState.players[attackerPlayerId];
-    if (!blockerPlayer || !attackerPlayer) return;
-
-    const blocker = blockerPlayer.frontLine[blockerSlotIndex];
-    const attacker = attackerPlayer[attackerZone][attackerSlotIndex];
-    if (!blocker || !attacker) return;
-
-    // ブロッカーをレストに
+    if (!pendingCombat || blockerPlayerId !== pendingCombat.defenderPlayerId) return;
     dispatchAction({
-      type: 'TOGGLE_REST',
-      payload: { playerId: blockerPlayerId, zone: 'frontLine', slotIndex: blockerSlotIndex },
+      type: 'BLOCK_ATTACK',
+      payload: { actorPlayerId: blockerPlayerId, blockerSlotIndex },
     });
-
-    const blockerBp = getCardBaseBp(blocker) + blocker.bpModifier;
-    const battle = calculateBattleResult(attackerBp, blockerBp, attackerCardName, blocker.name);
-
-    dispatchAction({
-      type: 'ADD_LOG',
-      payload: {
-        message: `🛡️【ブロック解決】${blockerPlayer.name}の「${blocker.name}」(BP${blockerBp}) がブロック！ VS ${attackerPlayer.name}の「${attackerCardName}」(BP${attackerBp}) ➔ ${battle.logMessage}`,
-        playerId: blockerPlayerId,
-        type: 'action',
-      },
-    });
-
-    // 敗者退場処理 (相打ち時は両者退場、返り討ち時はアタッカー退場)
-    if (battle.shouldRetireDefender) {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: blocker.id,
-          from: { playerId: blockerPlayerId, zone: 'frontLine', slotIndex: blockerSlotIndex },
-          to: { playerId: blockerPlayerId, zone: 'graveyard' },
-        },
-      });
-    }
-
-    if (battle.shouldRetireAttacker) {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: attacker.id,
-          from: { playerId: attackerPlayerId, zone: attackerZone, slotIndex: attackerSlotIndex },
-          to: { playerId: attackerPlayerId, zone: 'graveyard' },
-        },
-      });
-    }
-
-    setPendingBlockState(null);
   };
 
   // ノーブロック (アタックを通す -> ライフダメージへ)
   const handlePassBlock = () => {
-    if (!pendingBlockState) return;
-    const { targetPlayerId, attackerCardName } = pendingBlockState;
-    const targetPlayer = gameState.players[targetPlayerId];
-
+    if (!pendingCombat) return;
     dispatchAction({
-      type: 'ADD_LOG',
-      payload: {
-        message: `🛡️【ノーブロック】${targetPlayer?.name || targetPlayerId} はブロックせずアタックを通しました。ライフのトリガーチェックを行ってください。`,
-        playerId: targetPlayerId,
-        type: 'action',
-      },
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: pendingCombat.defenderPlayerId },
     });
-
-    setPendingBlockState(null);
-    setPendingLifeDamageState({ targetPlayerId, attackerCardName });
   };
 
   // 手札カード選択ハンドラ (所持プレイヤーID付き)
@@ -1145,6 +1047,18 @@ export const Board: React.FC<BoardProps> = ({
 
   const isTopActive = gameState.activePlayerId === topPlayerId;
   const isBottomActive = gameState.activePlayerId === bottomPlayerId;
+  const canActAs = (playerId: string) => isSoloMode || myPlayerId === playerId;
+  const canSelectLifeForDamage = (targetPlayerId: string) =>
+    pendingCombat?.stage === 'LIFE_SELECTION' &&
+    pendingCombat.defenderPlayerId === targetPlayerId &&
+    canActAs(pendingCombat.attackerPlayerId);
+  const selectLifeForDamage = (lifeIndex: number) => {
+    if (!pendingCombat || pendingCombat.stage !== 'LIFE_SELECTION') return;
+    dispatchAction({
+      type: 'SELECT_LIFE_FOR_DAMAGE',
+      payload: { actorPlayerId: pendingCombat.attackerPlayerId, lifeIndex },
+    });
+  };
 
   return (
     <div className={`w-full h-full max-w-7xl mx-auto flex flex-col justify-between overflow-y-auto overflow-x-hidden ${
@@ -1171,17 +1085,17 @@ export const Board: React.FC<BoardProps> = ({
           isOpponent={!isSoloMode}
           isSoloMode={isSoloMode}
           isCompact={isFitMode}
-          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: topPlayerId } })}
+          onDraw={isSoloMode ? () => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: topPlayerId } }) : undefined}
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: topPlayerId } })}
-          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })}
-          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } })}
+          onCheckLife={canSelectLifeForDamage(topPlayerId) ? selectLifeForDamage : undefined}
+          onTakeLife={isSoloMode ? (dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } }) : undefined}
           onFlipLife={isSoloMode ? (index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: topPlayerId, lifeIndex: index } }) : undefined}
           onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: topPlayerId, isFaceDown } })}
           onOpenLifeReorder={() => {
             setLifeReorderPlayerId(topPlayerId);
             setIsLifeReorderOpen(true);
           }}
-          onOpenLifeSelectModal={() => setLifeSelectPlayerId(topPlayerId)}
+          onOpenLifeSelectModal={isSoloMode || canSelectLifeForDamage(topPlayerId) ? () => setLifeSelectPlayerId(topPlayerId) : undefined}
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: topPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: topPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: topPlayerId, count } })}
@@ -1191,7 +1105,7 @@ export const Board: React.FC<BoardProps> = ({
           }}
           onRevealTopDeck={isSoloMode ? (reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: topPlayerId, reveal } }) : undefined}
           onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: topPlayerId, action } })}
-          onMillTopDeck={() => {
+          onMillTopDeck={isSoloMode ? () => {
             const topCard = topPlayer.deck[0];
             if (!topCard) return;
             dispatchAction({
@@ -1202,7 +1116,7 @@ export const Board: React.FC<BoardProps> = ({
                 to: { playerId: topPlayerId, zone: 'graveyard' },
               },
             });
-          }}
+          } : undefined}
           onInspectCard={setInspectCard}
           onDropToGraveyard={handleDropToGraveyard}
           onDropToRemoved={handleDropToRemoved}
@@ -1267,7 +1181,7 @@ export const Board: React.FC<BoardProps> = ({
                 } else {
                   handleAttackPlayer(topPlayerId);
                 }
-              } else if (pendingBlockState !== null && pendingBlockState.targetPlayerId === topPlayerId) {
+              } else if (pendingCombat?.stage === 'BLOCK_DECISION' && pendingCombat.defenderPlayerId === topPlayerId && canActAs(topPlayerId)) {
                 // ブロック選択中: フロントラインのアクティブキャラをクリックでブロック
                 const targetCard = topPlayer.frontLine[slotIdx];
                 if (targetCard && !targetCard.isRested) {
@@ -1344,7 +1258,7 @@ export const Board: React.FC<BoardProps> = ({
                 } else {
                   handleAttackPlayer(bottomPlayerId);
                 }
-              } else if (pendingBlockState !== null && pendingBlockState.targetPlayerId === bottomPlayerId) {
+              } else if (pendingCombat?.stage === 'BLOCK_DECISION' && pendingCombat.defenderPlayerId === bottomPlayerId && canActAs(bottomPlayerId)) {
                 // ブロック選択中: フロントラインのアクティブキャラをクリックでブロック
                 const targetCard = bottomPlayer.frontLine[slotIdx];
                 if (targetCard && !targetCard.isRested) {
@@ -1410,7 +1324,13 @@ export const Board: React.FC<BoardProps> = ({
           isCompact={isFitMode}
           onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: bottomPlayerId } })}
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: bottomPlayerId } })}
-          onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: bottomPlayerId, lifeIndex: index } })}
+          onCheckLife={
+            canSelectLifeForDamage(bottomPlayerId)
+              ? selectLifeForDamage
+              : pendingCombat?.stage === 'LIFE_SELECTION' && pendingCombat.defenderPlayerId === bottomPlayerId
+                ? undefined
+                : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: bottomPlayerId, lifeIndex: index } })
+          }
           onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: bottomPlayerId, isFaceDown } })}
           onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: bottomPlayerId, destination: dest, lifeIndex: index } })}
           onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: bottomPlayerId, lifeIndex: index } })}
@@ -1418,7 +1338,11 @@ export const Board: React.FC<BoardProps> = ({
             setLifeReorderPlayerId(bottomPlayerId);
             setIsLifeReorderOpen(true);
           }}
-          onOpenLifeSelectModal={() => setLifeSelectPlayerId(bottomPlayerId)}
+          onOpenLifeSelectModal={
+            pendingCombat?.stage === 'LIFE_SELECTION' && pendingCombat.defenderPlayerId === bottomPlayerId && !canSelectLifeForDamage(bottomPlayerId)
+              ? undefined
+              : () => setLifeSelectPlayerId(bottomPlayerId)
+          }
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: bottomPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: bottomPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: bottomPlayerId, count } })}
@@ -1516,7 +1440,7 @@ export const Board: React.FC<BoardProps> = ({
       />
 
       {/* ブロック選択プロンプトバー */}
-      {pendingBlockState && (
+      {pendingCombat?.stage === 'BLOCK_DECISION' && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-blue-950/95 via-indigo-950/95 to-blue-950/95 border-2 border-blue-500 rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 text-white text-xs animate-in slide-in-from-top-4 max-w-[95vw]">
           <div className="bg-blue-600 p-2 rounded-full animate-pulse shrink-0">
             <Shield className="w-5 h-5 text-white" />
@@ -1524,35 +1448,41 @@ export const Board: React.FC<BoardProps> = ({
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-extrabold text-blue-300">【ブロック選択】</span>
-              <span className="font-bold text-white">「{pendingBlockState.attackerCardName}」(BP{pendingBlockState.attackerBp})</span>
+              <span className="font-bold text-white">「{pendingCombat.attackerCardName}」(BP{pendingCombat.attackerBp})</span>
               <span className="text-slate-300">のアタック！</span>
             </div>
             <span className="text-slate-300 text-[11px]">
-              {gameState.players[pendingBlockState.targetPlayerId]?.name} のフロントラインのアクティブキャラをクリックしてブロック、または通す
+              {canActAs(pendingCombat.defenderPlayerId)
+                ? `${gameState.players[pendingCombat.defenderPlayerId]?.name} のフロントラインのアクティブキャラをクリックしてブロック、または通す`
+                : `${gameState.players[pendingCombat.defenderPlayerId]?.name} のブロック選択を待っています`}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handlePassBlock}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-emerald-400"
-            >
-              <ShieldAlert className="w-4 h-4" />
-              通す (ノーブロック)
-            </button>
-            <button
-              onClick={handleCancelPendingBlock}
-              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 border border-slate-700"
-              title="アタックを取り消し (アタッカーをアクティブに戻す)"
-            >
-              <X className="w-3.5 h-3.5" />
-              取消
-            </button>
+            {canActAs(pendingCombat.defenderPlayerId) && (
+              <button
+                onClick={handlePassBlock}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-emerald-400"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                通す (ノーブロック)
+              </button>
+            )}
+            {canActAs(pendingCombat.attackerPlayerId) && (
+              <button
+                onClick={handleCancelPendingBlock}
+                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 border border-slate-700"
+                title="アタックを取り消し (アタッカーをアクティブに戻す)"
+              >
+                <X className="w-3.5 h-3.5" />
+                取消
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* ライフダメージ / トリガー案内バー */}
-      {pendingLifeDamageState && (
+      {pendingCombat?.stage === 'LIFE_SELECTION' && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-amber-950/95 via-red-950/95 to-amber-950/95 border-2 border-amber-500 rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 text-white text-xs animate-in slide-in-from-top-4 max-w-[95vw]">
           <div className="bg-amber-600 p-2 rounded-full animate-bounce shrink-0">
             <Zap className="w-5 h-5 text-white" />
@@ -1560,44 +1490,24 @@ export const Board: React.FC<BoardProps> = ({
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-extrabold text-amber-300">【ライフダメージ】</span>
-              <span className="font-bold text-white">「{pendingLifeDamageState.attackerCardName}」</span>
+              <span className="font-bold text-white">「{pendingCombat.attackerCardName}」</span>
               <span className="text-slate-300">のアタックが通りました！</span>
             </div>
             <span className="text-slate-300 text-[11px]">
-              {gameState.players[pendingLifeDamageState.targetPlayerId]?.name} のライフトップをチェックするか、一覧から選択してください（インパクト等の追加ダメージもサイドゾーンからいつでも手動実行可能）
+              {canActAs(pendingCombat.attackerPlayerId)
+                ? `${gameState.players[pendingCombat.defenderPlayerId]?.name} の裏向きライフから1枚選択してください。選択すると即座にトリガーチェックへ進みます。`
+                : `${gameState.players[pendingCombat.attackerPlayerId]?.name} がライフを選択するのを待っています。`}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => {
-                dispatchAction({
-                  type: 'CHECK_LIFE_TRIGGER',
-                  payload: { playerId: pendingLifeDamageState.targetPlayerId, lifeIndex: 0 },
-                });
-                setPendingLifeDamageState(null);
-              }}
-              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md"
-            >
-              <Zap className="w-4 h-4" />
-              ライフトップをチェック
-            </button>
-            <button
-              onClick={() => {
-                setLifeSelectPlayerId(pendingLifeDamageState.targetPlayerId);
-                setPendingLifeDamageState(null);
-              }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-indigo-400"
-            >
-              ライフ一覧から選択
-            </button>
-            <button
-              onClick={() => setPendingLifeDamageState(null)}
-              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 border border-slate-700"
-              title="閉じる (ライフはいつでも直接操作可能です)"
-            >
-              <X className="w-3.5 h-3.5" />
-              閉じる
-            </button>
+            {canActAs(pendingCombat.attackerPlayerId) && (
+              <button
+                onClick={() => setLifeSelectPlayerId(pendingCombat.defenderPlayerId)}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md border border-indigo-400"
+              >
+                ライフを選択
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1619,20 +1529,24 @@ export const Board: React.FC<BoardProps> = ({
         isOpponent={lifeSelectPlayerId !== bottomPlayerId && !isSoloMode}
         onCheckLife={(lifeIndex) => {
           if (lifeSelectPlayerId) {
-            dispatchAction({
-              type: 'CHECK_LIFE_TRIGGER',
-              payload: { playerId: lifeSelectPlayerId, lifeIndex },
-            });
+            if (canSelectLifeForDamage(lifeSelectPlayerId)) {
+              selectLifeForDamage(lifeIndex);
+            } else {
+              dispatchAction({
+                type: 'CHECK_LIFE_TRIGGER',
+                payload: { playerId: lifeSelectPlayerId, lifeIndex },
+              });
+            }
           }
         }}
-        onTakeLife={(dest, lifeIndex) => {
+        onTakeLife={lifeSelectPlayerId === bottomPlayerId || isSoloMode ? (dest, lifeIndex) => {
           if (lifeSelectPlayerId) {
             dispatchAction({
               type: 'TAKE_LIFE',
               payload: { playerId: lifeSelectPlayerId, destination: dest, lifeIndex },
             });
           }
-        }}
+        } : undefined}
         onFlipLife={lifeSelectPlayerId === bottomPlayerId || isSoloMode ? (lifeIndex) => {
           if (lifeSelectPlayerId) {
             dispatchAction({

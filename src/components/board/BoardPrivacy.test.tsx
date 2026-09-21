@@ -64,11 +64,28 @@ describe('Board hidden information', () => {
     );
 
     expect(screen.queryByText('秘密のライフカード')).toBeNull();
-    fireEvent.click(
-      screen.getByTitle('ライフ一覧から好きなカードを任意指定してトリガーチェックや操作を行う')
-    );
     expect(screen.queryByText('秘密のライフカード')).toBeNull();
-    expect(screen.getByText('非公開カード')).toBeDefined();
+    expect(screen.queryByTitle('ライフ一覧から好きなカードを任意指定してトリガーチェックや操作を行う')).toBeNull();
+    expect(screen.queryByTitle(/相手のライフ（先頭）をトリガーチェック/)).toBeNull();
+    expect(screen.queryByRole('button', { name: '-1ダメ' })).toBeNull();
+    expect(screen.queryByTitle('このライフカードを直接場外へ送る')).toBeNull();
+  });
+
+  it('does not expose opponent draw or mill controls in P2P mode', () => {
+    const state = createInitialGameState('player-1', '自分', 'player-2', '相手', 'player-1');
+    state.players['player-2'].deck = [createCard('secret-deck', '秘密の山札カード', true)];
+
+    render(
+      <Board
+        gameState={state}
+        myPlayerId="player-1"
+        dispatchAction={vi.fn()}
+        isSoloMode={false}
+      />
+    );
+
+    expect(screen.queryByTitle('相手の山札から1枚引く')).toBeNull();
+    expect(screen.queryByRole('button', { name: '1枚削る' })).toBeNull();
   });
 
   it('shows an explicitly face-up opponent life card', () => {

@@ -1513,4 +1513,129 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(lastLog.message).toContain('手札に加えました（非公開）');
     expect(lastLog.message).not.toContain('秘密のサーチ先');
   });
+
+  it('synchronizes a player attack and only lets the defender pass', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    expect(state.players.p1.frontLine[0]?.isRested).toBe(true);
+    expect(state.pendingCombat).toMatchObject({
+      stage: 'BLOCK_DECISION',
+      attackerPlayerId: 'p1',
+      defenderPlayerId: 'p2',
+      attackerCardName: 'アタッカー',
+    });
+
+    const invalidPass = gameReducer(state, {
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: 'p1' },
+    });
+    expect(invalidPass).toBe(state);
+
+    state = gameReducer(state, {
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: 'p2' },
+    });
+    expect(state.pendingCombat?.stage).toBe('LIFE_SELECTION');
+  });
+
+  it('lets only the attacker select life and immediately enters trigger check', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+    state.players.p2.life = [
+      { ...createDummyCard('life-1', 'ライフ1'), isFaceDown: true },
+      { ...createDummyCard('life-2', 'ライフ2'), isFaceDown: true },
+    ];
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+    state = gameReducer(state, {
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: 'p2' },
+    });
+
+    const invalidSelection = gameReducer(state, {
+      type: 'SELECT_LIFE_FOR_DAMAGE',
+      payload: { actorPlayerId: 'p2', lifeIndex: 1 },
+    });
+    expect(invalidSelection).toBe(state);
+
+    state = gameReducer(state, {
+      type: 'SELECT_LIFE_FOR_DAMAGE',
+      payload: { actorPlayerId: 'p1', lifeIndex: 1 },
+    });
+
+    expect(state.pendingCombat).toBeNull();
+    expect(state.players.p2.life.map((card) => card.id)).toEqual(['life-1']);
+    expect(state.revealedCard?.card.id).toBe('life-2');
+    expect(state.revealedCard?.card.isFaceDown).toBe(false);
+    expect(state.revealedCard?.isTrigger).toBe(true);
+  });
+
+  it('resolves a synchronized block and retires the losing blocker', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+    state.players.p2.frontLine[0] = createDummyCard('blocker', 'ブロッカー', 3000);
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    state = gameReducer(state, {
+      type: 'BLOCK_ATTACK',
+      payload: { actorPlayerId: 'p2', blockerSlotIndex: 0 },
+    });
+
+    expect(state.pendingCombat).toBeNull();
+    expect(state.players.p2.frontLine[0]).toBeNull();
+    expect(state.players.p2.graveyard.map((card) => card.id)).toEqual(['blocker']);
+  });
+
+  it('does not advance the phase while synchronized combat is unresolved', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1', attackerZone: 'frontLine', attackerSlotIndex: 0, defenderPlayerId: 'p2',
+      },
+    });
+
+    const afterPhaseRequest = gameReducer(state, { type: 'SET_PHASE', payload: { phase: 'END' } });
+    expect(afterPhaseRequest).toBe(state);
+    expect(afterPhaseRequest.phase).toBe('ATTACK');
+  });
 });

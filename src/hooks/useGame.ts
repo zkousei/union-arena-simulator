@@ -5,6 +5,7 @@ import { PeerMessage, PeerStateSnapshot } from '../types/peer';
 import { createInitialGameState } from '../domain/initialState';
 import {
   createAuthoritativeTransition,
+  isActionRequestAllowed,
   isNewerSnapshot,
   isValidPeerStateSnapshot,
 } from '../domain/peerSync';
@@ -126,6 +127,7 @@ export function useGame() {
         sound.playRest();
         break;
       case 'CHECK_LIFE_TRIGGER':
+      case 'SELECT_LIFE_FOR_DAMAGE':
         sound.playTrigger();
         break;
       case 'ROLL_DICE':
@@ -236,7 +238,9 @@ export function useGame() {
       if (networkRoleRef.current !== 'host') return;
       if (hasProcessedRequest(msg)) return;
       try {
-        applyAuthoritativeAction(msg.payload as GameAction);
+        const action = msg.payload as GameAction;
+        if (!isActionRequestAllowed(msg.senderId, action)) return;
+        applyAuthoritativeAction(action);
       } catch {
         return;
       }

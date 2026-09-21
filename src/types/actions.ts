@@ -219,6 +219,41 @@ export type GameAction =
       };
     }
   | {
+      type: 'DECLARE_PLAYER_ATTACK';
+      payload: {
+        actorPlayerId: string;
+        attackerZone: 'frontLine' | 'energyLine';
+        attackerSlotIndex: FieldSlotIndex;
+        defenderPlayerId: string;
+      };
+    }
+  | {
+      type: 'PASS_BLOCK';
+      payload: {
+        actorPlayerId: string;
+      };
+    }
+  | {
+      type: 'BLOCK_ATTACK';
+      payload: {
+        actorPlayerId: string;
+        blockerSlotIndex: FieldSlotIndex;
+      };
+    }
+  | {
+      type: 'CANCEL_PLAYER_ATTACK';
+      payload: {
+        actorPlayerId: string;
+      };
+    }
+  | {
+      type: 'SELECT_LIFE_FOR_DAMAGE';
+      payload: {
+        actorPlayerId: string;
+        lifeIndex: number;
+      };
+    }
+  | {
       type: 'DISMISS_REVEALED_CARD';
       payload: {
         destination: 'hand' | 'graveyard' | 'life' | 'cancel';

@@ -45,6 +45,7 @@ export function createInitialGameState(
     },
     revealedCard: null,
     revealedDeckCards: null,
+    pendingCombat: null,
     logs: [
       {
         id: 'log-init',

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInitialGameState } from '../initialState';
-import { createAuthoritativeTransition, isNewerSnapshot } from '../peerSync';
+import { createAuthoritativeTransition, isActionRequestAllowed, isNewerSnapshot } from '../peerSync';
 import { gameReducer } from '../reducer';
 import { Card } from '../../types/card';
 
@@ -107,5 +107,16 @@ describe('authoritative P2P synchronization', () => {
     expect(transition.changed).toBe(false);
     expect(transition.snapshot.revision).toBe(12);
     expect(transition.snapshot.state).toBe(state);
+  });
+
+  it('rejects a combat request that claims another player as its actor', () => {
+    expect(isActionRequestAllowed('p2', {
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: 'p1' },
+    })).toBe(false);
+    expect(isActionRequestAllowed('p2', {
+      type: 'SELECT_LIFE_FOR_DAMAGE',
+      payload: { actorPlayerId: 'p2', lifeIndex: 0 },
+    })).toBe(true);
   });
 });

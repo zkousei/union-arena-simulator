@@ -33,6 +33,7 @@ function setupTestGameState(
 ): GameState {
   const state = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
   state.phase = 'ATTACK';
+  state.status = 'PLAYING';
   state.turn = 2; // Turn 2 so P1 can attack
   state.activePlayerId = 'player-1';
 
@@ -56,7 +57,7 @@ describe('Board Combat Flow and Block Interaction', () => {
     const gameState = setupTestGameState(4000, 3000);
     const dispatchAction = vi.fn();
 
-    render(
+    const { rerender } = render(
       <Board
         gameState={gameState}
         myPlayerId="player-1"
@@ -82,30 +83,47 @@ describe('Board Combat Flow and Block Interaction', () => {
     const opponentSide = screen.getByText(/Player 2 の手札/).closest('div')!;
     fireEvent.click(opponentSide);
 
-    // Check that attacker is rested and block prompt banner appears
-    expect(dispatchAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'TOGGLE_REST',
-        payload: { playerId: 'player-1', zone: 'frontLine', slotIndex: 0 },
-      })
-    );
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'player-1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'player-2',
+      },
+    });
+
+    gameState.pendingCombat = {
+      stage: 'BLOCK_DECISION',
+      attackerPlayerId: 'player-1',
+      attackerZone: 'frontLine',
+      attackerSlotIndex: 0,
+      defenderPlayerId: 'player-2',
+      attackerCardName: 'アタッカー君',
+      attackerBp: 4000,
+    };
+    rerender(<Board gameState={{ ...gameState }} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={true} isFitMode={false} />);
     expect(screen.getByText('【ブロック選択】')).toBeTruthy();
     expect(screen.getByText(/「アタッカー君」\(BP4000\)/)).toBeTruthy();
 
     // 3. Click "通す (ノーブロック)"
     const passBlockBtn = screen.getByRole('button', { name: /通す \(ノーブロック\)/ });
     fireEvent.click(passBlockBtn);
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'PASS_BLOCK',
+      payload: { actorPlayerId: 'player-2' },
+    });
 
-    // Life damage banner should appear
+    gameState.pendingCombat.stage = 'LIFE_SELECTION';
+    rerender(<Board gameState={{ ...gameState }} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={true} isFitMode={false} />);
     expect(screen.getByText('【ライフダメージ】')).toBeTruthy();
 
-    // 4. Click "ライフトップをチェック"
-    const checkTopLifeBtn = screen.getByRole('button', { name: /ライフトップをチェック/ });
-    fireEvent.click(checkTopLifeBtn);
+    fireEvent.click(screen.getByRole('button', { name: 'ライフを選択' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /このライフでトリガーチェック/ })[1]);
 
     expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'CHECK_LIFE_TRIGGER',
-      payload: { playerId: 'player-2', lifeIndex: 0 },
+      type: 'SELECT_LIFE_FOR_DAMAGE',
+      payload: { actorPlayerId: 'player-1', lifeIndex: 1 },
     });
   });
 
@@ -113,6 +131,15 @@ describe('Board Combat Flow and Block Interaction', () => {
     const gameState = setupTestGameState(4000, 3000);
     const dispatchAction = vi.fn();
 
+    gameState.pendingCombat = {
+      stage: 'BLOCK_DECISION',
+      attackerPlayerId: 'player-1',
+      attackerZone: 'frontLine',
+      attackerSlotIndex: 0,
+      defenderPlayerId: 'player-2',
+      attackerCardName: 'アタッカー君',
+      attackerBp: 4000,
+    };
     render(
       <Board
         gameState={gameState}
@@ -122,14 +149,6 @@ describe('Board Combat Flow and Block Interaction', () => {
         isFitMode={false}
       />
     );
-
-    // Declare attack
-    fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
-
-    // Click opponent area to attack player
-    const opponentSide = screen.getByText(/Player 2 の手札/).closest('div')!;
-    fireEvent.click(opponentSide);
 
     expect(screen.getByText('【ブロック選択】')).toBeTruthy();
 
@@ -137,82 +156,34 @@ describe('Board Combat Flow and Block Interaction', () => {
     const defenderCard = screen.getByText('ブロッカー君');
     fireEvent.click(defenderCard);
 
-    // Blocker should be rested
     expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'TOGGLE_REST',
-      payload: { playerId: 'player-2', zone: 'frontLine', slotIndex: 0 },
+      type: 'BLOCK_ATTACK',
+      payload: { actorPlayerId: 'player-2', blockerSlotIndex: 0 },
     });
-
-    // Defender (loser) should be moved to graveyard
-    expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'MOVE_CARD',
-      payload: {
-        cardId: 'def-1',
-        from: { playerId: 'player-2', zone: 'frontLine', slotIndex: 0 },
-        to: { playerId: 'player-2', zone: 'graveyard' },
-      },
-    });
-
-    // Attacker (winner) should NOT be moved to graveyard
-    const attackerMovedToGrave = dispatchAction.mock.calls.some(
-      (call) =>
-        call[0].type === 'MOVE_CARD' &&
-        call[0].payload.cardId === 'att-1' &&
-        call[0].payload.to.zone === 'graveyard'
-    );
-    expect(attackerMovedToGrave).toBe(false);
-
-    // Block prompt should close
-    expect(screen.queryByText('【ブロック選択】')).toBeNull();
   });
 
   it('retires defender only upon tie (attacker BP == defender BP)', () => {
     const gameState = setupTestGameState(3000, 3000);
     const dispatchAction = vi.fn();
 
-    render(
-      <Board
-        gameState={gameState}
-        myPlayerId="player-1"
-        dispatchAction={dispatchAction}
-        isSoloMode={true}
-        isFitMode={false}
-      />
-    );
-
-    // Declare attack
-    fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
-
-    // Click opponent area
-    fireEvent.click(screen.getByText(/Player 2 の手札/).closest('div')!);
-
-    // Block with defender
+    gameState.pendingCombat = {
+      stage: 'BLOCK_DECISION', attackerPlayerId: 'player-1', attackerZone: 'frontLine',
+      attackerSlotIndex: 0, defenderPlayerId: 'player-2', attackerCardName: 'アタッカー君', attackerBp: 3000,
+    };
+    render(<Board gameState={gameState} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={true} isFitMode={false} />);
     fireEvent.click(screen.getByText('ブロッカー君'));
-
-    // Defender should be moved to graveyard
     expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'MOVE_CARD',
-      payload: {
-        cardId: 'def-1',
-        from: { playerId: 'player-2', zone: 'frontLine', slotIndex: 0 },
-        to: { playerId: 'player-2', zone: 'graveyard' },
-      },
+      type: 'BLOCK_ATTACK', payload: { actorPlayerId: 'player-2', blockerSlotIndex: 0 },
     });
-
-    // Attacker should NOT be moved to graveyard
-    const attackerMovedToGrave = dispatchAction.mock.calls.some(
-      (call) =>
-        call[0].type === 'MOVE_CARD' &&
-        call[0].payload.cardId === 'att-1' &&
-        call[0].payload.to.zone === 'graveyard'
-    );
-    expect(attackerMovedToGrave).toBe(false);
   });
 
   it('retires neither character when attacker BP < defender BP (defender blocks and both survive)', () => {
     const gameState = setupTestGameState(2000, 3000);
     const dispatchAction = vi.fn();
+    gameState.pendingCombat = {
+      stage: 'BLOCK_DECISION', attackerPlayerId: 'player-1', attackerZone: 'frontLine',
+      attackerSlotIndex: 0, defenderPlayerId: 'player-2', attackerCardName: 'アタッカー君', attackerBp: 2000,
+    };
 
     render(
       <Board
@@ -224,25 +195,10 @@ describe('Board Combat Flow and Block Interaction', () => {
       />
     );
 
-    // Declare attack
-    fireEvent.contextMenu(screen.getByText('アタッカー君'));
-    fireEvent.click(screen.getByRole('button', { name: /アタック対象を選択/ }));
-
-    // Click opponent area
-    fireEvent.click(screen.getByText(/Player 2 の手札/).closest('div')!);
-
-    // Block
     fireEvent.click(screen.getByText('ブロッカー君'));
-
-    // Both should survive (neither moved to graveyard)
-    expect(dispatchAction).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'MOVE_CARD',
-        payload: expect.objectContaining({
-          to: expect.objectContaining({ zone: 'graveyard' }),
-        }),
-      })
-    );
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'BLOCK_ATTACK', payload: { actorPlayerId: 'player-2', blockerSlotIndex: 0 },
+    });
   });
 
   it('supports direct character attack (Snipe) by clicking opponent character directly during attack declaration', () => {
@@ -304,13 +260,38 @@ describe('Board Combat Flow and Block Interaction', () => {
     expect(quickAttackBtn).toBeTruthy();
     fireEvent.click(quickAttackBtn);
 
-    // Attacker is rested and block prompt appears immediately
-    expect(dispatchAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'TOGGLE_REST',
-        payload: { playerId: 'player-1', zone: 'frontLine', slotIndex: 0 },
-      })
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'player-1', attackerZone: 'frontLine', attackerSlotIndex: 0, defenderPlayerId: 'player-2',
+      },
+    });
+  });
+
+  it('shows synchronized combat controls only to the player whose decision is pending in P2P', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.pendingCombat = {
+      stage: 'BLOCK_DECISION', attackerPlayerId: 'player-1', attackerZone: 'frontLine',
+      attackerSlotIndex: 0, defenderPlayerId: 'player-2', attackerCardName: 'アタッカー君', attackerBp: 4000,
+    };
+    const dispatchAction = vi.fn();
+    const { rerender } = render(
+      <Board gameState={gameState} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={false} />
     );
-    expect(screen.getByText('【ブロック選択】')).toBeTruthy();
+
+    expect(screen.queryByRole('button', { name: /通す/ })).toBeNull();
+    expect(screen.getByRole('button', { name: '取消' })).toBeDefined();
+
+    rerender(<Board gameState={gameState} myPlayerId="player-2" dispatchAction={dispatchAction} isSoloMode={false} />);
+    expect(screen.getByRole('button', { name: /通す/ })).toBeDefined();
+    expect(screen.queryByRole('button', { name: '取消' })).toBeNull();
+
+    gameState.pendingCombat.stage = 'LIFE_SELECTION';
+    rerender(<Board gameState={{ ...gameState }} myPlayerId="player-2" dispatchAction={dispatchAction} isSoloMode={false} />);
+    expect(screen.queryByRole('button', { name: 'ライフを選択' })).toBeNull();
+    expect(screen.getByText(/ライフを選択するのを待っています/)).toBeDefined();
+
+    rerender(<Board gameState={{ ...gameState }} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={false} />);
+    expect(screen.getByRole('button', { name: 'ライフを選択' })).toBeDefined();
   });
 });
