@@ -3,6 +3,7 @@ import { Card } from '../../types/card';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
 import { CardView } from './CardView';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { Hand as HandIcon, Eye, Dices, Trash2 } from 'lucide-react';
 
 interface HandAreaProps {
@@ -48,6 +49,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   const [internalIsOpen, setInternalIsOpen] = useState<boolean>(isOpenHand ?? !isOpponent);
   const [isDragOver, setIsDragOver] = useState(false);
   const [confirmDiscardAll, setConfirmDiscardAll] = useState(false);
+  const [pendingDiscardIndex, setPendingDiscardIndex] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (isOpenHand !== undefined) {
@@ -58,7 +60,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   const showOpen = !isOpponent || internalIsOpen;
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!showOpen) return;
+    if (isOpponent) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setIsDragOver(true);
@@ -69,7 +71,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    if (!showOpen) return;
+    if (isOpponent) return;
     e.preventDefault();
     setIsDragOver(false);
 
@@ -77,33 +79,41 @@ export const HandArea: React.FC<HandAreaProps> = ({
       const raw = e.dataTransfer.getData(DND_MIME_TYPE);
       if (!raw) return;
       const payload = JSON.parse(raw) as DragCardPayload;
-      if (onDropToHand && payload.from.zone !== 'hand') {
+      if (onDropToHand) {
         onDropToHand(payload.from);
       }
     } catch (err) {
-      console.error('Failed to parse dropped card data:', err);
+      console.error('Failed to parse dropped card to hand:', err);
     }
   };
 
+  // 相手の手札（非表示モード）
   if (!showOpen) {
-    // 相手手札（非公開時）: 枚数と裏向きカード + ハンデスボタン
     return (
-      <div className={`flex items-center justify-between gap-2 p-1.5 bg-slate-900/40 rounded-xl border border-slate-800/60 ${isCompact ? 'min-h-[36px] h-9 shrink-0' : 'min-h-[70px]'}`}>
-        <div className="flex items-center gap-2">
-          <div className={`${isCompact ? 'text-[11px]' : 'text-xs'} font-bold text-slate-400 flex items-center gap-1`}>
-            <HandIcon className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{title || '相手手札'} ({cards.length}枚)</span>
+      <div
+        role="region"
+        aria-label={title || '相手手札'}
+        className={`flex flex-col w-full rounded-xl border border-slate-800/80 bg-slate-900/40 transition-all ${
+          isCompact ? 'p-1 gap-0.5 shrink-0' : 'p-2 gap-1'
+        }`}
+      >
+        <div className="flex items-center justify-between px-2 text-xs font-semibold text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-slate-300 font-bold">
+              <HandIcon className="w-4 h-4 text-indigo-400" />
+              {title || '相手手札'} ({cards.length}枚)
+            </span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {canToggleHide && (
               <button
                 onClick={() => setInternalIsOpen(true)}
-                className="flex items-center gap-1 px-2 py-1 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/40 rounded text-[10px] font-bold shadow transition-colors"
-                title="手札を表向き（オープン）で表示します"
+                className="flex items-center gap-1 px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] transition-colors"
+                title="手札を見る"
               >
                 <Eye className="w-3 h-3" />
-                手札を開く
+                手札を見る
               </button>
             )}
 
@@ -129,7 +139,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
                 if (canToggleHide) {
                   setInternalIsOpen(true);
                 } else if (onDiscardHandIndex) {
-                  onDiscardHandIndex(idx);
+                  setPendingDiscardIndex(idx);
                 }
               }}
               title={canToggleHide ? 'クリックで手札を開く' : '裏向きの相手手札'}
@@ -139,6 +149,22 @@ export const HandArea: React.FC<HandAreaProps> = ({
             </div>
           ))}
         </div>
+
+        <ConfirmModal
+          isOpen={pendingDiscardIndex !== null}
+          title="相手手札の破棄確認"
+          description={`相手の手札（左から ${(pendingDiscardIndex ?? 0) + 1} 枚目）を場外へ捨てますか？`}
+          confirmText="場外へ捨てる"
+          cancelText="キャンセル"
+          variant="danger"
+          onConfirm={() => {
+            if (pendingDiscardIndex !== null && onDiscardHandIndex) {
+              onDiscardHandIndex(pendingDiscardIndex);
+            }
+            setPendingDiscardIndex(null);
+          }}
+          onCancel={() => setPendingDiscardIndex(null)}
+        />
       </div>
     );
   }

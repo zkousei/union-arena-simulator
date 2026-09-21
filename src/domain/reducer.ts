@@ -940,7 +940,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (
           draft.pendingCombat ||
           draft.status !== 'PLAYING' ||
-          draft.phase !== 'ATTACK' ||
+          draft.phase === 'END' ||
           draft.activePlayerId !== actorPlayerId ||
           actorPlayerId === defenderPlayerId ||
           !attackerPlayer ||
@@ -950,6 +950,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           (draft.turn === 1 && attackerPlayer.isFirst)
         ) return;
 
+        draft.phase = 'ATTACK';
         attacker.isRested = true;
         const attackerBp = (attacker.bp ?? 0) + attacker.bpModifier;
         draft.pendingCombat = {
@@ -1074,10 +1075,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       case 'DISMISS_REVEALED_CARD': {
-        const { destination } = action.payload;
+        const { destination, actorPlayerId } = action.payload;
         if (!draft.revealedCard) return;
 
         const { card, fromPlayerId, isTrigger } = draft.revealedCard;
+        if (actorPlayerId && fromPlayerId && actorPlayerId !== fromPlayerId && destination !== 'life') return;
         const player = draft.players[fromPlayerId];
 
         // isTrigger === false の場合（山札下の公開・確認など）、カードは元のゾーンに存在するため複製・移動を行わない
@@ -1097,7 +1099,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             appendLog(draft, `${player.name} はカードを手札に加えました。`, fromPlayerId);
           } else if (destination === 'life') {
             player.life.unshift({ ...card, isFaceDown: true });
-            appendLog(draft, `${player.name} はカードをライフトップに戻しました。`, fromPlayerId);
+            const actorName = actorPlayerId && draft.players[actorPlayerId] ? draft.players[actorPlayerId].name : player.name;
+            appendLog(draft, `${actorName} はカードをライフトップに戻しました。`, actorPlayerId ?? fromPlayerId);
           }
         }
 
@@ -1144,7 +1147,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       case 'SET_PHASE': {
         if (draft.pendingCombat) return;
-        const { phase } = action.payload;
+        const { phase, actorPlayerId } = action.payload;
+        if (actorPlayerId && actorPlayerId !== draft.activePlayerId) return;
         draft.phase = phase;
 
         // 公式ルール P13: エンドフェイズ突入時、自陣の全カード（キャラ・フィールド）をアクティブ化し一時BP補正を解除

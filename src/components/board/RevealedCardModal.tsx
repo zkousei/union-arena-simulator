@@ -11,6 +11,7 @@ interface RevealedCardModalProps {
     isTrigger?: boolean;
   } | null;
   inspectCard: Card | null;
+  canControl?: boolean;
   onDismissRevealed?: (destination: 'hand' | 'graveyard' | 'life' | 'cancel') => void;
   onCloseInspect?: () => void;
 }
@@ -64,6 +65,7 @@ const formatEffectText = (text: string): React.ReactNode[] => {
 export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   revealed,
   inspectCard,
+  canControl = true,
   onDismissRevealed,
   onCloseInspect,
 }) => {
@@ -74,13 +76,17 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
 
   const handleClose = useCallback(() => {
     if (isTriggerModal) {
-      onDismissRevealed?.('graveyard');
+      if (canControl) {
+        onDismissRevealed?.('graveyard');
+      } else {
+        onDismissRevealed?.('life');
+      }
     } else if (revealed) {
       onDismissRevealed?.('cancel');
     } else {
       onCloseInspect?.();
     }
-  }, [isTriggerModal, onDismissRevealed, revealed, onCloseInspect]);
+  }, [isTriggerModal, canControl, onDismissRevealed, revealed, onCloseInspect]);
 
   useEffect(() => {
     if (!card) return;
@@ -265,32 +271,54 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
         {/* トリガーモーダル用アクションボタン */}
         {isTriggerModal && onDismissRevealed && (
           <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
-            <span className="text-xs text-slate-400">
-              公式ルール: トリガー処理後、カードは原則<strong>場外</strong>に置かれます（ゲットトリガー時のみ手札）：
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => onDismissRevealed('graveyard')}
-                className="flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg text-xs font-bold shadow-lg shadow-rose-600/30 ring-1 ring-rose-400 transition"
-              >
-                <Trash2 className="w-4 h-4" />
-                場外へ送る (基本)
-              </button>
-              <button
-                onClick={() => onDismissRevealed('hand')}
-                className="flex items-center justify-center gap-1.5 bg-sky-700 hover:bg-sky-600 text-white py-2 rounded-lg text-xs font-bold transition"
-              >
-                <Hand className="w-4 h-4" />
-                手札に加える
-              </button>
-              <button
-                onClick={() => onDismissRevealed('life')}
-                className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-xs font-bold transition"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                ライフに戻す
-              </button>
-            </div>
+            {canControl ? (
+              <>
+                <span className="text-xs text-slate-400">
+                  公式ルール: トリガー処理後、カードは原則<strong>場外</strong>に置かれます（ゲットトリガー時のみ手札）：
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => onDismissRevealed('graveyard')}
+                    className="flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-lg text-xs font-bold shadow-lg shadow-rose-600/30 ring-1 ring-rose-400 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    場外へ送る (基本)
+                  </button>
+                  <button
+                    onClick={() => onDismissRevealed('hand')}
+                    className="flex items-center justify-center gap-1.5 bg-sky-700 hover:bg-sky-600 text-white py-2 rounded-lg text-xs font-bold transition"
+                  >
+                    <Hand className="w-4 h-4" />
+                    手札に加える
+                  </button>
+                  <button
+                    onClick={() => onDismissRevealed('life')}
+                    className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-xs font-bold transition"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    ライフに戻す
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 bg-slate-900/90 rounded-lg border border-amber-500/30 text-xs text-amber-200">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                  相手プレイヤーがトリガー効果を処理中です...
+                </span>
+                {onDismissRevealed && (
+                  <button
+                    onClick={() => onDismissRevealed('life')}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-xs transition border border-slate-700 flex items-center gap-1 font-medium"
+                    title="トリガーチェックを取り消して、カードを相手のライフに戻します"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    取り消してライフに戻す
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

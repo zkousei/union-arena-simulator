@@ -63,4 +63,36 @@ describe('PhaseBar', () => {
     const attackBtn = screen.getByRole('button', { name: /アタック \(不可\)/ });
     expect(attackBtn.hasAttribute('disabled')).toBe(true);
   });
+
+  it('disables phase controls and turn pass for non-active player in P2P mode', () => {
+    const onSetPhase = vi.fn();
+    const onAdvancePhase = vi.fn();
+    const onPassTurn = vi.fn();
+
+    render(
+      <PhaseBar
+        {...defaultProps}
+        isSoloMode={false}
+        isActivePlayer={false}
+        onSetPhase={onSetPhase}
+        onAdvancePhase={onAdvancePhase}
+        onPassTurn={onPassTurn}
+      />
+    );
+
+    const mainBtn = screen.getByRole('button', { name: /メイン/ });
+    expect(mainBtn.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(mainBtn);
+    expect(onSetPhase).not.toHaveBeenCalled();
+
+    const advanceBtn = screen.getByRole('button', { name: /移動フェイズへ/ });
+    expect(advanceBtn.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(advanceBtn);
+    expect(onAdvancePhase).not.toHaveBeenCalled();
+
+    const passBtn = screen.getByRole('button', { name: /ターン終了/ });
+    expect(passBtn.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(passBtn);
+    expect(onPassTurn).not.toHaveBeenCalled();
+  });
 });

@@ -60,8 +60,10 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
   onExtraDraw,
 }) => {
   const nextInfo = getNextPhaseInfo(currentPhase, isFirstTurnFirstPlayer);
+  const isControllable = isSoloMode || isActivePlayer;
 
   const handleAdvance = () => {
+    if (!isControllable) return;
     if (onAdvancePhase) {
       onAdvancePhase();
     } else {
@@ -113,18 +115,23 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
               key={p.id}
               aria-label={`${p.label}${isAttackBlocked ? ' (不可)' : ''}`}
               onClick={() => {
-                if (isAttackBlocked) {
-                  alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
-                  return;
-                }
+                if (!isControllable || isAttackBlocked) return;
                 onSetPhase(p.id);
               }}
-              disabled={isAttackBlocked}
-              title={isAttackBlocked ? '公式ルール: 先攻1ターン目はアタック不可' : undefined}
+              disabled={!isControllable || isAttackBlocked}
+              title={
+                !isControllable
+                  ? '相手プレイヤーの手番中です'
+                  : isAttackBlocked
+                  ? '公式ルール: 先攻1ターン目はアタック不可'
+                  : undefined
+              }
               className={`flex items-center gap-1 rounded-lg font-bold transition-all ${
                 isCompact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 sm:px-3 py-1 text-xs'
               } ${
-                isAttackBlocked
+                !isControllable
+                  ? 'opacity-40 cursor-not-allowed text-slate-500'
+                  : isAttackBlocked
                   ? 'opacity-30 cursor-not-allowed text-slate-500 bg-slate-900/50 line-through'
                   : isActive
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105'
@@ -158,10 +165,11 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
         {currentPhase !== 'END' && (
           <button
             onClick={handleAdvance}
-            className={`flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-lg shadow transition ${
+            disabled={!isControllable}
+            className={`flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 text-white font-bold rounded-lg shadow transition ${
               isCompact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
             }`}
-            title={`次のフェイズへ進みます (ショートカット: Spaceキー)`}
+            title={!isControllable ? '相手プレイヤーの手番中です' : '次のフェイズへ進みます (ショートカット: Spaceキー)'}
           >
             <span>{isCompact ? nextInfo.label : `${nextInfo.fullLabel} [Space]`}</span>
           </button>
@@ -169,17 +177,23 @@ export const PhaseBar: React.FC<PhaseBarProps> = ({
 
         {/* ターン終了ボタン (エンドフェイズ時は強調表示) */}
         <button
-          onClick={onPassTurn}
-          className={`flex items-center gap-1.5 font-extrabold rounded-lg shadow-lg transition-all active:scale-95 ${
-            currentPhase === 'END'
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white ring-2 ring-amber-400/80 shadow-amber-500/30 scale-105 animate-pulse'
-              : 'bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 text-slate-200 border border-slate-600 hover:text-white'
+          onClick={() => {
+            if (!isControllable) return;
+            onPassTurn();
+          }}
+          disabled={!isControllable}
+          className={`flex items-center gap-1.5 font-extrabold rounded-lg shadow-lg transition-all ${
+            !isControllable
+              ? 'bg-slate-800 text-slate-500 opacity-40 cursor-not-allowed border border-slate-700'
+              : currentPhase === 'END'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-white ring-2 ring-amber-400/80 shadow-amber-500/30 scale-105 animate-pulse'
+              : 'bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 active:scale-95 text-slate-200 border border-slate-600 hover:text-white'
           } ${
             isCompact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
           }`}
-          title="ターンを終了して相手プレイヤーに交代します (エンドフェイズ時はSpaceキーでも実行可能)"
+          title={!isControllable ? '相手プレイヤーの手番中です' : 'ターンを終了して相手プレイヤーに交代します (エンドフェイズ時はSpaceキーでも実行可能)'}
         >
-          <span>ターン終了{currentPhase === 'END' ? ' [Space]' : ''}</span>
+          <span>ターン終了{isControllable && currentPhase === 'END' ? ' [Space]' : ''}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>

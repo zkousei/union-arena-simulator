@@ -14,6 +14,7 @@ import { LifeReorderModal } from '../modals/LifeReorderModal';
 import { LifeSelectModal } from '../modals/LifeSelectModal';
 import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { calculateBattleResult } from '../../domain/battle';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 import { Shield, ShieldAlert, X, Zap } from 'lucide-react';
@@ -102,6 +103,27 @@ export const Board: React.FC<BoardProps> = ({
     attackerPlayerId: string;
     zone: 'frontLine' | 'energyLine';
     slotIndex: FieldSlotIndex;
+  } | null>(null);
+
+  // START/MOVEフェイズからのアタック実行確認モーダル状態
+  const [pendingPhaseAttack, setPendingPhaseAttack] = useState<{
+    attackerPlayerId: string;
+    zone: 'frontLine' | 'energyLine';
+    slotIndex: FieldSlotIndex;
+    isDirect: boolean;
+  } | null>(null);
+
+  // アプリ内通知モーダル状態 (alertの代替)
+  const [alertNotice, setAlertNotice] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
+
+  // 相手ライフ直接場外送り確認モーダル状態
+  const [pendingTakeLife, setPendingTakeLife] = useState<{
+    playerId: string;
+    destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom';
+    lifeIndex?: number;
   } | null>(null);
 
   const pendingCombat = gameState.pendingCombat;
@@ -224,7 +246,7 @@ export const Board: React.FC<BoardProps> = ({
     );
   };
 
-  // アタック宣言
+  // アタック対象選択モード開始（相手プレイヤー または 相手キャラ【狙い撃ち】）
   const handleDeclareAttack = (
     attackerPlayerId: string,
     zone: 'frontLine' | 'energyLine',
@@ -232,9 +254,29 @@ export const Board: React.FC<BoardProps> = ({
   ) => {
     const attackerPlayer = gameState.players[attackerPlayerId];
     if (!attackerPlayer) return;
+
+    if (gameState.status !== 'PLAYING') {
+      setAlertNotice({ title: 'アタック不可', description: 'ゲーム開始前はアタックできません。' });
+      return;
+    }
+    if (gameState.activePlayerId !== attackerPlayerId) {
+      setAlertNotice({ title: 'アタック不可', description: '自分のターン中のみアタックできます。' });
+      return;
+    }
+    if (gameState.phase !== 'MAIN' && gameState.phase !== 'ATTACK') {
+      if (gameState.phase === 'END') {
+        setAlertNotice({ title: 'アタック不可', description: 'エンドフェイズ中はアタックできません。' });
+        return;
+      }
+      setPendingPhaseAttack({ attackerPlayerId, zone, slotIndex, isDirect: false });
+      return;
+    }
     // 公式ルール P10: 先攻第1ターンはアタックできない
     if (gameState.turn === 1 && attackerPlayer.isFirst) {
-      alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
+      setAlertNotice({
+        title: '公式ルール制限',
+        description: '【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。',
+      });
       return;
     }
     setAttackingState({ attackerPlayerId, zone, slotIndex });
@@ -254,9 +296,28 @@ export const Board: React.FC<BoardProps> = ({
     const attacker = attackerPlayer[zone][slotIndex];
     if (!attacker || attacker.isRested) return;
 
+    if (gameState.status !== 'PLAYING') {
+      setAlertNotice({ title: 'アタック不可', description: 'ゲーム開始前はアタックできません。' });
+      return;
+    }
+    if (gameState.activePlayerId !== attackerPlayerId) {
+      setAlertNotice({ title: 'アタック不可', description: '自分のターン中のみアタックできます。' });
+      return;
+    }
+    if (gameState.phase !== 'MAIN' && gameState.phase !== 'ATTACK') {
+      if (gameState.phase === 'END') {
+        setAlertNotice({ title: 'アタック不可', description: 'エンドフェイズ中はアタックできません。' });
+        return;
+      }
+      setPendingPhaseAttack({ attackerPlayerId, zone, slotIndex, isDirect: true });
+      return;
+    }
     // 公式ルール P10: 先攻第1ターンはアタックできない
     if (gameState.turn === 1 && attackerPlayer.isFirst) {
-      alert('【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。');
+      setAlertNotice({
+        title: '公式ルール制限',
+        description: '【公式ルール】先攻第1ターンはアタックフェイズを行えません（アタック不可）。',
+      });
       return;
     }
 
@@ -270,6 +331,31 @@ export const Board: React.FC<BoardProps> = ({
       },
     });
     setAttackingState(null);
+  };
+
+  // フェイズ移行確認モーダルで「アタックへ進む」が選択された際の実行処理
+  const handleConfirmPhaseAttack = () => {
+    if (!pendingPhaseAttack) return;
+    const { attackerPlayerId, zone, slotIndex, isDirect } = pendingPhaseAttack;
+    setPendingPhaseAttack(null);
+
+    if (isDirect) {
+      const targetPlayerId = Object.keys(gameState.players).find((id) => id !== attackerPlayerId);
+      if (targetPlayerId) {
+        dispatchAction({
+          type: 'DECLARE_PLAYER_ATTACK',
+          payload: {
+            actorPlayerId: attackerPlayerId,
+            attackerZone: zone,
+            attackerSlotIndex: slotIndex,
+            defenderPlayerId: targetPlayerId,
+          },
+        });
+        setAttackingState(null);
+      }
+    } else {
+      setAttackingState({ attackerPlayerId, zone, slotIndex });
+    }
   };
 
   // 1クリックで相手プレイヤーへ直接アタック宣言
@@ -468,7 +554,7 @@ export const Board: React.FC<BoardProps> = ({
   ) => {
     const player = gameState.players[playerId];
     if (from === 'deckTop' && (!player || player.deck.length === 0)) {
-      alert('山札がありません。');
+      setAlertNotice({ title: '山札なし', description: '山札がありません。' });
       return;
     }
     dispatchAction({
@@ -525,7 +611,7 @@ export const Board: React.FC<BoardProps> = ({
           },
         });
       } else {
-        alert('移動先に空き枠がありません。');
+        setAlertNotice({ title: '枠がいっぱいです', description: '移動先に空き枠がありません。' });
       }
     } else if (destination === 'deckTop') {
       dispatchAction({
@@ -693,7 +779,10 @@ export const Board: React.FC<BoardProps> = ({
       const targetSlots = dest === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
-        alert(`${dest === 'frontLine' ? 'フロントライン' : 'エナジーライン'}に空き枠がありません。`);
+        setAlertNotice({
+          title: '枠がいっぱいです',
+          description: `${dest === 'frontLine' ? 'フロントライン' : 'エナジーライン'}に空き枠がありません。`,
+        });
         return;
       }
       dispatchAction({
@@ -836,7 +925,7 @@ export const Board: React.FC<BoardProps> = ({
       const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
-        alert('フィールドに空き枠がありません。');
+        setAlertNotice({ title: '移動不可', description: 'フィールドに空き枠がありません。' });
         return;
       }
       dispatchAction({
@@ -897,7 +986,7 @@ export const Board: React.FC<BoardProps> = ({
       const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
       const emptySlot = targetSlots.findIndex((c) => c === null);
       if (emptySlot === -1) {
-        alert('フィールドに空き枠がありません。');
+        setAlertNotice({ title: '移動不可', description: 'フィールドに空き枠がありません。' });
         return;
       }
       dispatchAction({
@@ -1087,15 +1176,25 @@ export const Board: React.FC<BoardProps> = ({
           isCompact={isFitMode}
           onDraw={isSoloMode ? () => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: topPlayerId } }) : undefined}
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: topPlayerId } })}
-          onCheckLife={canSelectLifeForDamage(topPlayerId) ? selectLifeForDamage : undefined}
-          onTakeLife={isSoloMode ? (dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } }) : undefined}
+          onCheckLife={
+            canSelectLifeForDamage(topPlayerId)
+              ? selectLifeForDamage
+              : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })
+          }
+          onTakeLife={(dest, index) => {
+            if (isSoloMode) {
+              dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } });
+            } else {
+              setPendingTakeLife({ playerId: topPlayerId, destination: dest, lifeIndex: index });
+            }
+          }}
           onFlipLife={isSoloMode ? (index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: topPlayerId, lifeIndex: index } }) : undefined}
           onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: topPlayerId, isFaceDown } })}
           onOpenLifeReorder={() => {
             setLifeReorderPlayerId(topPlayerId);
             setIsLifeReorderOpen(true);
           }}
-          onOpenLifeSelectModal={isSoloMode || canSelectLifeForDamage(topPlayerId) ? () => setLifeSelectPlayerId(topPlayerId) : undefined}
+          onOpenLifeSelectModal={() => setLifeSelectPlayerId(topPlayerId)}
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: topPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: topPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: topPlayerId, count } })}
@@ -1539,14 +1638,18 @@ export const Board: React.FC<BoardProps> = ({
             }
           }
         }}
-        onTakeLife={lifeSelectPlayerId === bottomPlayerId || isSoloMode ? (dest, lifeIndex) => {
+        onTakeLife={(dest, lifeIndex) => {
           if (lifeSelectPlayerId) {
-            dispatchAction({
-              type: 'TAKE_LIFE',
-              payload: { playerId: lifeSelectPlayerId, destination: dest, lifeIndex },
-            });
+            if (lifeSelectPlayerId === bottomPlayerId || isSoloMode) {
+              dispatchAction({
+                type: 'TAKE_LIFE',
+                payload: { playerId: lifeSelectPlayerId, destination: dest, lifeIndex },
+              });
+            } else {
+              setPendingTakeLife({ playerId: lifeSelectPlayerId, destination: dest, lifeIndex });
+            }
           }
-        } : undefined}
+        }}
         onFlipLife={lifeSelectPlayerId === bottomPlayerId || isSoloMode ? (lifeIndex) => {
           if (lifeSelectPlayerId) {
             dispatchAction({
@@ -1576,10 +1679,64 @@ export const Board: React.FC<BoardProps> = ({
       <RevealedCardModal
         revealed={gameState.revealedCard}
         inspectCard={inspectCard}
+        canControl={isSoloMode || !gameState.revealedCard?.fromPlayerId || gameState.revealedCard.fromPlayerId === myPlayerId}
         onDismissRevealed={(destination) =>
-          dispatchAction({ type: 'DISMISS_REVEALED_CARD', payload: { destination } })
+          dispatchAction({
+            type: 'DISMISS_REVEALED_CARD',
+            payload: { destination, actorPlayerId: myPlayerId },
+          })
         }
         onCloseInspect={() => setInspectCard(null)}
+      />
+
+      {/* アタックフェイズ自動移行確認モーダル */}
+      <ConfirmModal
+        isOpen={pendingPhaseAttack !== null}
+        title="アタックフェイズへ移行"
+        description={`現在は【${
+          gameState.phase === 'START' ? 'スタート' : gameState.phase === 'MOVE' ? '移動' : gameState.phase
+        }フェイズ】です。\nアタックフェイズへ進んでアタックを実行しますか？`}
+        confirmText="アタックへ進む"
+        cancelText="キャンセル"
+        variant="primary"
+        onConfirm={handleConfirmPhaseAttack}
+        onCancel={() => setPendingPhaseAttack(null)}
+      />
+
+      {/* アプリ内通知・ルール警告モーダル (alert()代替) */}
+      <ConfirmModal
+        isOpen={alertNotice !== null}
+        title={alertNotice?.title || ''}
+        description={alertNotice?.description || ''}
+        confirmText="OK"
+        cancelText={null}
+        variant="warning"
+        onConfirm={() => setAlertNotice(null)}
+        onCancel={() => setAlertNotice(null)}
+      />
+
+      {/* 相手ライフ直接場外送り確認モーダル */}
+      <ConfirmModal
+        isOpen={pendingTakeLife !== null}
+        title="相手ライフの直接場外送り"
+        description={`相手（${gameState.players[pendingTakeLife?.playerId || '']?.name || '相手'}）のライフをトリガーチェックを行わずに場外へ送りますか？（効果ダメージやインパクト等）`}
+        confirmText="場外へ送る"
+        cancelText="キャンセル"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingTakeLife) {
+            dispatchAction({
+              type: 'TAKE_LIFE',
+              payload: {
+                playerId: pendingTakeLife.playerId,
+                destination: pendingTakeLife.destination,
+                lifeIndex: pendingTakeLife.lifeIndex,
+              },
+            });
+          }
+          setPendingTakeLife(null);
+        }}
+        onCancel={() => setPendingTakeLife(null)}
       />
 
       {/* 手札カード選択中インジケーター */}

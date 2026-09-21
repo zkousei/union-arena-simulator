@@ -118,5 +118,21 @@ describe('authoritative P2P synchronization', () => {
       type: 'SELECT_LIFE_FOR_DAMAGE',
       payload: { actorPlayerId: 'p2', lifeIndex: 0 },
     })).toBe(true);
+    expect(isActionRequestAllowed('p2', {
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination: 'graveyard', actorPlayerId: 'p1' },
+    })).toBe(false);
+    expect(isActionRequestAllowed('p2', {
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination: 'graveyard', actorPlayerId: 'p2' },
+    })).toBe(true);
+    expect(isActionRequestAllowed('p2', {
+      type: 'PASS_TURN',
+      payload: { playerId: 'p1' },
+    })).toBe(false);
+    expect(isActionRequestAllowed('p2', {
+      type: 'PASS_TURN',
+      payload: { playerId: 'p2' },
+    })).toBe(true);
   });
 });

@@ -274,7 +274,7 @@ export const PreGameBar: React.FC<PreGameBarProps> = ({
           <button
             onClick={() => onSetFirstPlayer(opponentPlayer.id)}
             className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
-              !isFirst
+              oppIsFirst
                 ? 'bg-amber-600 text-white shadow'
                 : 'text-slate-400 hover:text-white bg-slate-900'
             }`}

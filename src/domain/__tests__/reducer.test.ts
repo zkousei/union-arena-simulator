@@ -348,6 +348,38 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].graveyard[0].name).toBe('Trigger Card');
   });
 
+  it('allows non-owner to cancel trigger check and return card to owner life, but rejects non-owner sending to graveyard or hand', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const lifeCard = createDummyCard('trig-1', 'Trigger Card');
+    state.players['p2'].life = [lifeCard];
+
+    // p1 triggers p2's life
+    state = gameReducer(state, {
+      type: 'CHECK_LIFE_TRIGGER',
+      payload: { playerId: 'p2' },
+    });
+    expect(state.revealedCard?.fromPlayerId).toBe('p2');
+    expect(state.players['p2'].life.length).toBe(0);
+
+    // p1 attempts to send to graveyard -> rejected
+    const stateAfterGraveyard = gameReducer(state, {
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination: 'graveyard', actorPlayerId: 'p1' },
+    });
+    expect(stateAfterGraveyard.revealedCard).not.toBeNull();
+    expect(stateAfterGraveyard.players['p2'].graveyard.length).toBe(0);
+
+    // p1 attempts to cancel and return to p2's life -> allowed
+    const stateAfterCancel = gameReducer(state, {
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination: 'life', actorPlayerId: 'p1' },
+    });
+    expect(stateAfterCancel.revealedCard).toBeNull();
+    expect(stateAfterCancel.players['p2'].life.length).toBe(1);
+    expect(stateAfterCancel.players['p2'].life[0].name).toBe('Trigger Card');
+    expect(stateAfterCancel.players['p2'].life[0].isFaceDown).toBe(true);
+  });
+
   it('should handle extra draw in start phase for 1 AP', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].apCurrent = 2;
@@ -1512,6 +1544,60 @@ describe('gameReducer Official Rules Unit Tests', () => {
     const lastLog = state.logs[state.logs.length - 1];
     expect(lastLog.message).toContain('手札に加えました（非公開）');
     expect(lastLog.message).not.toContain('秘密のサーチ先');
+  });
+
+  it('transitions from MAIN phase to ATTACK phase when declaring player attack', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'MAIN';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    expect(state.phase).toBe('ATTACK');
+    expect(state.players.p1.frontLine[0]?.isRested).toBe(true);
+    expect(state.pendingCombat).toMatchObject({
+      stage: 'BLOCK_DECISION',
+      attackerPlayerId: 'p1',
+      defenderPlayerId: 'p2',
+      attackerCardName: 'アタッカー',
+    });
+  });
+
+  it('transitions to ATTACK phase when declaring player attack during START or MOVE phase', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'MOVE';
+    state.turn = 2;
+    state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    expect(state.phase).toBe('ATTACK');
+    expect(state.players.p1.frontLine[0]?.isRested).toBe(true);
+    expect(state.pendingCombat).toMatchObject({
+      stage: 'BLOCK_DECISION',
+      attackerPlayerId: 'p1',
+      defenderPlayerId: 'p2',
+      attackerCardName: 'アタッカー',
+    });
   });
 
   it('synchronizes a player attack and only lets the defender pass', () => {

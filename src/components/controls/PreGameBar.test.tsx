@@ -84,4 +84,25 @@ describe('PreGameBar', () => {
 
     expect(screen.getByRole('button', { name: /対戦開始/ }).hasAttribute('disabled')).toBe(false);
   });
+
+  it('does not highlight "相手が先攻" when firstPlayerId is null in P2P mode', () => {
+    const player1 = createInitialPlayerState('player-1', 'Player 1', false);
+    const player2 = createInitialPlayerState('player-2', 'Player 2', false);
+
+    render(
+      <PreGameBar
+        myPlayer={player1}
+        opponentPlayer={player2}
+        firstPlayerId={null}
+        isSoloMode={false}
+        {...callbacks}
+      />
+    );
+
+    const oppFirstBtn = screen.getByRole('button', { name: '相手が先攻' });
+    const myFirstBtn = screen.getByRole('button', { name: '自分が先攻' });
+
+    expect(oppFirstBtn.className).not.toContain('bg-amber-600');
+    expect(myFirstBtn.className).not.toContain('bg-amber-600');
+  });
 });

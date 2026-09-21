@@ -16,6 +16,12 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'CANCEL_PLAYER_ATTACK':
     case 'SELECT_LIFE_FOR_DAMAGE':
       return action.payload.actorPlayerId === senderId;
+    case 'DISMISS_REVEALED_CARD':
+      return !action.payload.actorPlayerId || action.payload.actorPlayerId === senderId;
+    case 'PASS_TURN':
+      return action.payload.playerId === senderId;
+    case 'SET_PHASE':
+      return !action.payload.actorPlayerId || action.payload.actorPlayerId === senderId;
     default:
       return true;
   }

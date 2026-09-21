@@ -268,6 +268,101 @@ describe('Board Combat Flow and Block Interaction', () => {
     });
   });
 
+  it('triggers DECLARE_PLAYER_ATTACK from quick attack button even during MAIN phase', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.phase = 'MAIN';
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={true}
+        isFitMode={false}
+      />
+    );
+
+    const attackerCard = screen.getByText('アタッカー君').closest('div[draggable="true"]') as HTMLElement;
+    const quickAttackBtn = within(attackerCard).getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    expect(quickAttackBtn).toBeTruthy();
+    fireEvent.click(quickAttackBtn);
+
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'player-1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'player-2',
+      },
+    });
+  });
+
+  it('asks confirmation via modal when attacking from non-MAIN/ATTACK phase and executes when confirmed', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.phase = 'MOVE';
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={true}
+        isFitMode={false}
+      />
+    );
+
+    const attackerCard = screen.getByText('アタッカー君').closest('div[draggable="true"]') as HTMLElement;
+    const quickAttackBtn = within(attackerCard).getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    fireEvent.click(quickAttackBtn);
+
+    // Modal appears
+    expect(screen.getByText('アタックフェイズへ移行')).toBeTruthy();
+    expect(screen.getByText(/現在は【移動フェイズ】です/)).toBeTruthy();
+
+    const confirmBtn = screen.getByRole('button', { name: 'アタックへ進む' });
+    fireEvent.click(confirmBtn);
+
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'player-1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'player-2',
+      },
+    });
+  });
+
+  it('cancels attack when confirmation modal is cancelled during non-MAIN/ATTACK phase', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.phase = 'MOVE';
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={true}
+        isFitMode={false}
+      />
+    );
+
+    const attackerCard = screen.getByText('アタッカー君').closest('div[draggable="true"]') as HTMLElement;
+    const quickAttackBtn = within(attackerCard).getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    fireEvent.click(quickAttackBtn);
+
+    expect(screen.getByText('アタックフェイズへ移行')).toBeTruthy();
+    const cancelBtn = screen.getByRole('button', { name: 'キャンセル' });
+    fireEvent.click(cancelBtn);
+
+    expect(dispatchAction).not.toHaveBeenCalled();
+    expect(screen.queryByText('アタックフェイズへ移行')).toBeNull();
+  });
+
   it('shows synchronized combat controls only to the player whose decision is pending in P2P', () => {
     const gameState = setupTestGameState(4000, 3000);
     gameState.pendingCombat = {
@@ -293,5 +388,72 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     rerender(<Board gameState={{ ...gameState }} myPlayerId="player-1" dispatchAction={dispatchAction} isSoloMode={false} />);
     expect(screen.getByRole('button', { name: 'ライフを選択' })).toBeDefined();
+  });
+
+  it('allows manual trigger check on opponent life in P2P mode outside of combat', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.pendingCombat = null;
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={false}
+      />
+    );
+
+    // Opponent's SideZonesArea has check button and life cards
+    const checkButtons = screen.getAllByRole('button', { name: /チェック/ });
+    // First check button should be topPlayer's (opponent)
+    fireEvent.click(checkButtons[0]);
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'CHECK_LIFE_TRIGGER',
+      payload: { playerId: 'player-2', lifeIndex: 0 },
+    });
+
+    // Clicking opponent's second life card directly
+    const opponentLife2 = screen.getByTitle('ライフ #2 - クリックでトリガーチェック');
+    fireEvent.click(opponentLife2);
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'CHECK_LIFE_TRIGGER',
+      payload: { playerId: 'player-2', lifeIndex: 1 },
+    });
+  });
+
+  it('prompts confirmation modal before sending opponent life directly to graveyard (-1ダメ) in P2P mode', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.pendingCombat = null;
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={false}
+      />
+    );
+
+    const minusDamageBtn = screen.getByRole('button', { name: '-1ダメ' });
+    fireEvent.click(minusDamageBtn);
+
+    // Modal should appear
+    expect(screen.getByText('相手ライフの直接場外送り')).toBeTruthy();
+
+    // Cancel first
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+    expect(dispatchAction).not.toHaveBeenCalled();
+    expect(screen.queryByText('相手ライフの直接場外送り')).toBeNull();
+
+    // Click again and confirm
+    fireEvent.click(screen.getByRole('button', { name: '-1ダメ' }));
+    fireEvent.click(screen.getByRole('button', { name: '場外へ送る' }));
+
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'player-2', destination: 'graveyard', lifeIndex: 0 },
+    });
   });
 });

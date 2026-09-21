@@ -257,6 +257,7 @@ export type GameAction =
       type: 'DISMISS_REVEALED_CARD';
       payload: {
         destination: 'hand' | 'graveyard' | 'life' | 'cancel';
+        actorPlayerId?: string;
       };
     }
   | {
@@ -283,6 +284,7 @@ export type GameAction =
       type: 'SET_PHASE';
       payload: {
         phase: Phase;
+        actorPlayerId?: string;
       };
     }
   | {

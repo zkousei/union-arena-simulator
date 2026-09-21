@@ -64,11 +64,12 @@ describe('Board hidden information', () => {
     );
 
     expect(screen.queryByText('秘密のライフカード')).toBeNull();
+
+    // Open opponent life selection modal and verify face-down life details remain hidden
+    fireEvent.click(screen.getByTitle('ライフ一覧から好きなカードを任意指定してトリガーチェックや操作を行う'));
+    expect(screen.getByText(/相手ライフの選択/)).toBeDefined();
     expect(screen.queryByText('秘密のライフカード')).toBeNull();
-    expect(screen.queryByTitle('ライフ一覧から好きなカードを任意指定してトリガーチェックや操作を行う')).toBeNull();
-    expect(screen.queryByTitle(/相手のライフ（先頭）をトリガーチェック/)).toBeNull();
-    expect(screen.queryByRole('button', { name: '-1ダメ' })).toBeNull();
-    expect(screen.queryByTitle('このライフカードを直接場外へ送る')).toBeNull();
+    expect(screen.getByText('非公開カード')).toBeDefined();
   });
 
   it('does not expose opponent draw or mill controls in P2P mode', () => {
