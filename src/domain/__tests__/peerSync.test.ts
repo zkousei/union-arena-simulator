@@ -155,4 +155,87 @@ describe('authoritative P2P synchronization', () => {
       },
     })).toBe(true);
   });
+
+  it('rejects host-only actions from guests and prevents guests from impersonating the host', () => {
+    // ホスト専権アクション
+    expect(isActionRequestAllowed('p2', {
+      type: 'INIT_GAME',
+      payload: {
+        player1Id: 'p1',
+        player1Name: 'Host',
+        player2Id: 'p2',
+        player2Name: 'Guest',
+        activePlayerId: 'p1',
+      },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'SET_FIRST_PLAYER',
+      payload: { firstPlayerId: 'p2' },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'START_GAME',
+    })).toBe(false);
+
+    // プレイヤー偽装（他人の手札・山札・AP・ライフ等を操作）
+    expect(isActionRequestAllowed('p2', {
+      type: 'DISCARD_ALL_HAND',
+      payload: { playerId: 'p1' },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'DRAW_CARD',
+      payload: { playerId: 'p1', count: 1 },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'USE_AP',
+      payload: { playerId: 'p1', amount: 1 },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'RECOVER_LIFE',
+      payload: { playerId: 'p1', count: 1 },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: 'c1', destination: 'hand' },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'c1',
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'graveyard' },
+      },
+    })).toBe(false);
+
+    // 自身の正当なアクションは許可
+    expect(isActionRequestAllowed('p2', {
+      type: 'DISCARD_ALL_HAND',
+      payload: { playerId: 'p2' },
+    })).toBe(true);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'DRAW_CARD',
+      payload: { playerId: 'p2', count: 1 },
+    })).toBe(true);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'USE_AP',
+      payload: { playerId: 'p2', amount: 1 },
+    })).toBe(true);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'c1',
+        from: { playerId: 'p2', zone: 'hand', index: 0 },
+        to: { playerId: 'p2', zone: 'graveyard' },
+      },
+    })).toBe(true);
+  });
 });

@@ -10,6 +10,59 @@ export interface AuthoritativeTransition {
 
 export function isActionRequestAllowed(senderId: string, action: GameAction): boolean {
   switch (action.type) {
+    // ホスト専権アクション（ゲストからの要求は受け付けない）
+    case 'INIT_GAME':
+    case 'SET_FIRST_PLAYER':
+    case 'START_GAME':
+    case 'SYNC_STATE':
+      return false;
+
+    // 送信者自身のアクションである必要がある操作（playerId による検証）
+    case 'SETUP_GAME':
+    case 'DRAW_INITIAL_HAND':
+    case 'MULLIGAN':
+    case 'KEEP_HAND':
+    case 'PLACE_INITIAL_LIFE':
+    case 'SET_READY':
+    case 'TOGGLE_REST':
+    case 'SET_ALL_ACTIVE':
+    case 'MODIFY_BP':
+    case 'RAID_CARD':
+    case 'SEPARATE_UNDER_CARD':
+    case 'SEPARATE_PARENT_CARD':
+    case 'ADD_MARKER':
+    case 'TOGGLE_FREEZE':
+    case 'RECOVER_LIFE':
+    case 'TAKE_LIFE':
+    case 'REORDER_LIFE':
+    case 'DRAW_CARD':
+    case 'FLIP_LIFE':
+    case 'DISCARD_ALL_HAND':
+    case 'DISCARD_HAND_CARD':
+    case 'REVEAL_TOP_DECK_CARD':
+    case 'BOTTOM_DECK_ACTION':
+    case 'EXTRA_DRAW':
+    case 'CHECK_LIFE_TRIGGER':
+    case 'USE_AP':
+    case 'RECOVER_AP':
+    case 'SHUFFLE_DECK':
+    case 'PASS_TURN':
+    case 'LOOK_AT_TOP_DECK':
+    case 'RESOLVE_TOP_DECK_CARD':
+    case 'CLOSE_TOP_DECK':
+    case 'SEARCH_DECK_CARD':
+    case 'ROLL_DICE':
+    case 'ADD_LOG':
+      return action.payload.playerId === senderId;
+
+    case 'CHAT_MESSAGE':
+      return action.payload.senderId === senderId;
+
+    // 移動操作: 自分のカードのみ移動を要求可能
+    case 'MOVE_CARD':
+      return action.payload.from.playerId === senderId;
+
+    // 戦闘・アタック系操作（actorPlayerId による検証）
     case 'DECLARE_PLAYER_ATTACK':
     case 'ATTACK_CHARACTER':
     case 'PASS_BLOCK':
@@ -17,14 +70,15 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'CANCEL_PLAYER_ATTACK':
     case 'SELECT_LIFE_FOR_DAMAGE':
       return action.payload.actorPlayerId === senderId;
+
+    // 公開カードの処理・フェイズ切り替え（actorPlayerId があれば一致を検証）
     case 'DISMISS_REVEALED_CARD':
       return !action.payload.actorPlayerId || action.payload.actorPlayerId === senderId;
-    case 'PASS_TURN':
-      return action.payload.playerId === senderId;
     case 'SET_PHASE':
       return !action.payload.actorPlayerId || action.payload.actorPlayerId === senderId;
+
     default:
-      return true;
+      return false;
   }
 }
 

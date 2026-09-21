@@ -623,6 +623,14 @@ export const Board: React.FC<BoardProps> = ({
         return;
       }
 
+      if (card.cardType === 'FIELD' && targetZone === 'frontLine') {
+        setAlertNotice({
+          title: '配置不可',
+          description: 'フィールドカードはエナジーラインにのみ配置できます。',
+        });
+        return;
+      }
+
       if (existingCard) {
         setPendingRaidOrMarker({
           targetPlayerId,
@@ -650,6 +658,14 @@ export const Board: React.FC<BoardProps> = ({
 
       const card = from.zone === 'frontLine' ? targetPlayer.frontLine[fromSlot] : targetPlayer.energyLine[fromSlot];
       if (!card) return;
+
+      if (card.cardType === 'FIELD' && targetZone === 'frontLine') {
+        setAlertNotice({
+          title: '移動不可',
+          description: 'フィールドカードはフロントラインに移動できません。',
+        });
+        return;
+      }
 
       dispatchAction({
         type: 'MOVE_CARD',
@@ -715,6 +731,13 @@ export const Board: React.FC<BoardProps> = ({
     if (!card) return;
 
     if (dest === 'frontLine' || dest === 'energyLine') {
+      if (card.cardType === 'FIELD' && dest === 'frontLine') {
+        setAlertNotice({
+          title: '配置不可',
+          description: 'フィールドカードはエナジーラインにのみ配置できます。',
+        });
+        return;
+      }
       if (card.cardType === 'EVENT') {
         // イベントカードは使用時、場には出ず直接場外へ
         dispatchAction({

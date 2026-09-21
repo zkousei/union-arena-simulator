@@ -432,6 +432,9 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         if (!sourceCard) return;
         const redactCardName = isHiddenSource(from, sourceCard) && isHiddenDestination(to);
 
+        // 公式ルール: フィールドカードはエナジーラインにのみ配置でき、フロントラインには登場・移動できない
+        if (sourceCard.cardType === 'FIELD' && to.zone === 'frontLine') return;
+
         // 盤面スロット間の移動で、移動先に既にカードが存在する場合は「位置のスワップ（入れ替え）」を実行
         if (isFromField && isToField && from.slotIndex !== undefined && to.slotIndex !== undefined) {
           const fromSlot = from.slotIndex as FieldSlotIndex;
@@ -440,6 +443,11 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           const toCard = to.zone === 'frontLine' ? toPlayer.frontLine[toSlot] : toPlayer.energyLine[toSlot];
 
           if (fromCard && fromCard.id === cardId && toCard) {
+            // フィールドカードがフロントラインにスワップされるのを防止
+            if ((fromCard.cardType === 'FIELD' && to.zone === 'frontLine') || (toCard.cardType === 'FIELD' && from.zone === 'frontLine')) {
+              return;
+            }
+
             // スワップ
             if (from.zone === 'frontLine') {
               fromPlayer.frontLine[fromSlot] = toCard;
@@ -820,6 +828,15 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           player.deck.push(restored);
           appendLog(draft, `${player.name} がライフから${cardLogLabel(restored, !wasFaceDown)}を山札の下へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
         }
+
+        if (player.life.length === 0) {
+          appendLog(
+            draft,
+            `👑【ライフ0】${player.name} のライフが 0 枚になりました（公式ルール上は敗北条件を満たします）。※ファイナルトリガー解決や手動でのライフ回復・リセットが可能です。`,
+            playerId,
+            'system'
+          );
+        }
         break;
       }
 
@@ -1064,6 +1081,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           !attackerPlayer ||
           !defenderPlayer ||
           !attacker ||
+          attacker.cardType !== 'CHARACTER' ||
           attacker.isRested ||
           (draft.turn === 1 && attackerPlayer.isFirst)
         ) return;
@@ -1110,6 +1128,8 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           !targetPlayer ||
           !attacker ||
           !defender ||
+          attacker.cardType !== 'CHARACTER' ||
+          defender.cardType !== 'CHARACTER' ||
           attacker.isRested ||
           (draft.turn === 1 && attackerPlayer.isFirst)
         ) return;
@@ -1176,6 +1196,19 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
 
         const defender = draft.players[combat.defenderPlayerId];
         if (!defender) return;
+
+        // 相手ライフが0枚の場合、ライフ選択には移行せず戦闘を解除し、敗北通知を出力（手動リセット/回復可能）
+        if (defender.life.length === 0) {
+          draft.pendingCombat = null;
+          appendLog(
+            draft,
+            `🛡️【ノーブロック】${defender.name} はアタックを通しました（現在ライフ 0 枚）。公式ルール上は既に敗北条件を満たしています。（※ファイナルトリガー等の解決や手動でのライフ回復・リセットが可能です）`,
+            combat.defenderPlayerId,
+            'system'
+          );
+          break;
+        }
+
         combat.stage = 'LIFE_SELECTION';
         appendLog(
           draft,
@@ -1197,7 +1230,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         const blockerPlayer = draft.players[combat.defenderPlayerId];
         const attacker = attackerPlayer?.[combat.attackerZone][combat.attackerSlotIndex];
         const blocker = blockerPlayer?.frontLine[action.payload.blockerSlotIndex];
-        if (!attackerPlayer || !blockerPlayer || !attacker || !blocker || blocker.isRested) return;
+        if (!attackerPlayer || !blockerPlayer || !attacker || !blocker || blocker.cardType !== 'CHARACTER' || blocker.isRested) return;
 
         blocker.isRested = true;
         const blockerBp = (blocker.bp ?? 0) + blocker.bpModifier;
@@ -1326,6 +1359,15 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
             player.life.unshift({ ...card, isFaceDown: true });
             const actorName = actorPlayerId && draft.players[actorPlayerId] ? draft.players[actorPlayerId].name : player.name;
             appendLog(draft, `${actorName} はカードをライフトップに戻しました。`, actorPlayerId ?? fromPlayerId);
+          }
+
+          if (player.life.length === 0) {
+            appendLog(
+              draft,
+              `👑【ライフ0】${player.name} のライフが 0 枚になりました（公式ルール上は敗北条件を満たします）。※ファイナルトリガー解決や手動でのライフ回復・リセットが可能です。`,
+              fromPlayerId,
+              'system'
+            );
           }
         }
 
@@ -1553,6 +1595,14 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
             playerId
           );
         } else if (destination === 'frontLine' || destination === 'energyLine') {
+          if (destination === 'frontLine' && cleanCard.cardType === 'FIELD') {
+            player.hand.push(cleanCard);
+            appendLog(draft, `${player.name} はフィールドカードのため「${card.name}」を手札に加えました（フロントL配置不可）。`, playerId);
+            if (draft.revealedDeckCards.cards.length === 0) {
+              draft.revealedDeckCards = null;
+            }
+            break;
+          }
           const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
           const targetIndex =
             action.payload.slotIndex !== undefined ? action.payload.slotIndex : targetSlots.findIndex((c) => c === null);
@@ -1620,12 +1670,17 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           player.removed.push(cleanCard);
           appendLog(draft, `${player.name} は山札から「${card.name}」を除外（リムーブ）しました。`, playerId);
         } else if (destination === 'life') {
-          player.life.push({ ...cleanCard, isFaceDown: true });
+          player.life.unshift({ ...cleanCard, isFaceDown: true });
           appendLog(draft, `${player.name} は山札から非公開カードをライフに裏向きで置きました。`, playerId);
         } else if (destination === 'lifeFaceUp') {
-          player.life.push({ ...cleanCard, isFaceDown: false });
+          player.life.unshift({ ...cleanCard, isFaceDown: false });
           appendLog(draft, `${player.name} は山札から「${card.name}」をライフに表向きで置きました。`, playerId);
         } else if (destination === 'frontLine') {
+          if (cleanCard.cardType === 'FIELD') {
+            player.hand.push(cleanCard);
+            appendLog(draft, `${player.name} はフィールドカードのため「${card.name}」を手札に加えました（フロントL配置不可）。`, playerId);
+            break;
+          }
           const emptyIndex = player.frontLine.findIndex((s) => s === null);
           const targetSlot = slotIndex !== undefined ? slotIndex : (emptyIndex >= 0 ? (emptyIndex as FieldSlotIndex) : null);
           if (targetSlot !== null && player.frontLine[targetSlot] === null) {

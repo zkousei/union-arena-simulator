@@ -476,7 +476,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           </div>
 
-          {!isOpponent && !card.isRested && onDirectAttack && (
+          {!isOpponent && !card.isRested && onDirectAttack && card.cardType === 'CHARACTER' && (
             <button
               onClick={() => {
                 onDirectAttack();
@@ -489,7 +489,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           )}
 
-          {!isOpponent && !card.isRested && onDeclareAttack && (
+          {!isOpponent && !card.isRested && onDeclareAttack && card.cardType === 'CHARACTER' && (
             <button
               onClick={() => {
                 onDeclareAttack();
@@ -637,7 +637,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
                   エナジーLへ移動
                 </button>
-              ) : (
+              ) : card.cardType !== 'FIELD' ? (
                 <button
                   onClick={() => {
                     onMoveTo('frontLine');
@@ -648,7 +648,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
                   フロントLへ移動
                 </button>
-              )}
+              ) : null}
             </>
           )}
 
@@ -670,6 +670,17 @@ export const CardView: React.FC<CardViewProps> = ({
                     >
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
                       イベントを使用（場外へ）
+                    </button>
+                  ) : card.cardType === 'FIELD' ? (
+                    <button
+                      onClick={() => {
+                        onMoveTo('energyLine');
+                        setShowMenu(false);
+                      }}
+                      className="w-full py-1.5 px-2 bg-emerald-950/70 hover:bg-emerald-900/80 rounded flex items-center justify-center gap-1.5 text-emerald-300 font-bold border border-emerald-500/40 text-[11px]"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
+                      エナジーL登場（フィールド）
                     </button>
                   ) : (
                     <div className="grid grid-cols-2 gap-1">

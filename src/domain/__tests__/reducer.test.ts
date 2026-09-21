@@ -1606,6 +1606,7 @@ describe('gameReducer Official Rules Unit Tests', () => {
     state.phase = 'ATTACK';
     state.turn = 2;
     state.players.p1.frontLine[0] = createDummyCard('attacker', 'アタッカー', 4000);
+    state.players.p2.life = [createDummyCard('life-1', 'ライフ1')];
 
     state = gameReducer(state, {
       type: 'DECLARE_PLAYER_ATTACK',
@@ -2313,6 +2314,271 @@ describe('gameReducer Official Rules Unit Tests', () => {
 
       expect(state.players.p1.hand.length + state.players.p1.deck.length + 1).toBe(50);
       expect(state.players.p1.energyLine[0]?.id).toBe(handCardId);
+    });
+
+    it('clears pendingCombat and notifies defeat without forcing FINISHED status when attacked at 0 life', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'ATTACK';
+      state.turn = 2;
+      state.activePlayerId = 'p1';
+      state.players.p1.frontLine[0] = createDummyCard('c-1', 'Attacker');
+      state.players.p2.life = []; // 相手ライフが0枚
+
+      // アタック宣言
+      state = gameReducer(state, {
+        type: 'DECLARE_PLAYER_ATTACK',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          defenderPlayerId: 'p2',
+        },
+      });
+      expect(state.pendingCombat?.stage).toBe('BLOCK_DECISION');
+
+      // ノーブロック（PASS_BLOCK）
+      state = gameReducer(state, {
+        type: 'PASS_BLOCK',
+        payload: { actorPlayerId: 'p2' },
+      });
+
+      // pendingCombat が解消されスタックしない
+      expect(state.pendingCombat).toBeNull();
+      // ゲームは勝手に FINISHED にならず手動継続可能
+      expect(state.status).toBe('PLAYING');
+      // ログにライフ0被弾のアナウンスが出力される
+      const lastLog = state.logs[state.logs.length - 1];
+      expect(lastLog.message).toContain('ライフ');
+      expect(lastLog.message).toContain('0');
+    });
+
+    it('notifies defeat when life becomes 0 after trigger resolution without forcing FINISHED status', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const lastLife = createDummyCard('last-life', 'Last Life');
+      state.players.p1.life = [lastLife];
+
+      // トリガーチェック
+      state = gameReducer(state, {
+        type: 'CHECK_LIFE_TRIGGER',
+        payload: { playerId: 'p1', lifeIndex: 0 },
+      });
+      expect(state.revealedCard?.card.id).toBe('last-life');
+
+      // 場外へ送ってライフが0枚になる
+      state = gameReducer(state, {
+        type: 'DISMISS_REVEALED_CARD',
+        payload: { destination: 'graveyard' },
+      });
+
+      expect(state.players.p1.life).toHaveLength(0);
+      expect(state.status).toBe('PLAYING'); // 勝手にFINISHEDにならない
+      const lastLog = state.logs[state.logs.length - 1];
+      expect(lastLog.message).toContain('ライフが 0 枚');
+      expect(lastLog.message).toContain('敗北');
+    });
+
+    it('does not notify defeat if life is recovered back from trigger check (final trigger)', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const lastLife = createDummyCard('last-life', 'Final Trigger Card');
+      state.players.p1.life = [lastLife];
+
+      state = gameReducer(state, {
+        type: 'CHECK_LIFE_TRIGGER',
+        payload: { playerId: 'p1', lifeIndex: 0 },
+      });
+
+      // ライフへ戻す（ファイナルトリガー等）
+      state = gameReducer(state, {
+        type: 'DISMISS_REVEALED_CARD',
+        payload: { destination: 'life' },
+      });
+
+      expect(state.players.p1.life).toHaveLength(1);
+      const lastLog = state.logs[state.logs.length - 1];
+      expect(lastLog.message).not.toContain('敗北');
+    });
+
+    it('notifies defeat when life becomes 0 from TAKE_LIFE', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const lastLife = createDummyCard('last-life', 'Last Life Card');
+      state.players.p1.life = [lastLife];
+
+      state = gameReducer(state, {
+        type: 'TAKE_LIFE',
+        payload: { playerId: 'p1', destination: 'hand', lifeIndex: 0 },
+      });
+
+      expect(state.players.p1.life).toHaveLength(0);
+      expect(state.status).toBe('PLAYING');
+      const lastLog = state.logs[state.logs.length - 1];
+      expect(lastLog.message).toContain('ライフが 0 枚');
+      expect(lastLog.message).toContain('敗北');
+    });
+
+    it('rejects FIELD card attacks and blocks', () => {
+      const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'ATTACK';
+      state.turn = 2; // 先攻1T制約を回避
+      state.activePlayerId = 'p1';
+
+      const fieldCard: Card = {
+        ...createDummyCard('field-1', 'Training Ground'),
+        cardType: 'FIELD',
+        bp: null,
+      };
+      const defenderChar = createDummyCard('char-def', 'Defender Char', 3000);
+      state.players.p1.frontLine[0] = fieldCard;
+      state.players.p2.frontLine[0] = defenderChar;
+      state.players.p2.life = [createDummyCard('life-1', 'Life 1')];
+
+      // フィールドカードでプレイヤーアタック宣言 -> no-op
+      const stateAfterPlayerAttack = gameReducer(state, {
+        type: 'DECLARE_PLAYER_ATTACK',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          defenderPlayerId: 'p2',
+        },
+      });
+      expect(stateAfterPlayerAttack.pendingCombat).toBeNull();
+      expect(stateAfterPlayerAttack.players.p1.frontLine[0]?.isRested).toBe(false);
+
+      // フィールドカードでキャラアタック（狙い撃ち）宣言 -> no-op
+      const stateAfterSnipe = gameReducer(state, {
+        type: 'ATTACK_CHARACTER',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          targetPlayerId: 'p2',
+          targetSlotIndex: 0,
+        },
+      });
+      expect(stateAfterSnipe.players.p1.frontLine[0]?.isRested).toBe(false);
+
+      // 正当なキャラアタックに対してフィールドカードがブロック宣言 -> no-op
+      const blockState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      blockState.status = 'PLAYING';
+      blockState.phase = 'ATTACK';
+      blockState.turn = 2;
+      blockState.activePlayerId = 'p1';
+      const attackerChar = createDummyCard('char-atk', 'Attacker Char', 4000);
+      blockState.players.p1.frontLine[0] = attackerChar;
+      blockState.players.p2.frontLine[0] = fieldCard;
+      blockState.players.p2.life = [createDummyCard('life-1', 'Life 1')];
+
+      const attackingState = gameReducer(blockState, {
+        type: 'DECLARE_PLAYER_ATTACK',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          defenderPlayerId: 'p2',
+        },
+      });
+      expect(attackingState.pendingCombat?.stage).toBe('BLOCK_DECISION');
+
+      const blockedState = gameReducer(attackingState, {
+        type: 'BLOCK_ATTACK',
+        payload: {
+          actorPlayerId: 'p2',
+          blockerSlotIndex: 0,
+        },
+      });
+      // ブロックが成立せず、依然として BLOCK_DECISION のまま
+      expect(blockedState.pendingCombat?.stage).toBe('BLOCK_DECISION');
+      expect(blockedState.players.p2.frontLine[0]?.isRested).toBe(false);
+    });
+
+    it('prevents FIELD cards from entering or moving to frontLine', () => {
+      const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const fieldCard: Card = {
+        ...createDummyCard('field-1', 'Training Ground'),
+        cardType: 'FIELD',
+        bp: null,
+      };
+      state.players.p1.hand = [fieldCard];
+
+      // 手札からフロントラインへの移動 -> 拒否 (no-op)
+      const stateAfterHandToFront = gameReducer(state, {
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: 'field-1',
+          from: { playerId: 'p1', zone: 'hand', index: 0 },
+          to: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+        },
+      });
+      expect(stateAfterHandToFront.players.p1.frontLine[0]).toBeNull();
+      expect(stateAfterHandToFront.players.p1.hand).toHaveLength(1);
+
+      // 手札からエナジーラインへの移動 -> 許可
+      const stateAfterHandToEnergy = gameReducer(state, {
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: 'field-1',
+          from: { playerId: 'p1', zone: 'hand', index: 0 },
+          to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+        },
+      });
+      expect(stateAfterHandToEnergy.players.p1.energyLine[0]?.id).toBe('field-1');
+      expect(stateAfterHandToEnergy.players.p1.hand).toHaveLength(0);
+
+      // エナジーラインからフロントラインへの移動 -> 拒否 (no-op)
+      const stateAfterEnergyToFront = gameReducer(stateAfterHandToEnergy, {
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: 'field-1',
+          from: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+          to: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+        },
+      });
+      expect(stateAfterEnergyToFront.players.p1.frontLine[0]).toBeNull();
+      expect(stateAfterEnergyToFront.players.p1.energyLine[0]?.id).toBe('field-1');
+
+      // SEARCH_DECK_CARD で FIELD カードを frontLine に登場させようとした場合は手札に退避
+      const searchDeckState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      searchDeckState.status = 'PLAYING';
+      searchDeckState.players.p1.deck = [{ ...fieldCard, id: 'field-in-deck' }];
+      const stateAfterSearchToFront = gameReducer(searchDeckState, {
+        type: 'SEARCH_DECK_CARD',
+        payload: {
+          playerId: 'p1',
+          cardId: 'field-in-deck',
+          destination: 'frontLine',
+        },
+      });
+      expect(stateAfterSearchToFront.players.p1.frontLine[0]).toBeNull();
+      expect(stateAfterSearchToFront.players.p1.hand.some((c) => c.id === 'field-in-deck')).toBe(true);
+    });
+
+    it('places searched card on top of life (unshift) instead of bottom in SEARCH_DECK_CARD', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const existingLife = createDummyCard('existing-life', 'Existing Life');
+      const searchedCard = createDummyCard('searched-card', 'Searched Card');
+      state.players.p1.life = [existingLife];
+      state.players.p1.deck = [searchedCard];
+
+      state = gameReducer(state, {
+        type: 'SEARCH_DECK_CARD',
+        payload: {
+          playerId: 'p1',
+          cardId: 'searched-card',
+          destination: 'life',
+        },
+      });
+
+      expect(state.players.p1.life).toHaveLength(2);
+      // ライフトップ (インデックス 0) に置かれていること
+      expect(state.players.p1.life[0].id).toBe('searched-card');
+      expect(state.players.p1.life[1].id).toBe('existing-life');
     });
   });
 });
