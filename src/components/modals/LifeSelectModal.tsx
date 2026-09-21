@@ -9,7 +9,7 @@ export interface LifeSelectModalProps {
   isOpponent: boolean;
   onCheckLife: (lifeIndex: number) => void;
   onTakeLife: (destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom', lifeIndex: number) => void;
-  onFlipLife: (lifeIndex: number) => void;
+  onFlipLife?: (lifeIndex: number) => void;
   onInspectCard?: (card: Card) => void;
   onClose: () => void;
 }
@@ -181,7 +181,7 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
                       </button>
 
                       {isOpponent ? (
-                        <div className="grid grid-cols-2 gap-1 text-[10px]">
+                        <div className="text-[10px]">
                           <button
                             onClick={() => {
                               onTakeLife('graveyard', idx);
@@ -192,14 +192,6 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
                           >
                             <Trash2 className="w-3 h-3 text-rose-400" />
                             場外へ (-1)
-                          </button>
-                          <button
-                            onClick={() => onFlipLife(idx)}
-                            className="py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded font-medium flex items-center justify-center gap-0.5 transition-colors"
-                            title="表/裏を切り替える（眞霜平助等）"
-                          >
-                            <RefreshCw className="w-3 h-3 text-amber-400" />
-                            表/裏 切替
                           </button>
                         </div>
                       ) : (
@@ -251,14 +243,16 @@ export const LifeSelectModal: React.FC<LifeSelectModalProps> = ({
                               <ArrowDown className="w-2.5 h-2.5 text-emerald-400" />
                               山札下
                             </button>
-                            <button
-                              onClick={() => onFlipLife(idx)}
-                              className="py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded text-[9px] font-medium flex items-center justify-center gap-0.5 transition-colors"
-                              title="表/裏を切り替える"
-                            >
-                              <RefreshCw className="w-2.5 h-2.5 text-amber-400" />
-                              表/裏
-                            </button>
+                            {onFlipLife && (
+                              <button
+                                onClick={() => onFlipLife(idx)}
+                                className="py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded text-[9px] font-medium flex items-center justify-center gap-0.5 transition-colors"
+                                title="表/裏を切り替える"
+                              >
+                                <RefreshCw className="w-2.5 h-2.5 text-amber-400" />
+                                表/裏
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}

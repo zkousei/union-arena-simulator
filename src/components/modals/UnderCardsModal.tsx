@@ -6,6 +6,7 @@ import { Layers, Hand, Trash2, ArrowUpRight, X, ShieldAlert, ArrowUp, ArrowDown,
 interface UnderCardsModalProps {
   isOpen: boolean;
   parentCard: Card | null;
+  isOpponent?: boolean;
   hasEmptyFrontSlot: boolean;
   hasEmptyEnergySlot: boolean;
   onSeparateCard: (
@@ -20,6 +21,7 @@ interface UnderCardsModalProps {
 export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
   isOpen,
   parentCard,
+  isOpponent = false,
   hasEmptyFrontSlot,
   hasEmptyEnergySlot,
   onSeparateCard,
@@ -27,10 +29,11 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
   onInspectCard,
   onClose,
 }) => {
-  const [revealFaceDown, setRevealFaceDown] = useState(true);
+  const [revealOwnFaceDown, setRevealOwnFaceDown] = useState(true);
   if (!isOpen || !parentCard) return null;
 
   const underCards = parentCard.underCards || [];
+  const revealFaceDown = !isOpponent && revealOwnFaceDown;
 
   const handleSeparateParent = (dest: 'hand' | 'graveyard' | 'removed' | 'deckTop' | 'deckBottom' | 'life' | 'lifeFaceUp') => {
     if (onSeparateParentCard) {
@@ -59,14 +62,16 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setRevealFaceDown(!revealFaceDown)}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-colors"
-              title="裏向きマーカーの内容表示を切り替えます（ルール上、プレイヤー自身はいつでも確認可能です）"
-            >
-              <Eye className="w-3.5 h-3.5 text-amber-400" />
-              <span>{revealFaceDown ? 'マーカー表面を表示中' : 'マーカーを裏面で表示'}</span>
-            </button>
+            {!isOpponent && (
+              <button
+                onClick={() => setRevealOwnFaceDown(!revealOwnFaceDown)}
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-colors"
+                title="裏向きマーカーの内容表示を切り替えます（ルール上、プレイヤー自身はいつでも確認可能です）"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-400" />
+                <span>{revealFaceDown ? 'マーカー表面を表示中' : 'マーカーを裏面で表示'}</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
@@ -85,8 +90,12 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
               現在の表面（上のカード）
             </div>
             
-            <CardView card={parentCard} onInspect={onInspectCard} />
-            {onInspectCard && (
+            <CardView
+              card={parentCard}
+              isOpponent={isOpponent}
+              onInspect={!isOpponent || !parentCard.isFaceDown ? onInspectCard : undefined}
+            />
+            {onInspectCard && (!isOpponent || !parentCard.isFaceDown) && (
               <button
                 onClick={() => onInspectCard(parentCard)}
                 className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400/40 rounded text-[10px] text-purple-200 font-bold transition-colors"
@@ -97,7 +106,7 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
               </button>
             )}
 
-            <div className="w-full mt-2 pt-2 border-t border-purple-500/30 flex flex-col gap-1.5">
+            {!isOpponent && <div className="w-full mt-2 pt-2 border-t border-purple-500/30 flex flex-col gap-1.5">
               <span className="text-[11px] font-bold text-slate-300 text-center">
                 上のカードを分離する
               </span>
@@ -167,7 +176,7 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                 <ArrowDown className="w-3 h-3" />
                 山札下へ
               </button>
-            </div>
+            </div>}
           </div>
 
           {/* 右側: 下敷きカード一覧 */}
@@ -213,12 +222,13 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                       </div>
                       <CardView
                         card={card}
+                        isOpponent={isOpponent}
                         revealFaceDown={revealFaceDown}
-                        onInspect={onInspectCard}
+                        onInspect={!isOpponent || !card.isFaceDown ? onInspectCard : undefined}
                       />
 
                       {/* 詳細確認ボタン */}
-                      {onInspectCard && (
+                      {onInspectCard && (!isOpponent || !card.isFaceDown) && (
                         <button
                           onClick={() => onInspectCard(card)}
                           className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] text-indigo-300 font-bold transition-colors"
@@ -230,7 +240,7 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                       )}
 
                       {/* 下敷きカード個別分離アクションボタン */}
-                      <div className="flex flex-col gap-1 w-full text-[10px] mt-1">
+                      {!isOpponent && <div className="flex flex-col gap-1 w-full text-[10px] mt-1">
                         <div className="grid grid-cols-3 gap-1">
                           <button
                             onClick={() => onSeparateCard(card.id, 'hand')}
@@ -318,7 +328,7 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                             エナジーLに出す
                           </button>
                         )}
-                      </div>
+                      </div>}
                     </div>
                   );
                 })

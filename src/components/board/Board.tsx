@@ -10,7 +10,6 @@ import { RevealedCardModal } from './RevealedCardModal';
 import { TopDeckModal } from '../modals/TopDeckModal';
 import { CardSearchModal } from '../modals/CardSearchModal';
 import { UnderCardsModal } from '../modals/UnderCardsModal';
-import { OpponentHandModal } from '../modals/OpponentHandModal';
 import { LifeReorderModal } from '../modals/LifeReorderModal';
 import { LifeSelectModal } from '../modals/LifeSelectModal';
 import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
@@ -79,7 +78,6 @@ export const Board: React.FC<BoardProps> = ({
   const [inspectCard, setInspectCard] = useState<Card | null>(null);
   const [isCardSearchOpen, setIsCardSearchOpen] = useState(false);
   const [searchPlayerId, setSearchPlayerId] = useState<string>(bottomPlayerId);
-  const [isOpponentHandOpen, setIsOpponentHandOpen] = useState(false);
   const [isLifeReorderOpen, setIsLifeReorderOpen] = useState(false);
   const [lifeReorderPlayerId, setLifeReorderPlayerId] = useState<string>(bottomPlayerId);
   const [lifeSelectPlayerId, setLifeSelectPlayerId] = useState<string | null>(null);
@@ -1095,57 +1093,6 @@ export const Board: React.FC<BoardProps> = ({
     setIsLifeReorderOpen(false);
   };
 
-  // 相手手札カードの移動（山札トップ表向き・山札トップ・山札ボトム・場外等）
-  const handleMoveOpponentHandCard = (
-    cardIndex: number,
-    destination: 'deckTopFaceUp' | 'deckTop' | 'deckBottom' | 'graveyard'
-  ) => {
-    const card = topPlayer.hand[cardIndex];
-    if (!card) return;
-
-    if (destination === 'deckTopFaceUp') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: topPlayerId, zone: 'deck', index: 0 },
-        },
-      });
-      dispatchAction({
-        type: 'REVEAL_TOP_DECK_CARD',
-        payload: { playerId: topPlayerId, reveal: true },
-      });
-    } else if (destination === 'deckTop') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: topPlayerId, zone: 'deck', index: 0 },
-        },
-      });
-    } else if (destination === 'deckBottom') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: topPlayerId, zone: 'deck' },
-        },
-      });
-    } else if (destination === 'graveyard') {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: card.id,
-          from: { playerId: topPlayerId, zone: 'hand', index: cardIndex },
-          to: { playerId: topPlayerId, zone: 'graveyard' },
-        },
-      });
-    }
-  };
-
   const handleExecuteRaid = (moveToFront: boolean) => {
     if (!pendingRaidOrMarker) return;
     dispatchAction({
@@ -1228,7 +1175,7 @@ export const Board: React.FC<BoardProps> = ({
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: topPlayerId } })}
           onCheckLife={(index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })}
           onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } })}
-          onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: topPlayerId, lifeIndex: index } })}
+          onFlipLife={isSoloMode ? (index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: topPlayerId, lifeIndex: index } }) : undefined}
           onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: topPlayerId, isFaceDown } })}
           onOpenLifeReorder={() => {
             setLifeReorderPlayerId(topPlayerId);
@@ -1242,7 +1189,7 @@ export const Board: React.FC<BoardProps> = ({
             setSearchPlayerId(topPlayerId);
             setIsCardSearchOpen(true);
           }}
-          onRevealTopDeck={(reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: topPlayerId, reveal } })}
+          onRevealTopDeck={isSoloMode ? (reveal) => dispatchAction({ type: 'REVEAL_TOP_DECK_CARD', payload: { playerId: topPlayerId, reveal } }) : undefined}
           onBottomDeckAction={(action) => dispatchAction({ type: 'BOTTOM_DECK_ACTION', payload: { playerId: topPlayerId, action } })}
           onMillTopDeck={() => {
             const topCard = topPlayer.deck[0];
@@ -1282,7 +1229,6 @@ export const Board: React.FC<BoardProps> = ({
             onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
             onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
             onDiscardHandIndex={(index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
-            onOpenOpponentHandModal={() => setIsOpponentHandOpen(true)}
           />
           <FieldZone
             title={`${topPlayer.name}: エナジーライン`}
@@ -1543,6 +1489,7 @@ export const Board: React.FC<BoardProps> = ({
       <UnderCardsModal
         isOpen={!!activeUnderCardsParent && (activeUnderCardsParent.underCards?.length ?? 0) > 0}
         parentCard={activeUnderCardsParent}
+        isOpponent={!!underCardsTarget?.playerId && underCardsTarget.playerId !== bottomPlayerId && !isSoloMode}
         hasEmptyFrontSlot={underCardsFrontEmpty}
         hasEmptyEnergySlot={underCardsEnergyEmpty}
         onSeparateCard={handleSeparateUnderCard}
@@ -1655,22 +1602,6 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       )}
 
-      {/* 相手手札確認・ハンデスモーダル */}
-      <OpponentHandModal
-        isOpen={isOpponentHandOpen}
-        cards={topPlayer.hand}
-        opponentName={topPlayer.name}
-        onDiscardCard={(cardIndex: number) => {
-          dispatchAction({
-            type: 'DISCARD_HAND_CARD',
-            payload: { playerId: topPlayerId, index: cardIndex },
-          });
-        }}
-        onMoveOpponentHandCard={handleMoveOpponentHandCard}
-        onInspectCard={setInspectCard}
-        onClose={() => setIsOpponentHandOpen(false)}
-      />
-
       {/* ライフ確認・並び替えモーダル */}
       <LifeReorderModal
         isOpen={isLifeReorderOpen}
@@ -1702,14 +1633,14 @@ export const Board: React.FC<BoardProps> = ({
             });
           }
         }}
-        onFlipLife={(lifeIndex) => {
+        onFlipLife={lifeSelectPlayerId === bottomPlayerId || isSoloMode ? (lifeIndex) => {
           if (lifeSelectPlayerId) {
             dispatchAction({
               type: 'FLIP_LIFE',
               payload: { playerId: lifeSelectPlayerId, lifeIndex },
             });
           }
-        }}
+        } : undefined}
         onInspectCard={setInspectCard}
         onClose={() => setLifeSelectPlayerId(null)}
       />

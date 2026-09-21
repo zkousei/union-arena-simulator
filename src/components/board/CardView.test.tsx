@@ -24,6 +24,23 @@ const dummyCard: Card = {
 };
 
 describe('CardView', () => {
+  it('does not offer inspection for an opponent face-down card', () => {
+    const handleInspect = vi.fn();
+
+    render(
+      <CardView
+        card={{ ...dummyCard, isFaceDown: true }}
+        isOpponent={true}
+        revealFaceDown={true}
+        onInspect={handleInspect}
+      />
+    );
+
+    expect(screen.queryByTitle('自分のみ表面を確認')).toBeNull();
+    expect(screen.queryByText('裏向きカードを見る (デバッグ)')).toBeNull();
+    expect(screen.queryByText(dummyCard.name)).toBeNull();
+  });
+
   it('renders active card with card-active class', () => {
     const { container } = render(
       <CardView card={{ ...dummyCard, isRested: false }} />

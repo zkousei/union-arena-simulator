@@ -336,20 +336,6 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                       </button>
                     )}
 
-                    {/* 相手ライフのホバー時「表/裏切替」ボタン（眞霜平助等） */}
-                    {isOpponent && onFlipLife && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onFlipLife(idx);
-                        }}
-                        className="hidden group-hover:flex absolute -bottom-2 -left-1 bg-amber-950 hover:bg-amber-900 border border-amber-500 rounded px-1 text-[7px] text-amber-200 font-bold shadow z-20 whitespace-nowrap"
-                        title="相手のライフの表/裏を切り替える（眞霜平助等）"
-                      >
-                        表裏
-                      </button>
-                    )}
-
                     {/* 自分ライフの個別操作ポップアップ */}
                     {!isOpponent && selectedMyLifeIndex === idx && (
                       <>
@@ -610,16 +596,6 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
               </button>
             ) : isOpponent ? (
               <div className="flex items-center gap-1">
-                {onRevealTopDeck && (
-                  <button
-                    onClick={() => onRevealTopDeck()}
-                    disabled={player.deck.length === 0}
-                    className="px-1.5 py-1 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 rounded text-[9px] font-bold text-amber-300 shadow transition-colors"
-                    title="相手の山札の一番上を表向き/裏向きにする（朝倉シン等）"
-                  >
-                    {player.revealedTopDeckCard ? 'トップ裏' : 'トップ表'}
-                  </button>
-                )}
                 {onMillTopDeck && (
                   <button
                     onClick={onMillTopDeck}

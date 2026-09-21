@@ -41,6 +41,27 @@ function getCardAtLocation(player: PlayerState, loc: CardLocation, cardId?: stri
   return loc.zone === 'deck' || loc.zone === 'life' ? cards[0] ?? null : null;
 }
 
+function isHiddenSource(loc: CardLocation, card: Card): boolean {
+  return (
+    loc.zone === 'hand' ||
+    loc.zone === 'deck' ||
+    (loc.zone === 'life' && card.isFaceDown !== false) ||
+    ((loc.zone === 'frontLine' || loc.zone === 'energyLine') && card.isFaceDown === true)
+  );
+}
+
+function isHiddenDestination(loc: CardLocation): boolean {
+  return (
+    loc.zone === 'hand' ||
+    loc.zone === 'deck' ||
+    (loc.zone === 'life' && loc.isFaceDown !== false)
+  );
+}
+
+function cardLogLabel(card: Card, disclose: boolean): string {
+  return disclose ? `「${card.name}」` : '非公開カード';
+}
+
 /**
  * 補助関数: プレイヤーの特定ゾーンからカードを取り出す
  */
@@ -330,6 +351,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const isToField = to.zone === 'frontLine' || to.zone === 'energyLine';
         const sourceCard = getCardAtLocation(fromPlayer, from, cardId);
         if (!sourceCard) return;
+        const redactCardName = isHiddenSource(from, sourceCard) && isHiddenDestination(to);
 
         // 盤面スロット間の移動で、移動先に既にカードが存在する場合は「位置のスワップ（入れ替え）」を実行
         if (isFromField && isToField && from.slotIndex !== undefined && to.slotIndex !== undefined) {
@@ -416,14 +438,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const fromDesc = from.zone === 'hand' ? '手札' : from.zone === 'frontLine' ? 'フロントライン' : from.zone === 'energyLine' ? 'エナジーライン' : from.zone;
           appendLog(
             draft,
-            `🛡️【ライフ追加】${fromPlayer.name} が「${card.name}」を${fromDesc}からライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
+            `🛡️【ライフ追加】${fromPlayer.name} が${cardLogLabel(card, !redactCardName)}を${fromDesc}からライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
             from.playerId
           );
         } else if (to.zone === 'deck') {
           const isTop = to.index === 0;
           appendLog(
             draft,
-            `📚 ${fromPlayer.name} が「${card.name}」を山札の${isTop ? '一番上' : '一番下'}へ戻しました。`,
+            `📚 ${fromPlayer.name} が${cardLogLabel(card, !redactCardName)}を山札の${isTop ? '一番上' : '一番下'}へ戻しました。`,
             from.playerId
           );
         } else if (from.zone === 'hand' && to.zone === 'graveyard' && card.cardType === 'EVENT') {
@@ -436,7 +458,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } else {
           const fromDesc = `${from.zone}${from.slotIndex !== undefined ? `[枠${from.slotIndex + 1}]` : ''}`;
           const toDesc = `${to.zone}${to.slotIndex !== undefined ? `[枠${to.slotIndex + 1}]` : ''}`;
-          appendLog(draft, `${fromPlayer.name} が「${card.name}」を ${fromDesc} から ${toDesc} へ移動しました。`, from.playerId);
+          appendLog(draft, `${fromPlayer.name} が${cardLogLabel(card, !redactCardName)}を ${fromDesc} から ${toDesc} へ移動しました。`, from.playerId);
         }
         break;
       }
@@ -454,10 +476,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         const [separated] = hostCard.underCards.splice(underIndex, 1);
         const restored = resetCardState(separated);
+        const hiddenUnderCard = separated.isFaceDown === true;
 
         if (destination === 'hand') {
           player.hand.push(restored);
-          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を手札に戻しました。`, playerId);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から${cardLogLabel(restored, !hiddenUnderCard)}を手札に戻しました。`, playerId);
         } else if (destination === 'graveyard') {
           player.graveyard.push(restored);
           appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を場外へ送りました。`, playerId);
@@ -469,15 +492,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           player.life.unshift({ ...restored, isFaceDown });
           appendLog(
             draft,
-            `${player.name} が「${hostCard.name}」の下から「${restored.name}」をライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
+            `${player.name} が「${hostCard.name}」の下から${cardLogLabel(restored, !hiddenUnderCard || !isFaceDown)}をライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
             playerId
           );
         } else if (destination === 'deckTop') {
           player.deck.unshift(restored);
-          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を山札の上へ置きました。`, playerId);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から${cardLogLabel(restored, !hiddenUnderCard)}を山札の上へ置きました。`, playerId);
         } else if (destination === 'deckBottom') {
           player.deck.push(restored);
-          appendLog(draft, `${player.name} が「${hostCard.name}」の下から「${restored.name}」を山札の下へ置きました。`, playerId);
+          appendLog(draft, `${player.name} が「${hostCard.name}」の下から${cardLogLabel(restored, !hiddenUnderCard)}を山札の下へ置きました。`, playerId);
         } else if (destination === 'frontLine' || destination === 'energyLine') {
           const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
           const targetIndex =
@@ -546,7 +569,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         appendLog(
           draft,
-          `${player.name} が上のカード「${hostCard.name}」を分離して${destName}へ移動しました。下の「${newTopCard.name}」がフィールドに残ります。`,
+          `${player.name} が上のカード「${hostCard.name}」を分離して${destName}へ移動しました。下の${cardLogLabel(newTopCard, newTopCard.isFaceDown !== true)}がフィールドに残ります。`,
           playerId,
           'action'
         );
@@ -677,20 +700,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ) return;
 
         const card = player.life.splice(lifeIndex, 1)[0];
+        const wasFaceDown = card.isFaceDown !== false;
         const restored = resetCardState(card);
 
         if (destination === 'hand') {
           player.hand.push(restored);
-          appendLog(draft, `${player.name} がライフから「${restored.name}」を手札に加えました（現在ライフ: ${player.life.length}）。`, playerId);
+          appendLog(draft, `${player.name} がライフから${cardLogLabel(restored, !wasFaceDown)}を手札に加えました（現在ライフ: ${player.life.length}）。`, playerId);
         } else if (destination === 'graveyard') {
           player.graveyard.push(restored);
           appendLog(draft, `${player.name} がライフから「${restored.name}」を場外へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
         } else if (destination === 'deckTop') {
           player.deck.unshift(restored);
-          appendLog(draft, `${player.name} がライフから「${restored.name}」を山札の上へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
+          appendLog(draft, `${player.name} がライフから${cardLogLabel(restored, !wasFaceDown)}を山札の上へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
         } else if (destination === 'deckBottom') {
           player.deck.push(restored);
-          appendLog(draft, `${player.name} がライフから「${restored.name}」を山札の下へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
+          appendLog(draft, `${player.name} がライフから${cardLogLabel(restored, !wasFaceDown)}を山札の下へ置きました（現在ライフ: ${player.life.length}）。`, playerId);
         }
         break;
       }
@@ -791,7 +815,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } else if (bottomAction === 'toHand') {
           const bottomCard = player.deck.pop()!;
           player.hand.push(resetCardState(bottomCard));
-          appendLog(draft, `${player.name} が山札の一番下のカード「${bottomCard.name}」を手札に加えました。`, playerId);
+          appendLog(draft, `${player.name} が山札の一番下のカードを手札に加えました（非公開）。`, playerId);
         }
         break;
       }
@@ -1109,16 +1133,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           appendLog(draft, `${player.name} は確認した「${card.name}」を場外に置きました。`, playerId);
         } else if (destination === 'top') {
           player.deck.unshift(cleanCard);
-          appendLog(draft, `${player.name} は確認した「${card.name}」を山札の上に戻しました。`, playerId);
+          appendLog(draft, `${player.name} は確認した非公開カードを山札の上に戻しました。`, playerId);
         } else if (destination === 'bottom') {
           player.deck.push(cleanCard);
-          appendLog(draft, `${player.name} は確認した「${card.name}」を山札の下に置きました。`, playerId);
+          appendLog(draft, `${player.name} は確認した非公開カードを山札の下に置きました。`, playerId);
         } else if (destination === 'life' || destination === 'lifeFaceUp') {
           const isFaceDown = destination === 'life';
           player.life.unshift({ ...cleanCard, isFaceDown });
           appendLog(
             draft,
-            `${player.name} は確認した「${card.name}」をライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
+            `${player.name} は確認した${cardLogLabel(card, !isFaceDown)}をライフに${isFaceDown ? '裏向き' : '表向き'}で置きました。`,
             playerId
           );
         } else if (destination === 'frontLine' || destination === 'energyLine') {
@@ -1190,7 +1214,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           appendLog(draft, `${player.name} は山札から「${card.name}」を除外（リムーブ）しました。`, playerId);
         } else if (destination === 'life') {
           player.life.push({ ...cleanCard, isFaceDown: true });
-          appendLog(draft, `${player.name} は山札から「${card.name}」をライフに裏向きで置きました。`, playerId);
+          appendLog(draft, `${player.name} は山札から非公開カードをライフに裏向きで置きました。`, playerId);
         } else if (destination === 'lifeFaceUp') {
           player.life.push({ ...cleanCard, isFaceDown: false });
           appendLog(draft, `${player.name} は山札から「${card.name}」をライフに表向きで置きました。`, playerId);

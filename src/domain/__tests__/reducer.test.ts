@@ -25,6 +25,91 @@ function createDummyCard(id: string, name: string, bp: number = 3000): Card {
 }
 
 describe('gameReducer Official Rules Unit Tests', () => {
+  it('redacts card names from logs when moving a hidden hand card to a hidden zone', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const secret = createDummyCard('secret-hand', '秘密の手札');
+    state.players['p1'].hand = [secret];
+
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: secret.id,
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'life', isFaceDown: true },
+      },
+    });
+
+    const message = state.logs[state.logs.length - 1].message;
+    expect(message).not.toContain(secret.name);
+    expect(message).toContain('非公開カード');
+
+    let publicState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    publicState.players['p1'].hand = [secret];
+    publicState = gameReducer(publicState, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: secret.id,
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'life', isFaceDown: false },
+      },
+    });
+    expect(publicState.logs[publicState.logs.length - 1].message).toContain(secret.name);
+  });
+
+  it('redacts a face-down marker name when it moves to another hidden zone', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const secret = { ...createDummyCard('secret-marker', '秘密のマーカー'), isFaceDown: true };
+    state.players['p1'].frontLine[0] = {
+      ...createDummyCard('host', '親カード'),
+      underCards: [secret],
+    };
+
+    state = gameReducer(state, {
+      type: 'SEPARATE_UNDER_CARD',
+      payload: {
+        playerId: 'p1',
+        zone: 'frontLine',
+        slotIndex: 0,
+        underCardId: secret.id,
+        destination: 'hand',
+      },
+    });
+
+    const message = state.logs[state.logs.length - 1].message;
+    expect(message).not.toContain(secret.name);
+    expect(message).toContain('非公開カード');
+  });
+
+  it('redacts hidden life, deck-check, and deck-search results that move to hidden zones', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const secretLife = { ...createDummyCard('secret-life', '秘密のライフ'), isFaceDown: true };
+    state.players['p1'].life = [secretLife];
+
+    state = gameReducer(state, {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'hand', lifeIndex: 0 },
+    });
+    expect(state.logs[state.logs.length - 1].message).not.toContain(secretLife.name);
+
+    const checkedCard = createDummyCard('checked', '秘密の確認カード');
+    let checkedState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    checkedState.revealedDeckCards = { playerId: 'p1', cards: [checkedCard] };
+    checkedState = gameReducer(checkedState, {
+      type: 'RESOLVE_TOP_DECK_CARD',
+      payload: { playerId: 'p1', cardId: checkedCard.id, destination: 'bottom' },
+    });
+    expect(checkedState.logs[checkedState.logs.length - 1].message).not.toContain(checkedCard.name);
+
+    const searchedCard = createDummyCard('searched', '秘密の検索カード');
+    let searchedState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    searchedState.players['p1'].deck = [searchedCard];
+    searchedState = gameReducer(searchedState, {
+      type: 'SEARCH_DECK_CARD',
+      payload: { playerId: 'p1', cardId: searchedCard.id, destination: 'life' },
+    });
+    expect(searchedState.logs[searchedState.logs.length - 1].message).not.toContain(searchedCard.name);
+  });
+
   it('should initialize game state with PREPARING status', () => {
     const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     expect(state.status).toBe('PREPARING');

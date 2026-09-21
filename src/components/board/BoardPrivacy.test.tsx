@@ -28,7 +28,7 @@ function createCard(id: string, name: string, isFaceDown = false): Card {
 }
 
 describe('Board hidden information', () => {
-  it('keeps the opponent hand hidden until the explicit inspection action is used', () => {
+  it('keeps the opponent hand hidden without an inspection action in P2P mode', () => {
     const state = createInitialGameState('player-1', '自分', 'player-2', '相手', 'player-1');
     state.players['player-2'].hand = [createCard('secret-hand', '秘密の手札カード')];
 
@@ -43,10 +43,11 @@ describe('Board hidden information', () => {
 
     expect(screen.queryByText('秘密の手札カード')).toBeNull();
     expect(screen.getByText('相手手札 (1枚)')).toBeDefined();
+    expect(screen.queryByRole('button', { name: '手札を見る' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: '手札を見る' }));
-    expect(screen.getByText('秘密の手札カード')).toBeDefined();
-    expect(screen.getByText(/相手の手札公開・確認/)).toBeDefined();
+    fireEvent.click(screen.getByTitle('裏向きの相手手札'));
+    expect(screen.queryByText('秘密の手札カード')).toBeNull();
+    expect(screen.queryByText(/相手の手札公開・確認/)).toBeNull();
   });
 
   it('does not reveal a face-down opponent life card in the board or selection modal', () => {

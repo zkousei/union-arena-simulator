@@ -24,7 +24,6 @@ interface HandAreaProps {
   onDiscardRandom?: () => void;
   onDiscardHandIndex?: (index: number) => void;
   onDiscardAll?: () => void;
-  onOpenOpponentHandModal?: () => void;
   isCompact?: boolean;
 }
 
@@ -44,7 +43,6 @@ export const HandArea: React.FC<HandAreaProps> = ({
   onDiscardRandom,
   onDiscardHandIndex,
   onDiscardAll,
-  onOpenOpponentHandModal,
   isCompact = false,
 }) => {
   const [internalIsOpen, setInternalIsOpen] = useState<boolean>(isOpenHand ?? !isOpponent);
@@ -88,7 +86,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   };
 
   if (!showOpen) {
-    // 相手手札（非公開時）: 枚数と裏向きカード + ハンデス/公開ボタン
+    // 相手手札（非公開時）: 枚数と裏向きカード + ハンデスボタン
     return (
       <div className={`flex items-center justify-between gap-2 p-1.5 bg-slate-900/40 rounded-xl border border-slate-800/60 ${isCompact ? 'min-h-[36px] h-9 shrink-0' : 'min-h-[70px]'}`}>
         <div className="flex items-center gap-2">
@@ -120,16 +118,6 @@ export const HandArea: React.FC<HandAreaProps> = ({
               </button>
             )}
 
-            {onOpenOpponentHandModal && cards.length > 0 && (
-              <button
-                onClick={onOpenOpponentHandModal}
-                className="flex items-center gap-1 px-2 py-1 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 rounded text-[10px] font-bold shadow transition-colors"
-                title="効果によって相手の手札を公開・確認する"
-              >
-                <Eye className="w-3 h-3" />
-                手札を見る
-              </button>
-            )}
           </div>
         </div>
 
@@ -140,13 +128,11 @@ export const HandArea: React.FC<HandAreaProps> = ({
               onClick={() => {
                 if (canToggleHide) {
                   setInternalIsOpen(true);
-                } else if (onOpenOpponentHandModal) {
-                  onOpenOpponentHandModal();
                 } else if (onDiscardHandIndex) {
                   onDiscardHandIndex(idx);
                 }
               }}
-              title={canToggleHide ? 'クリックで手札を開く' : 'クリックで相手手札の確認・ハンデスモーダルを開く'}
+              title={canToggleHide ? 'クリックで手札を開く' : '裏向きの相手手札'}
               className="w-12 h-16 rounded border border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center text-[10px] text-indigo-400/70 font-bold shadow hover:scale-105 hover:border-amber-400 cursor-pointer transition-transform"
             >
               UA

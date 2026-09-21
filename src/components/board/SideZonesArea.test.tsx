@@ -54,6 +54,24 @@ function createDummyPlayer(deckCount: number = 20): PlayerState {
 }
 
 describe('SideZonesArea Top Deck Viewing Options', () => {
+  it('does not expose opponent life-flip or top-deck reveal controls', () => {
+    const player = createDummyPlayer(20);
+    player.life = [{ ...createDummyCard('life-1', '秘密のライフ'), isFaceDown: true }];
+
+    render(
+      <SideZonesArea
+        player={player}
+        isOpponent={true}
+        isSoloMode={false}
+        onFlipLife={vi.fn()}
+        onRevealTopDeck={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText('表裏')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'トップ表' })).toBeNull();
+  });
+
   it('displays quick options up to 8 and 10 cards, and calls onLookAtTopDeck when 6 cards clicked', () => {
     const onLookAtTopDeck = vi.fn();
     const player = createDummyPlayer(20);
@@ -250,5 +268,4 @@ describe('SideZonesArea Top Deck Viewing Options', () => {
     expect(screen.queryByRole('dialog', { name: 'ライフ #4 操作メニュー' })).toBeNull();
   });
 });
-
 

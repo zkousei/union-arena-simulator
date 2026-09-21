@@ -158,7 +158,7 @@ describe('LifeSelectModal', () => {
     expect(handleClose).toHaveBeenCalled();
   });
 
-  it('calls onFlipLife when flip button is clicked', () => {
+  it('does not expose life-flip controls for an opponent', () => {
     const handleFlipLife = vi.fn();
 
     render(
@@ -167,6 +167,26 @@ describe('LifeSelectModal', () => {
         lifeCards={dummyLifeCards}
         playerName="相手プレイヤー"
         isOpponent={true}
+        onCheckLife={vi.fn()}
+        onTakeLife={vi.fn()}
+        onFlipLife={handleFlipLife}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /表\/裏/i })).toBeNull();
+    expect(handleFlipLife).not.toHaveBeenCalled();
+  });
+
+  it('keeps life-flip controls available for the owner', () => {
+    const handleFlipLife = vi.fn();
+
+    render(
+      <LifeSelectModal
+        isOpen={true}
+        lifeCards={dummyLifeCards}
+        playerName="自分"
+        isOpponent={false}
         onCheckLife={vi.fn()}
         onTakeLife={vi.fn()}
         onFlipLife={handleFlipLife}

@@ -29,6 +29,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { sound } from './utils/audio';
+import { isSoloGameRoute } from './utils/gameMode';
 
 const Board = lazy(() =>
   import('./components/board/Board').then((module) => ({ default: module.Board }))
@@ -483,7 +484,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
     sound.playPlace();
   };
 
-  const isSoloMode = peer.role === null;
+  const isSoloMode = isSoloGameRoute(mode, hostParam, roomParam, peer.role);
   const toolbarTargetPlayerId = isSoloMode ? gameState.activePlayerId : myPlayerId;
 
   const handleSetAllActive = () => {

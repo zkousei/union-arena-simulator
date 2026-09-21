@@ -93,8 +93,9 @@ export const CardView: React.FC<CardViewProps> = ({
     return () => window.removeEventListener('click', handleOutsideClick);
   }, [showMenu]);
 
-  // 裏向き表示 (revealFaceDown が true の場合は表面を表示しつつ裏向きバッジを表示)
-  if (card.isFaceDown && !revealFaceDown) {
+  // 裏向きの表面確認は所有者側だけに限る。
+  const canRevealFaceDown = revealFaceDown && !isOpponent;
+  if (card.isFaceDown && !canRevealFaceDown) {
     return (
       <div
         className={`${cardDimensions} rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown`}
@@ -112,7 +113,7 @@ export const CardView: React.FC<CardViewProps> = ({
         <div className={`${isCompact ? 'w-7 h-10' : 'w-12 h-16'} rounded border border-indigo-500/30 flex items-center justify-center`}>
           <span className={`${isCompact ? 'text-[8px]' : 'text-[10px]'} font-bold text-indigo-400/80 tracking-wider`}>UA</span>
         </div>
-        {onInspect && (
+        {onInspect && !isOpponent && (
           <button
             type="button"
             onClick={(e) => {
@@ -524,20 +525,6 @@ export const CardView: React.FC<CardViewProps> = ({
             >
               <Eye className="w-3.5 h-3.5 text-sky-400" />
               カード詳細・効果を見る
-            </button>
-          )}
-
-          {/* 相手カードの裏向きマーカーを自分で確認する（ソロモード/開発用） */}
-          {isOpponent && card.isFaceDown && onInspect && (
-            <button
-              onClick={() => {
-                onInspect(card);
-                setShowMenu(false);
-              }}
-              className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2 text-amber-300"
-            >
-              <Eye className="w-3.5 h-3.5 text-amber-400" />
-              裏向きカードを見る (デバッグ)
             </button>
           )}
 
