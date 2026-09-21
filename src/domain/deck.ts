@@ -23,6 +23,7 @@ export function resetCardState(card: Card): Card {
     underCards: [],
     isFaceDown: false,
     isFrozen: false,
+    isMarker: undefined,
   };
 }
 

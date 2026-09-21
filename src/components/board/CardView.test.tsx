@@ -287,4 +287,115 @@ describe('CardView', () => {
     fireEvent.click(inspectBtns[0]);
     expect(handleInspect).toHaveBeenCalledWith(dummyCard);
   });
+
+  it('renders raid badge in mid-left position avoiding overlap with quick action buttons', () => {
+    const handleOpenUnderCards = vi.fn();
+    const handleDirectAttack = vi.fn();
+
+    const raidCard = {
+      ...dummyCard,
+      triggers: ['RAID' as const],
+      underCards: [{ ...dummyCard, id: 'base-card-1' }],
+    };
+
+    render(
+      <CardView
+        card={raidCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent={false}
+        onDirectAttack={handleDirectAttack}
+        onOpenUnderCards={handleOpenUnderCards}
+      />
+    );
+
+    const raidBadge = screen.getByTitle('クリックで下敷きカード（レイド元）を確認・操作');
+    expect(raidBadge).toBeTruthy();
+    expect(raidBadge.className).toContain('top-7');
+    expect(raidBadge.className).not.toContain('-top-1.5');
+
+    // レイドバッジとアタックボタンがそれぞれ独立してクリック可能
+    const attackBtn = screen.getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）');
+    expect(attackBtn).toBeTruthy();
+
+    fireEvent.click(raidBadge);
+    expect(handleOpenUnderCards).toHaveBeenCalledTimes(1);
+    expect(handleDirectAttack).not.toHaveBeenCalled();
+
+    fireEvent.click(attackBtn);
+    expect(handleDirectAttack).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders MARK badge (amber) instead of RAID badge when card only has markers (even if card has RAID trigger)', () => {
+    const handleOpenUnderCards = vi.fn();
+
+    // 素出しされたレイドカードにマーカーが置かれた状況
+    const cardWithMarkerOnly = {
+      ...dummyCard,
+      triggers: ['RAID' as const],
+      underCards: [{ ...dummyCard, id: 'marker-1', isMarker: true }],
+    };
+
+    render(
+      <CardView
+        card={cardWithMarkerOnly}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent={false}
+        onOpenUnderCards={handleOpenUnderCards}
+      />
+    );
+
+    const markBadge = screen.getByTitle('クリックで下敷きカード（マーカー）を確認・操作');
+    expect(markBadge).toBeTruthy();
+    expect(markBadge.textContent).toContain('MARK');
+    expect(markBadge.textContent).not.toContain('RAID');
+    expect(markBadge.className).toContain('bg-amber-600');
+    expect(markBadge.className).not.toContain('bg-purple-600');
+  });
+
+  it('renders both RAID and MARK info when card has both raid base and marker', () => {
+    const handleOpenUnderCards = vi.fn();
+
+    const cardWithBoth = {
+      ...dummyCard,
+      triggers: ['RAID' as const],
+      underCards: [
+        { ...dummyCard, id: 'base-1', isMarker: false },
+        { ...dummyCard, id: 'marker-1', isMarker: true },
+      ],
+    };
+
+    render(
+      <CardView
+        card={cardWithBoth}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent={false}
+        onOpenUnderCards={handleOpenUnderCards}
+      />
+    );
+
+    const badge = screen.getByTitle('クリックで下敷きカード（レイド元・マーカー）を確認・操作');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent).toContain('RAID');
+    expect(badge.textContent).toContain('1');
+    expect(badge.textContent).toContain('MARK');
+  });
+
+  it('does not render REST badge when card is rested (rotation is the only visual indicator)', () => {
+    const restedCard = {
+      ...dummyCard,
+      isRested: true,
+      rarity: 'R' as const,
+    };
+
+    render(
+      <CardView
+        card={restedCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent={false}
+      />
+    );
+
+    // RESTバッジは存在しない（横向き回転で視覚的にレストと分かる）
+    expect(screen.queryByText('REST')).toBeNull();
+  });
 });

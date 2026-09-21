@@ -204,10 +204,10 @@ export const UnderCardsModal: React.FC<UnderCardsModalProps> = ({
                     >
                       <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mb-0.5">
                         <span>下敷き #{index + 1}</span>
-                        {card.isFaceDown ? (
+                        {card.isMarker ? (
                           <span className="text-[9px] bg-amber-950/90 text-amber-300 px-1 rounded border border-amber-500/40 flex items-center gap-0.5">
-                            <Eye className="w-2.5 h-2.5" />
-                            マーカー(裏)
+                            {card.isFaceDown && <Eye className="w-2.5 h-2.5" />}
+                            マーカー({card.isFaceDown ? '裏' : '表'})
                           </span>
                         ) : (
                           <span className="text-[9px] bg-purple-950/80 text-purple-300 px-1 rounded border border-purple-500/40">

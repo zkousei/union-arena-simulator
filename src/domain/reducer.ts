@@ -652,6 +652,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         newTopCard.underCards = underCards;
         newTopCard.isRested = hostCard.isRested; // 状態（レスト/アクティブ）を引き継ぐ
         newTopCard.isFrozen = hostCard.isFrozen;
+        newTopCard.isMarker = undefined;
 
         if (zone === 'frontLine') {
           player.frontLine[slotIndex] = newTopCard;
@@ -773,6 +774,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
           hostCard.underCards.push({
             ...resetCardState(markerCard),
             isFaceDown,
+            isMarker: true,
           });
           appendLog(
             draft,
@@ -976,7 +978,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         );
         if (!removedRaidCard) return;
 
-        const cleanTargetCard: Card = { ...targetCard, underCards: [] };
+        const cleanTargetCard: Card = { ...targetCard, underCards: [], isMarker: false };
         // 下敷きカードのすべての要素も確実に underCards: [] にフラット化
         const flattenedExistingUnders = (targetCard.underCards || []).map((c) => ({
           ...c,

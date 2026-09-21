@@ -42,6 +42,7 @@ export interface Card {
   underCards: Card[];     // レイド元などの下に重ねられたカード群
   isFaceDown?: boolean;   // 裏向き状態
   isFrozen?: boolean;     // フリーズ状態（次のターンアクティブにならない）
+  isMarker?: boolean;     // 下敷きカードがマーカーであるか（false/undefinedはレイド元）
 }
 
 /**

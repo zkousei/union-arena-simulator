@@ -140,7 +140,10 @@ export const CardView: React.FC<CardViewProps> = ({
   const currentBp = (effectiveBp ?? 0) + card.bpModifier;
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
   const underCount = card.underCards?.length ?? 0;
-  const isRaid = underCount > 0 && !!card.underCards?.[0];
+  const raidBaseCount = card.underCards?.filter((c) => !c.isMarker).length ?? 0;
+  const markerCount = card.underCards?.filter((c) => !!c.isMarker).length ?? 0;
+  const hasRaid = raidBaseCount > 0;
+  const hasMarker = markerCount > 0;
   const secondUnderCard = underCount >= 2 ? card.underCards?.[underCount - 2] : null;
   const firstUnderCard = underCount >= 1 ? card.underCards?.[underCount - 1] : null;
   const colorClass = COLOR_BORDER_MAP[card.color] || COLOR_BORDER_MAP.COLORLESS;
@@ -189,12 +192,12 @@ export const CardView: React.FC<CardViewProps> = ({
         {/* レイド / マーカーの重なり視覚効果 (underCards > 0 の時、背後にずらして立体表示) */}
         {underCount >= 2 && (
           <div
-            className={`absolute inset-0 rounded-lg border-2 shadow-md pointer-events-none transition-all duration-200 translate-x-2 translate-y-2 group-hover/card:translate-x-3.5 group-hover/card:translate-y-3.5 ${
+            className={`absolute inset-0 rounded-lg border-2 shadow-md pointer-events-none transition-all duration-200 translate-x-2 translate-y-2 group-hover/card:translate-x-3.5 group-hover/card:translate-x-3.5 ${
               secondUnderCard?.isFaceDown
                 ? 'border-slate-700 bg-slate-950/95 shadow-black/80'
-                : isRaid
-                ? 'border-purple-500/80 bg-purple-950/95 shadow-purple-950/80'
-                : 'border-amber-500/80 bg-amber-950/95 shadow-amber-950/80'
+                : secondUnderCard?.isMarker
+                ? 'border-amber-500/80 bg-amber-950/95 shadow-amber-950/80'
+                : 'border-purple-500/80 bg-purple-950/95 shadow-purple-950/80'
             }`}
             style={{ zIndex: 0 }}
           >
@@ -210,9 +213,9 @@ export const CardView: React.FC<CardViewProps> = ({
             className={`absolute inset-0 rounded-lg border-2 shadow-md pointer-events-none transition-all duration-200 translate-x-1 translate-y-1 group-hover/card:translate-x-2 group-hover/card:translate-y-2 ${
               firstUnderCard?.isFaceDown
                 ? 'border-slate-700 bg-slate-950/90 shadow-black/70'
-                : isRaid
-                ? 'border-purple-400 bg-purple-900/90 shadow-purple-900/70'
-                : 'border-amber-400 bg-amber-900/90 shadow-amber-900/70'
+                : firstUnderCard?.isMarker
+                ? 'border-amber-400 bg-amber-900/90 shadow-amber-900/70'
+                : 'border-purple-400 bg-purple-900/90 shadow-purple-900/70'
             }`}
             style={{ zIndex: 1 }}
           />
@@ -311,7 +314,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </>
           ) : null}
 
-          {/* レイド / マーカー 重ねバッジ */}
+          {/* レイド / マーカー 重ねバッジ (上部のクイック操作ボタンと重ならないよう左側中段に配置) */}
           {underCount > 0 && (
             <button
               type="button"
@@ -319,16 +322,38 @@ export const CardView: React.FC<CardViewProps> = ({
                 e.stopPropagation();
                 if (onOpenUnderCards) onOpenUnderCards();
               }}
-              title={`クリックで下敷きカード（${isRaid ? 'レイド元' : 'マーカー'}）を確認・操作`}
-              className={`absolute -top-1.5 -left-1.5 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-lg border z-30 cursor-pointer transition-transform hover:scale-110 flex items-center gap-0.5 ${
-                isRaid
+              title={`クリックで下敷きカード（${
+                hasRaid && hasMarker ? 'レイド元・マーカー' : hasRaid ? 'レイド元' : 'マーカー'
+              }）を確認・操作`}
+              className={`absolute ${
+                isCompact ? 'top-6 left-0.5 text-[8px] px-1 py-0.2' : 'top-7 left-1 text-[9px] px-1.5 py-0.5'
+              } text-white font-black rounded-full shadow-lg border z-30 cursor-pointer transition-transform hover:scale-110 flex items-center gap-0.5 ${
+                hasRaid && !hasMarker
                   ? 'bg-purple-600 hover:bg-purple-500 border-purple-200 shadow-purple-900/50'
-                  : 'bg-amber-600 hover:bg-amber-500 border-amber-200 shadow-amber-900/50'
+                  : !hasRaid && hasMarker
+                  ? 'bg-amber-600 hover:bg-amber-500 border-amber-200 shadow-amber-900/50'
+                  : 'bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-500 hover:to-amber-500 border-purple-200 shadow-purple-900/50'
               }`}
             >
               <Layers className="w-2.5 h-2.5" />
-              <span>{isRaid ? 'RAID' : 'MARK'}</span>
-              <span className="bg-black/40 px-1 rounded-full text-[8px] font-extrabold">{underCount}</span>
+              {hasRaid && hasMarker ? (
+                <>
+                  <span>RAID</span>
+                  <span className="bg-black/40 px-1 rounded-full text-[8px] font-extrabold">{raidBaseCount}</span>
+                  <span>MARK</span>
+                  <span className="bg-black/40 px-1 rounded-full text-[8px] font-extrabold">{markerCount}</span>
+                </>
+              ) : hasRaid ? (
+                <>
+                  <span>RAID</span>
+                  <span className="bg-black/40 px-1 rounded-full text-[8px] font-extrabold">{raidBaseCount}</span>
+                </>
+              ) : (
+                <>
+                  <span>MARK</span>
+                  <span className="bg-black/40 px-1 rounded-full text-[8px] font-extrabold">{markerCount}</span>
+                </>
+              )}
             </button>
           )}
 
@@ -340,15 +365,8 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-        {/* レスト表示インジケータ */}
-        {card.isRested && (
-          <div className="absolute top-1 right-1 bg-amber-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow z-20 border border-amber-300">
-            REST
-          </div>
-        )}
-
         {/* レアリティバッジ (右肩) */}
-        {card.rarity && !card.isRested && (
+        {card.rarity && (
           <div className={`absolute top-1 right-1 text-[8px] sm:text-[9px] font-black px-1 py-0.5 rounded shadow z-20 border leading-none ${
             card.rarity.includes('★') || card.isParallel
               ? 'bg-amber-400 text-slate-950 border-amber-200 shadow-amber-400/50'

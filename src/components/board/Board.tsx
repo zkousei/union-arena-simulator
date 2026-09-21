@@ -432,20 +432,6 @@ export const Board: React.FC<BoardProps> = ({
     const handIndex = targetPlayer.hand.findIndex((c) => c.id === selectedHandCard.card.id);
     if (handIndex === -1) return;
 
-    if (selectedHandCard.card.cardType === 'EVENT') {
-      // イベントカードは使用時、場には出ずに場外へ
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: selectedHandCard.card.id,
-          from: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
-          to: { playerId: targetPlayerId, zone: 'graveyard' },
-        },
-      });
-      setSelectedHandCard(null);
-      return;
-    }
-
     if (existingCard) {
       setPendingRaidOrMarker({
         targetPlayerId,
@@ -454,6 +440,20 @@ export const Board: React.FC<BoardProps> = ({
         targetZone: zone,
         targetSlotIndex: slotIndex,
         fromLocation: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
+      });
+      setSelectedHandCard(null);
+      return;
+    }
+
+    if (selectedHandCard.card.cardType === 'EVENT') {
+      // イベントカードは空き枠への使用時、場には出ずに場外へ
+      dispatchAction({
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: selectedHandCard.card.id,
+          from: { playerId: targetPlayerId, zone: 'hand', index: handIndex },
+          to: { playerId: targetPlayerId, zone: 'graveyard' },
+        },
       });
       setSelectedHandCard(null);
       return;
@@ -610,8 +610,20 @@ export const Board: React.FC<BoardProps> = ({
       const card = targetPlayer.hand[handIndex];
       if (!card) return;
 
+      if (existingCard) {
+        setPendingRaidOrMarker({
+          targetPlayerId,
+          incomingCard: card,
+          existingCard,
+          targetZone,
+          targetSlotIndex: slotIndex,
+          fromLocation: from,
+        });
+        return;
+      }
+
       if (card.cardType === 'EVENT') {
-        // イベントカードは使用時、場には出ず直接場外へ
+        // イベントカードは空き枠へ使用時、場には出ず直接場外へ
         dispatchAction({
           type: 'MOVE_CARD',
           payload: {
@@ -627,18 +639,6 @@ export const Board: React.FC<BoardProps> = ({
         setAlertNotice({
           title: '配置不可',
           description: 'フィールドカードはエナジーラインにのみ配置できます。',
-        });
-        return;
-      }
-
-      if (existingCard) {
-        setPendingRaidOrMarker({
-          targetPlayerId,
-          incomingCard: card,
-          existingCard,
-          targetZone,
-          targetSlotIndex: slotIndex,
-          fromLocation: from,
         });
         return;
       } else {

@@ -321,6 +321,7 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(activeSlotCard?.isRested).toBe(false);
     expect(activeSlotCard?.underCards.length).toBe(1);
     expect(activeSlotCard?.underCards[0].name).toBe('Suzaku Kururugi');
+    expect(activeSlotCard?.underCards[0].isMarker).toBe(false);
   });
 
   it('should send triggered card to graveyard by default on dismiss (Ver 1.1 official rule)', () => {
@@ -846,6 +847,7 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].frontLine[0]?.underCards.length).toBe(1);
     expect(state.players['p1'].frontLine[0]?.underCards[0].name).toBe('Marker from Deck');
     expect(state.players['p1'].frontLine[0]?.underCards[0].isFaceDown).toBe(true);
+    expect(state.players['p1'].frontLine[0]?.underCards[0].isMarker).toBe(true);
 
     // 手札からマーカー追加
     state = gameReducer(state, {
@@ -861,6 +863,7 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].hand.length).toBe(0);
     expect(state.players['p1'].frontLine[0]?.underCards.length).toBe(2);
     expect(state.players['p1'].frontLine[0]?.underCards[1].name).toBe('Marker from Hand');
+    expect(state.players['p1'].frontLine[0]?.underCards[1].isMarker).toBe(true);
   });
 
   it('should toggle freeze and skip activation during SET_ALL_ACTIVE while unfreezing', () => {
