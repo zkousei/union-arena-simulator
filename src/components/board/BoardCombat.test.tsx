@@ -225,17 +225,15 @@ describe('Board Combat Flow and Block Interaction', () => {
     // Should resolve directly without block prompt
     expect(screen.queryByText('【ブロック選択】')).toBeNull();
 
-    // Attacker is rested and defender is retired
+    // Attacker attacks defender via ATTACK_CHARACTER action
     expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'TOGGLE_REST',
-      payload: { playerId: 'player-1', zone: 'frontLine', slotIndex: 0 },
-    });
-    expect(dispatchAction).toHaveBeenCalledWith({
-      type: 'MOVE_CARD',
+      type: 'ATTACK_CHARACTER',
       payload: {
-        cardId: 'def-1',
-        from: { playerId: 'player-2', zone: 'frontLine', slotIndex: 0 },
-        to: { playerId: 'player-2', zone: 'graveyard' },
+        actorPlayerId: 'player-1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        targetPlayerId: 'player-2',
+        targetSlotIndex: 0,
       },
     });
   });

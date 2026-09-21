@@ -191,6 +191,15 @@ export const HandArea: React.FC<HandAreaProps> = ({
             {title || (isOpponent ? '相手の手札' : '自分の手札')} ({cards.length}枚)
           </span>
 
+          {cards.length > 8 && (
+            <span
+              className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold rounded"
+              title="公式ルール: エンドフェイズ終了時に手札が8枚以下になるようリムーブエリア（除外）に置いてください"
+            >
+              ⚠️ 手札超過 ({cards.length}/8枚 - リムーブ要)
+            </span>
+          )}
+
           {canToggleHide && (
             <button
               onClick={() => setInternalIsOpen(false)}

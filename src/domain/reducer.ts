@@ -191,9 +191,72 @@ function appendLog(
 }
 
 /**
- * 公式ルール (Ver 1.1) 準拠ゲームリデューサー
+ * 補助関数: ゲーム状態に存在する全カードIDを高速に収集する（カード保存則検証用）
  */
-export function gameReducer(state: GameState, action: GameAction): GameState {
+function collectAllCardIds(state: GameState): string[] {
+  const ids: string[] = [];
+  const collect = (card: Card | null) => {
+    if (!card) return;
+    ids.push(card.id);
+    if (card.underCards && card.underCards.length > 0) {
+      card.underCards.forEach(collect);
+    }
+  };
+
+  const players = Object.values(state.players);
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    p.deck.forEach(collect);
+    p.hand.forEach(collect);
+    p.frontLine.forEach(collect);
+    p.energyLine.forEach(collect);
+    p.life.forEach(collect);
+    p.graveyard.forEach(collect);
+    p.removed.forEach(collect);
+    p.apArea.forEach(collect);
+  }
+
+  // isTrigger !== false の場合のみ、元のゾーンから切り離された実体カードとして集計（view の場合は元ゾーンに存在）
+  if (state.revealedCard?.card && state.revealedCard.isTrigger !== false) {
+    collect(state.revealedCard.card);
+  }
+  if (state.revealedDeckCards?.cards) {
+    state.revealedDeckCards.cards.forEach(collect);
+  }
+
+  return ids;
+}
+
+function areCardIdMultisetsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const countMap = new Map<string, number>();
+  for (let i = 0; i < a.length; i++) {
+    const id = a[i];
+    countMap.set(id, (countMap.get(id) || 0) + 1);
+  }
+  for (let i = 0; i < b.length; i++) {
+    const id = b[i];
+    const count = countMap.get(id);
+    if (!count) return false;
+    if (count === 1) {
+      countMap.delete(id);
+    } else {
+      countMap.set(id, count - 1);
+    }
+  }
+  return countMap.size === 0;
+}
+
+const CONSERVATION_EXEMPT_ACTIONS = new Set<string>([
+  'INIT_GAME',
+  'SETUP_GAME',
+  'SYNC_STATE',
+]);
+
+/**
+ * 内部ゲームリデューサー
+ */
+function internalGameReducer(state: GameState, action: GameAction): GameState {
   return produce(state, (draft) => {
     switch (action.type) {
       case 'INIT_GAME': {
@@ -399,7 +462,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           }
         }
 
-        if (isToField && !isFromField && sourceCard.cardType !== 'EVENT') {
+        if (isToField && sourceCard.cardType !== 'EVENT') {
           const toSlot = (to.slotIndex ?? 0) as FieldSlotIndex;
           const destinationCard =
             to.zone === 'frontLine' ? toPlayer.frontLine[toSlot] : toPlayer.energyLine[toSlot];
@@ -490,6 +553,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const underIndex = hostCard.underCards.findIndex((c) => c.id === underCardId);
         if (underIndex === -1) return;
 
+        const validDestinations = [
+          'hand',
+          'graveyard',
+          'removed',
+          'life',
+          'lifeFaceUp',
+          'deckTop',
+          'deckBottom',
+          'frontLine',
+          'energyLine',
+        ];
+        if (!validDestinations.includes(destination)) return;
+
         if (destination === 'frontLine' || destination === 'energyLine') {
           const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
           const targetIndex =
@@ -550,6 +626,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         const hostCard = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
         if (!hostCard || !hostCard.underCards || hostCard.underCards.length === 0) return;
+
+        const validDestinations = [
+          'hand',
+          'graveyard',
+          'removed',
+          'deckTop',
+          'deckBottom',
+          'life',
+          'lifeFaceUp',
+        ];
+        if (!validDestinations.includes(destination)) return;
 
         const underCards = [...hostCard.underCards];
         // 直下にあったカード（末尾の1枚）を新たなフィールド上のカードとして昇格させる
@@ -739,7 +826,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'REORDER_LIFE': {
         const { playerId, newLifeCards } = action.payload;
         const player = draft.players[playerId];
-        if (!player) return;
+        if (!player || !Array.isArray(newLifeCards) || newLifeCards.length !== player.life.length) return;
+
+        const currentIds = player.life.map((c) => c.id).sort();
+        const newIds = newLifeCards.map((c) => c.id).sort();
+        if (!currentIds.every((id, idx) => id === newIds[idx])) return;
 
         player.life = newLifeCards;
         appendLog(draft, `${player.name} がライフエリアのカード（${newLifeCards.length}枚）を並び替えました。`, playerId);
@@ -859,15 +950,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const targetCard = targetZone === 'frontLine' ? player.frontLine[targetSlotIndex] : player.energyLine[targetSlotIndex];
         if (!targetCard) return;
 
-        // レイド元から引っこ抜く
-        removeCardFromLocation(draft.players[fromLocation.playerId], fromLocation);
+        // レイド元から引っこ抜く（カード実在性・ID一致を保証）
+        const removedRaidCard = removeCardFromLocation(
+          draft.players[fromLocation.playerId],
+          fromLocation,
+          raidCard.id
+        );
+        if (!removedRaidCard) return;
 
         const cleanTargetCard: Card = { ...targetCard, underCards: [] };
+        // 下敷きカードのすべての要素も確実に underCards: [] にフラット化
+        const flattenedExistingUnders = (targetCard.underCards || []).map((c) => ({
+          ...c,
+          underCards: [],
+        }));
         // 公式ルール P12: 「レストの場合、アクティブにする」「エナジーLにある場合、フロントLへ移動できる」
         const newRaidCard: Card = {
           ...raidCard,
           isRested: false, // レイド登場時は強制アクティブ化！
-          underCards: [...(targetCard.underCards || []), cleanTargetCard],
+          underCards: [...flattenedExistingUnders, cleanTargetCard],
         };
 
         if (targetZone === 'energyLine' && moveToFront) {
@@ -927,7 +1028,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'CHECK_LIFE_TRIGGER': {
         const { playerId, lifeIndex } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.life.length === 0) return;
+        if (!player || player.life.length === 0 || draft.revealedCard) return;
 
         const idx = Math.min(Math.max(0, lifeIndex ?? 0), player.life.length - 1);
         const [selectedLife] = player.life.splice(idx, 1);
@@ -984,6 +1085,84 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           `⚔️【アタック宣言】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) が ${defenderPlayer.name} にアタックしました！相手はブロックするか選択してください。`,
           actorPlayerId
         );
+        break;
+      }
+
+      case 'ATTACK_CHARACTER': {
+        const {
+          actorPlayerId,
+          attackerZone,
+          attackerSlotIndex,
+          targetPlayerId,
+          targetSlotIndex,
+        } = action.payload;
+        const attackerPlayer = draft.players[actorPlayerId];
+        const targetPlayer = draft.players[targetPlayerId];
+        const attacker = attackerPlayer?.[attackerZone][attackerSlotIndex];
+        const defender = targetPlayer?.frontLine[targetSlotIndex];
+        if (
+          draft.pendingCombat ||
+          draft.status !== 'PLAYING' ||
+          draft.phase === 'END' ||
+          draft.activePlayerId !== actorPlayerId ||
+          actorPlayerId === targetPlayerId ||
+          !attackerPlayer ||
+          !targetPlayer ||
+          !attacker ||
+          !defender ||
+          attacker.isRested ||
+          (draft.turn === 1 && attackerPlayer.isFirst)
+        ) return;
+
+        attacker.isRested = true;
+        const attackerBp = (attacker.bp ?? 0) + attacker.bpModifier;
+        const defenderBp = (defender.bp ?? 0) + defender.bpModifier;
+        const battle = calculateBattleResult(attackerBp, defenderBp, attacker.name, defender.name);
+
+        appendLog(
+          draft,
+          `⚔️【狙い撃ち / バトル解決】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) VS ${targetPlayer.name}の「${defender.name}」(BP${defenderBp}) ➔ ${battle.logMessage}`,
+          actorPlayerId,
+          'action'
+        );
+
+        if (battle.shouldRetireDefender) {
+          const [retired] = targetPlayer.frontLine.splice(targetSlotIndex, 1, null);
+          if (retired) {
+            const underCards = retired.underCards || [];
+            targetPlayer.graveyard.push(resetCardState(retired));
+            underCards.forEach((underCard) => {
+              targetPlayer.graveyard.push(resetCardState(underCard));
+            });
+            if (underCards.length > 0) {
+              appendLog(
+                draft,
+                `「${retired.name}」の退場に伴い、下敷きのレイド元カード ${underCards.length} 枚（${underCards.map((c) => c.name).join(', ')}）が場外へ移動しました。`,
+                targetPlayerId,
+                'system'
+              );
+            }
+          }
+        }
+
+        if (battle.shouldRetireAttacker) {
+          const [retired] = attackerPlayer[attackerZone].splice(attackerSlotIndex, 1, null);
+          if (retired) {
+            const underCards = retired.underCards || [];
+            attackerPlayer.graveyard.push(resetCardState(retired));
+            underCards.forEach((underCard) => {
+              attackerPlayer.graveyard.push(resetCardState(underCard));
+            });
+            if (underCards.length > 0) {
+              appendLog(
+                draft,
+                `「${retired.name}」の退場に伴い、下敷きのレイド元カード ${underCards.length} 枚（${underCards.map((c) => c.name).join(', ')}）が場外へ移動しました。`,
+                actorPlayerId,
+                'system'
+              );
+            }
+          }
+        }
         break;
       }
 
@@ -1089,7 +1268,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           !combat ||
           combat.stage !== 'LIFE_SELECTION' ||
           action.payload.actorPlayerId !== combat.attackerPlayerId ||
-          !Number.isInteger(action.payload.lifeIndex)
+          !Number.isInteger(action.payload.lifeIndex) ||
+          draft.revealedCard
         ) return;
         const defender = draft.players[combat.defenderPlayerId];
         if (
@@ -1220,6 +1400,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
 
         appendLog(draft, `フェイズが「${phase}」に移行しました。`, draft.activePlayerId, 'phase');
+
+        // 公式ルール Ver 1.1 4.4.2: エンドフェイズ突入時、手札が9枚以上の場合は8枚になるよう選んでリムーブエリアに置く
+        if (phase === 'END') {
+          const activePlayer = draft.players[draft.activePlayerId];
+          if (activePlayer && activePlayer.hand.length > 8) {
+            const excess = activePlayer.hand.length - 8;
+            appendLog(
+              draft,
+              `⚠️【手札上限超過】${activePlayer.name} の手札は現在 ${activePlayer.hand.length} 枚です。公式ルール（手札上限8枚）に従い、手札から ${excess} 枚選んでリムーブエリア（除外）に置いてください。`,
+              draft.activePlayerId,
+              'system'
+            );
+          }
+        }
         break;
       }
 
@@ -1434,7 +1628,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } else if (destination === 'frontLine') {
           const emptyIndex = player.frontLine.findIndex((s) => s === null);
           const targetSlot = slotIndex !== undefined ? slotIndex : (emptyIndex >= 0 ? (emptyIndex as FieldSlotIndex) : null);
-          if (targetSlot !== null) {
+          if (targetSlot !== null && player.frontLine[targetSlot] === null) {
             player.frontLine[targetSlot] = { ...cleanCard, isRested: true };
             appendLog(draft, `${player.name} は山札から「${card.name}」をフロントL枠${targetSlot + 1}に登場させました。`, playerId);
           } else {
@@ -1444,7 +1638,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } else if (destination === 'energyLine') {
           const emptyIndex = player.energyLine.findIndex((s) => s === null);
           const targetSlot = slotIndex !== undefined ? slotIndex : (emptyIndex >= 0 ? (emptyIndex as FieldSlotIndex) : null);
-          if (targetSlot !== null) {
+          if (targetSlot !== null && player.energyLine[targetSlot] === null) {
             player.energyLine[targetSlot] = { ...cleanCard, isRested: true };
             appendLog(draft, `${player.name} は山札から「${card.name}」をエナジーL枠${targetSlot + 1}に登場させました。`, playerId);
           } else {
@@ -1490,4 +1684,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         break;
     }
   });
+}
+
+/**
+ * 公式ルール (Ver 1.1) 準拠ゲームリデューサー
+ * カード保存則の不変条件ガード（Invariant Guard）を備え、カードの消失・増殖を伴う不正な遷移を自動ロールバックします。
+ */
+export function gameReducer(state: GameState, action: GameAction): GameState {
+  const isGuarded = !CONSERVATION_EXEMPT_ACTIONS.has(action.type);
+  const beforeIds = isGuarded ? collectAllCardIds(state) : null;
+
+  const nextState = internalGameReducer(state, action);
+
+  if (beforeIds && beforeIds.length > 0 && nextState !== state) {
+    const afterIds = collectAllCardIds(nextState);
+    if (!areCardIdMultisetsEqual(beforeIds, afterIds)) {
+      console.error(
+        `[CRITICAL: Card Conservation Guard] Action "${action.type}" corrupted card conservation! Automatically rolled back.`,
+        { beforeCount: beforeIds.length, afterCount: afterIds.length }
+      );
+      return state;
+    }
+  }
+
+  return nextState;
 }

@@ -11,6 +11,7 @@ export interface AuthoritativeTransition {
 export function isActionRequestAllowed(senderId: string, action: GameAction): boolean {
   switch (action.type) {
     case 'DECLARE_PLAYER_ATTACK':
+    case 'ATTACK_CHARACTER':
     case 'PASS_BLOCK':
     case 'BLOCK_ATTACK':
     case 'CANCEL_PLAYER_ATTACK':

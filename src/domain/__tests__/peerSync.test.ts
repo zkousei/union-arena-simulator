@@ -134,5 +134,25 @@ describe('authoritative P2P synchronization', () => {
       type: 'PASS_TURN',
       payload: { playerId: 'p2' },
     })).toBe(true);
+    expect(isActionRequestAllowed('p2', {
+      type: 'ATTACK_CHARACTER',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        targetPlayerId: 'p2',
+        targetSlotIndex: 0,
+      },
+    })).toBe(false);
+    expect(isActionRequestAllowed('p2', {
+      type: 'ATTACK_CHARACTER',
+      payload: {
+        actorPlayerId: 'p2',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        targetPlayerId: 'p1',
+        targetSlotIndex: 0,
+      },
+    })).toBe(true);
   });
 });

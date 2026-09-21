@@ -1939,4 +1939,380 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players.p1.frontLine[0]?.underCards.length).toBe(1);
     expect(state.players.p1.frontLine[0]?.underCards[0].id).toBe('under-c');
   });
+
+  describe('ATTACK_CHARACTER (Snipe / Battle Resolution)', () => {
+    it('resolves character attack atomically, resting attacker and retiring losing defender with its underCards', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'MAIN';
+      state.turn = 2;
+
+      const attackerCard = createDummyCard('sniper-1', 'Sniper', 4000);
+      const defenderUnder = createDummyCard('def-under', 'Defender Under');
+      const defenderCard: Card = {
+        ...createDummyCard('defender-1', 'Defender', 2500),
+        underCards: [defenderUnder],
+      };
+
+      state.players.p1.frontLine[0] = attackerCard;
+      state.players.p2.frontLine[1] = defenderCard;
+
+      state = gameReducer(state, {
+        type: 'ATTACK_CHARACTER',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          targetPlayerId: 'p2',
+          targetSlotIndex: 1,
+        },
+      });
+
+      // アタッカーはレストになる
+      expect(state.players.p1.frontLine[0]?.isRested).toBe(true);
+      // ディフェンダーは退場し枠が空く
+      expect(state.players.p2.frontLine[1]).toBeNull();
+      // ディフェンダーとその下敷きがすべて墓地へ送られる
+      expect(state.players.p2.graveyard.map((c) => c.id)).toEqual(['defender-1', 'def-under']);
+    });
+
+    it('allows character attack from energyLine for special character abilities', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'MAIN';
+      state.turn = 2;
+
+      const energyAttacker = createDummyCard('energy-sniper', 'Energy Sniper', 5000);
+      const defenderCard = createDummyCard('def-target', 'Target', 3000);
+
+      state.players.p1.energyLine[2] = energyAttacker;
+      state.players.p2.frontLine[0] = defenderCard;
+
+      state = gameReducer(state, {
+        type: 'ATTACK_CHARACTER',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'energyLine',
+          attackerSlotIndex: 2,
+          targetPlayerId: 'p2',
+          targetSlotIndex: 0,
+        },
+      });
+
+      expect(state.players.p1.energyLine[2]?.isRested).toBe(true);
+      expect(state.players.p2.frontLine[0]).toBeNull();
+      expect(state.players.p2.graveyard.map((c) => c.id)).toEqual(['def-target']);
+    });
+
+    it('rejects attack when attacker is already rested or on turn 1 for first player', () => {
+      const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'MAIN';
+      state.turn = 1; // 先攻1ターン目
+      state.players.p1.isFirst = true;
+
+      const attackerCard = createDummyCard('attacker', 'Attacker', 4000);
+      const defenderCard = createDummyCard('defender', 'Defender', 3000);
+      state.players.p1.frontLine[0] = attackerCard;
+      state.players.p2.frontLine[0] = defenderCard;
+
+      const stateTurn1 = gameReducer(state, {
+        type: 'ATTACK_CHARACTER',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          targetPlayerId: 'p2',
+          targetSlotIndex: 0,
+        },
+      });
+
+      // 先攻1ターン目はアタック不可
+      expect(stateTurn1).toBe(state);
+      expect(state.players.p1.frontLine[0]?.isRested).toBe(false);
+
+      // ターン2でアタッカーがレスト済みの場合
+      const restedState = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      restedState.status = 'PLAYING';
+      restedState.phase = 'MAIN';
+      restedState.turn = 2;
+      restedState.players.p1.frontLine[0] = { ...attackerCard, isRested: true };
+      restedState.players.p2.frontLine[0] = defenderCard;
+
+      const stateRested = gameReducer(restedState, {
+        type: 'ATTACK_CHARACTER',
+        payload: {
+          actorPlayerId: 'p1',
+          attackerZone: 'frontLine',
+          attackerSlotIndex: 0,
+          targetPlayerId: 'p2',
+          targetSlotIndex: 0,
+        },
+      });
+      expect(stateRested).toBe(restedState);
+    });
+  });
+
+  describe('Card Preservation in Deck Operations', () => {
+    it('redirects card to hand instead of dropping it when RESOLVE_TOP_DECK_CARD field slot is full', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const topCard = createDummyCard('top-card', 'Top Deck Card');
+      state.revealedDeckCards = {
+        playerId: 'p1',
+        cards: [topCard],
+      };
+
+      // フロントライン枠をすべて埋める
+      state.players.p1.frontLine = [
+        createDummyCard('f1', 'F1'),
+        createDummyCard('f2', 'F2'),
+        createDummyCard('f3', 'F3'),
+        createDummyCard('f4', 'F4'),
+      ];
+
+      state = gameReducer(state, {
+        type: 'RESOLVE_TOP_DECK_CARD',
+        payload: {
+          playerId: 'p1',
+          cardId: 'top-card',
+          destination: 'frontLine',
+        },
+      });
+
+      // カードが消滅せず手札に退避される
+      expect(state.players.p1.hand.map((c) => c.id)).toContain('top-card');
+      expect(state.revealedDeckCards?.cards ?? []).toHaveLength(0);
+    });
+
+    it('does not overwrite existing card when SEARCH_DECK_CARD targets an occupied slot, and sends to hand', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const searchCard = createDummyCard('search-c', 'Search Card');
+      const existingCard = createDummyCard('existing-c', 'Existing Card');
+      state.players.p1.deck = [searchCard];
+      state.players.p1.frontLine[1] = existingCard;
+
+      state = gameReducer(state, {
+        type: 'SEARCH_DECK_CARD',
+        payload: {
+          playerId: 'p1',
+          cardId: 'search-c',
+          destination: 'frontLine',
+          slotIndex: 1, // すでに existingCard があるスロットを指定
+        },
+      });
+
+      // 既存のカードが上書きされずに残る
+      expect(state.players.p1.frontLine[1]?.id).toBe('existing-c');
+      // サーチしたカードは消滅せず手札に退避される
+      expect(state.players.p1.hand.map((c) => c.id)).toContain('search-c');
+    });
+  });
+
+  describe('End Phase Hand Limit Notification (Remove Area)', () => {
+    it('notifies player to send excess hand cards to removed area when hand > 8 on END phase', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      state.phase = 'MAIN';
+      state.activePlayerId = 'p1';
+
+      // 手札を10枚にする（上限8枚に対して2枚超過）
+      state.players.p1.hand = Array.from({ length: 10 }, (_, i) => createDummyCard(`h-${i}`, `Hand ${i}`));
+
+      state = gameReducer(state, {
+        type: 'SET_PHASE',
+        payload: { phase: 'END' },
+      });
+
+      const lastLog = state.logs[state.logs.length - 1];
+      expect(lastLog.message).toContain('手札上限');
+      expect(lastLog.message).toContain('リムーブエリア（除外）');
+      expect(lastLog.message).toContain('2 枚');
+    });
+  });
+
+  describe('Card Conservation and Overwrite Prevention Hardening', () => {
+    it('prevents field-to-field MOVE_CARD from overwriting existing card when swap conditions are not met', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const cardA = createDummyCard('card-a', 'Card A');
+      const cardB = createDummyCard('card-b', 'Card B');
+      state.players.p1.frontLine[0] = cardA;
+      state.players.p1.frontLine[1] = cardB;
+
+      // 不正なカードID（card-a のスロットなのに card-unknown を指定）
+      state = gameReducer(state, {
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: 'card-unknown',
+          from: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+          to: { playerId: 'p1', zone: 'frontLine', slotIndex: 1 },
+        },
+      });
+
+      // どちらのカードも上書きされず元の位置に残る
+      expect(state.players.p1.frontLine[0]?.id).toBe('card-a');
+      expect(state.players.p1.frontLine[1]?.id).toBe('card-b');
+    });
+
+    it('prevents RAID_CARD from consuming wrong hand card or duplicating if card is not in hand', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const baseCard = createDummyCard('base-1', 'Base Card');
+      const handCard = createDummyCard('hand-1', 'Hand Card');
+      const nonExistentRaidCard = createDummyCard('raid-ghost', 'Ghost Raid Card');
+
+      state.players.p1.frontLine[0] = baseCard;
+      state.players.p1.hand = [handCard];
+
+      // 手札の index 0 を指定しているが、渡された raidCard.id は手札に存在しない 'raid-ghost'
+      state = gameReducer(state, {
+        type: 'RAID_CARD',
+        payload: {
+          playerId: 'p1',
+          targetZone: 'frontLine',
+          targetSlotIndex: 0,
+          raidCard: nonExistentRaidCard,
+          fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+        },
+      });
+
+      // 手札のカードは削除されず残る
+      expect(state.players.p1.hand).toHaveLength(1);
+      expect(state.players.p1.hand[0].id).toBe('hand-1');
+      // フィールドのカードもレイドされず元のまま
+      expect(state.players.p1.frontLine[0]?.id).toBe('base-1');
+      expect(state.players.p1.frontLine[0]?.underCards ?? []).toHaveLength(0);
+    });
+
+    it('prevents CHECK_LIFE_TRIGGER and SELECT_LIFE_FOR_DAMAGE from overwriting pending revealedCard', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const life1 = createDummyCard('life-1', 'Life 1');
+      const life2 = createDummyCard('life-2', 'Life 2');
+      state.players.p1.life = [life1, life2];
+
+      // 1回目のトリガーチェック
+      state = gameReducer(state, {
+        type: 'CHECK_LIFE_TRIGGER',
+        payload: { playerId: 'p1', lifeIndex: 0 },
+      });
+      expect(state.revealedCard?.card.id).toBe('life-1');
+      expect(state.players.p1.life).toHaveLength(1);
+
+      // 解決前に2回目のトリガーチェックを実行しようとする
+      state = gameReducer(state, {
+        type: 'CHECK_LIFE_TRIGGER',
+        payload: { playerId: 'p1', lifeIndex: 0 },
+      });
+
+      // 前の revealedCard が上書きされず残る
+      expect(state.revealedCard?.card.id).toBe('life-1');
+      // 残りのライフも勝手に削られない
+      expect(state.players.p1.life).toHaveLength(1);
+    });
+
+    it('rejects REORDER_LIFE when card count or IDs do not match existing life cards', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const life1 = createDummyCard('life-1', 'Life 1');
+      const life2 = createDummyCard('life-2', 'Life 2');
+      state.players.p1.life = [life1, life2];
+
+      // 枚数が不足している不正な配列
+      state = gameReducer(state, {
+        type: 'REORDER_LIFE',
+        payload: {
+          playerId: 'p1',
+          newLifeCards: [life1],
+        },
+      });
+      // ライフは変更されず2枚のまま
+      expect(state.players.p1.life).toHaveLength(2);
+
+      // 存在しないカードIDが含まれる不正な配列
+      state = gameReducer(state, {
+        type: 'REORDER_LIFE',
+        payload: {
+          playerId: 'p1',
+          newLifeCards: [life1, createDummyCard('fake', 'Fake')],
+        },
+      });
+      // ライフは変更されず元のまま
+      expect(state.players.p1.life.map((c) => c.id)).toEqual(['life-1', 'life-2']);
+
+      // 正当な順列での並び替えは成功する
+      state = gameReducer(state, {
+        type: 'REORDER_LIFE',
+        payload: {
+          playerId: 'p1',
+          newLifeCards: [life2, life1],
+        },
+      });
+      expect(state.players.p1.life.map((c) => c.id)).toEqual(['life-2', 'life-1']);
+    });
+
+    it('rejects SEPARATE_UNDER_CARD and SEPARATE_PARENT_CARD with invalid destination without losing cards', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      const parent = createDummyCard('p-1', 'Parent Card');
+      const under = createDummyCard('u-1', 'Under Card');
+      parent.underCards = [under];
+      state.players.p1.frontLine[0] = parent;
+
+      // 無効な destination での下敷き分離試行
+      state = gameReducer(state, {
+        type: 'SEPARATE_UNDER_CARD',
+        payload: {
+          playerId: 'p1',
+          zone: 'frontLine',
+          slotIndex: 0,
+          underCardId: 'u-1',
+          destination: 'invalid_destination' as unknown as 'hand',
+        },
+      });
+
+      // カードが抜き出されず残る
+      expect(state.players.p1.frontLine[0]?.underCards).toHaveLength(1);
+      expect(state.players.p1.frontLine[0]?.underCards?.[0].id).toBe('u-1');
+
+      // 無効な destination での親分離試行
+      state = gameReducer(state, {
+        type: 'SEPARATE_PARENT_CARD',
+        payload: {
+          playerId: 'p1',
+          zone: 'frontLine',
+          slotIndex: 0,
+          destination: 'invalid_destination' as unknown as 'hand',
+        },
+      });
+
+      // 親カードもそのまま残り消滅しない
+      expect(state.players.p1.frontLine[0]?.id).toBe('p-1');
+      expect(state.players.p1.frontLine[0]?.underCards).toHaveLength(1);
+    });
+
+    it('preserves complete card count across valid operations and would roll back any conservation corruptions', () => {
+      let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state = gameReducer(state, {
+        type: 'SETUP_GAME',
+        payload: {
+          playerId: 'p1',
+          deckCards: Array.from({ length: 50 }, (_, i) => createDummyCard(`p1-c-${i}`, `Card ${i}`)),
+          apCards: [],
+        },
+      });
+
+      const totalBefore = state.players.p1.hand.length + state.players.p1.deck.length;
+      expect(totalBefore).toBe(50);
+
+      // 通常アクションの正常実行
+      const handCardId = state.players.p1.hand[0].id;
+      state = gameReducer(state, {
+        type: 'MOVE_CARD',
+        payload: {
+          cardId: handCardId,
+          from: { playerId: 'p1', zone: 'hand', index: 0 },
+          to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+        },
+      });
+
+      expect(state.players.p1.hand.length + state.players.p1.deck.length + 1).toBe(50);
+      expect(state.players.p1.energyLine[0]?.id).toBe(handCardId);
+    });
+  });
 });

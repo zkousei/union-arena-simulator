@@ -15,15 +15,7 @@ import { LifeSelectModal } from '../modals/LifeSelectModal';
 import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
 import { ConfirmModal } from '../modals/ConfirmModal';
-import { calculateBattleResult } from '../../domain/battle';
-import { CARD_DATABASE } from '../../data/cardDatabase';
 import { Shield, ShieldAlert, X, Zap } from 'lucide-react';
-
-const getCardBaseBp = (card: Card): number => {
-  if (card.bp !== null && card.bp !== undefined) return card.bp;
-  const master = CARD_DATABASE.find((c) => c.code === card.code);
-  return master?.bp ?? 0;
-};
 
 interface BoardProps {
   gameState: GameState;
@@ -383,57 +375,16 @@ export const Board: React.FC<BoardProps> = ({
     const { attackerPlayerId, zone, slotIndex } = attackingState;
     if (attackerPlayerId === targetPlayerId) return;
 
-    const attackerPlayer = gameState.players[attackerPlayerId];
-    const targetPlayer = gameState.players[targetPlayerId];
-    if (!attackerPlayer || !targetPlayer) return;
-
-    const attacker = attackerPlayer[zone][slotIndex];
-    const defender = targetPlayer.frontLine[oppSlotIndex];
-    if (!attacker || !defender) return;
-
-    // アタッカーをレストに
     dispatchAction({
-      type: 'TOGGLE_REST',
-      payload: { playerId: attackerPlayerId, zone, slotIndex },
-    });
-
-    const attackerBp = getCardBaseBp(attacker) + attacker.bpModifier;
-    const defenderBp = getCardBaseBp(defender) + defender.bpModifier;
-
-    // 公式ルール P12: アタッカーBP vs ディフェンダーBP の勝敗計算
-    const battle = calculateBattleResult(attackerBp, defenderBp, attacker.name, defender.name);
-
-    dispatchAction({
-      type: 'ADD_LOG',
+      type: 'ATTACK_CHARACTER',
       payload: {
-        message: `⚔️【狙い撃ち / バトル解決】${attackerPlayer.name}の「${attacker.name}」(BP${attackerBp}) VS ${targetPlayer.name}の「${defender.name}」(BP${defenderBp}) ➔ ${battle.logMessage}`,
-        playerId: attackerPlayerId,
-        type: 'action',
+        actorPlayerId: attackerPlayerId,
+        attackerZone: zone,
+        attackerSlotIndex: slotIndex,
+        targetPlayerId,
+        targetSlotIndex: oppSlotIndex,
       },
     });
-
-    // 敗者退場処理 (相打ち時は両者退場、返り討ち時はアタッカー退場)
-    if (battle.shouldRetireDefender) {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: defender.id,
-          from: { playerId: targetPlayerId, zone: 'frontLine', slotIndex: oppSlotIndex },
-          to: { playerId: targetPlayerId, zone: 'graveyard' },
-        },
-      });
-    }
-
-    if (battle.shouldRetireAttacker) {
-      dispatchAction({
-        type: 'MOVE_CARD',
-        payload: {
-          cardId: attacker.id,
-          from: { playerId: attackerPlayerId, zone, slotIndex },
-          to: { playerId: attackerPlayerId, zone: 'graveyard' },
-        },
-      });
-    }
 
     setAttackingState(null);
   };

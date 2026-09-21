@@ -44,6 +44,9 @@ function collectOwnedCards(state: GameState): Card[] {
     player.apArea.forEach(addCard);
   });
   state.revealedDeckCards?.cards.forEach(addCard);
+  if (state.revealedCard?.card && state.revealedCard.isTrigger !== false) {
+    addCard(state.revealedCard.card);
+  }
 
   return cards;
 }

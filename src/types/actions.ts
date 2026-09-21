@@ -228,6 +228,16 @@ export type GameAction =
       };
     }
   | {
+      type: 'ATTACK_CHARACTER';
+      payload: {
+        actorPlayerId: string;
+        attackerZone: 'frontLine' | 'energyLine';
+        attackerSlotIndex: FieldSlotIndex;
+        targetPlayerId: string;
+        targetSlotIndex: FieldSlotIndex;
+      };
+    }
+  | {
       type: 'PASS_BLOCK';
       payload: {
         actorPlayerId: string;
