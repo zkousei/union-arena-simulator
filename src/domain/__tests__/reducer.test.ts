@@ -1724,4 +1724,219 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(afterPhaseRequest).toBe(state);
     expect(afterPhaseRequest.phase).toBe('ATTACK');
   });
+
+  it('keeps frozen cards rested and clears isFrozen on SET_PHASE (END) and PASS_TURN', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'MAIN';
+    state.activePlayerId = 'p1';
+
+    const frozenCard = { ...createDummyCard('f-1', 'Frozen Card'), isRested: true, isFrozen: true };
+    const normalRestedCard = { ...createDummyCard('n-1', 'Normal Card'), isRested: true, isFrozen: false };
+    state.players.p1.frontLine[0] = frozenCard;
+    state.players.p1.frontLine[1] = normalRestedCard;
+
+    const p2FrozenCard = { ...createDummyCard('p2-f', 'P2 Frozen Card'), isRested: true, isFrozen: true };
+    const p2NormalCard = { ...createDummyCard('p2-n', 'P2 Normal Card'), isRested: true, isFrozen: false };
+    state.players.p2.frontLine[0] = p2FrozenCard;
+    state.players.p2.frontLine[1] = p2NormalCard;
+
+    // 1. SET_PHASE ('END')
+    state = gameReducer(state, {
+      type: 'SET_PHASE',
+      payload: { phase: 'END' },
+    });
+
+    // フリーズカードは起き上がらず、isFrozen のみ false になる
+    expect(state.players.p1.frontLine[0]?.isRested).toBe(true);
+    expect(state.players.p1.frontLine[0]?.isFrozen).toBe(false);
+    // 通常カードは起き上がる
+    expect(state.players.p1.frontLine[1]?.isRested).toBe(false);
+
+    // 2. PASS_TURN: 次プレイヤーにターンが渡る際、次プレイヤーのフリーズカードも同様に起き上がらない
+    state = gameReducer(state, {
+      type: 'PASS_TURN',
+      payload: { playerId: 'p1' },
+    });
+
+    expect(state.activePlayerId).toBe('p2');
+    expect(state.players.p2.frontLine[0]?.isRested).toBe(true);
+    expect(state.players.p2.frontLine[0]?.isFrozen).toBe(false);
+    expect(state.players.p2.frontLine[1]?.isRested).toBe(false);
+  });
+
+  it('sends all underCards to graveyard when a raid card is retired during BLOCK_ATTACK', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+
+    const attackerCard = createDummyCard('att-1', 'Attacker', 5000);
+    const blockerUnder1 = createDummyCard('under-1', 'Under Card 1');
+    const blockerUnder2 = createDummyCard('under-2', 'Under Card 2');
+    const blockerRaidCard: Card = {
+      ...createDummyCard('raid-blocker', 'Raid Blocker', 3000),
+      underCards: [blockerUnder1, blockerUnder2],
+    };
+
+    state.players.p1.frontLine[0] = attackerCard;
+    state.players.p2.frontLine[0] = blockerRaidCard;
+
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    state = gameReducer(state, {
+      type: 'BLOCK_ATTACK',
+      payload: { actorPlayerId: 'p2', blockerSlotIndex: 0 },
+    });
+
+    expect(state.players.p2.frontLine[0]).toBeNull();
+    // 親カードおよび下敷き2枚の合計3枚が墓地に送られる
+    expect(state.players.p2.graveyard.map((c) => c.id)).toEqual(['raid-blocker', 'under-1', 'under-2']);
+  });
+
+  it('keeps both attacker and blocker on field when blocker has higher BP, and does not retire underCards', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.status = 'PLAYING';
+    state.phase = 'ATTACK';
+    state.turn = 2;
+
+    const attackerUnder = createDummyCard('att-under', 'Attacker Under');
+    const attackerRaid: Card = {
+      ...createDummyCard('att-raid', 'Attacker Raid', 2000),
+      underCards: [attackerUnder],
+    };
+    const strongBlocker = createDummyCard('strong-blocker', 'Strong Blocker', 4000);
+
+    state.players.p1.frontLine[0] = attackerRaid;
+    state.players.p2.frontLine[0] = strongBlocker;
+
+    state = gameReducer(state, {
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'p1',
+        attackerZone: 'frontLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'p2',
+      },
+    });
+
+    state = gameReducer(state, {
+      type: 'BLOCK_ATTACK',
+      payload: { actorPlayerId: 'p2', blockerSlotIndex: 0 },
+    });
+
+    // 公式ルール: アタッカーBP < ディフェンダーBP の場合、両者生存
+    expect(state.players.p1.frontLine[0]?.id).toBe('att-raid');
+    expect(state.players.p1.frontLine[0]?.underCards.length).toBe(1);
+    expect(state.players.p2.frontLine[0]?.id).toBe('strong-blocker');
+    expect(state.players.p1.graveyard).toHaveLength(0);
+    expect(state.players.p2.graveyard).toHaveLength(0);
+  });
+
+  it('sends underCards to fromPlayer graveyard when card leaves field in MOVE_CARD', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const under = createDummyCard('under-card', 'Under Card');
+    const raidCard: Card = {
+      ...createDummyCard('raid-card', 'Raid Card'),
+      underCards: [under],
+    };
+
+    state.players.p1.frontLine[0] = raidCard;
+
+    // p1 のフロントラインから p2 の手札（または相手の領域）等に移動させた場合でも、underCards は p1 の墓地に行く
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: 'raid-card',
+        from: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 },
+        to: { playerId: 'p2', zone: 'hand' },
+      },
+    });
+
+    expect(state.players.p1.frontLine[0]).toBeNull();
+    expect(state.players.p1.graveyard.map((c) => c.id)).toContain('under-card');
+    expect(state.players.p2.graveyard).toHaveLength(0);
+  });
+
+  it('flattens underCards when performing consecutive raids on the same character', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const base = createDummyCard('base', 'Base Card');
+    const raid1: Card = { ...createDummyCard('raid-1', 'Raid 1'), underCards: [] };
+    const raid2: Card = { ...createDummyCard('raid-2', 'Raid 2'), underCards: [] };
+
+    state.players.p1.frontLine[0] = base;
+    state.players.p1.hand = [raid1, raid2];
+
+    // 1回目のレイド
+    state = gameReducer(state, {
+      type: 'RAID_CARD',
+      payload: {
+        playerId: 'p1',
+        fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+        raidCard: raid1,
+        targetZone: 'frontLine',
+        targetSlotIndex: 0,
+      },
+    });
+
+    // 2回目のレイド (raid-1 の上に raid-2)
+    state = gameReducer(state, {
+      type: 'RAID_CARD',
+      payload: {
+        playerId: 'p1',
+        fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+        raidCard: raid2,
+        targetZone: 'frontLine',
+        targetSlotIndex: 0,
+      },
+    });
+
+    const top = state.players.p1.frontLine[0];
+    expect(top?.id).toBe('raid-2');
+    expect(top?.underCards.length).toBe(2);
+    expect(top?.underCards[0].id).toBe('base');
+    expect(top?.underCards[1].id).toBe('raid-1');
+    // underCardsの要素自体がネストしたunderCardsを持っていないこと
+    expect(top?.underCards[1].underCards).toEqual([]);
+  });
+
+  it('does not lose card if SEPARATE_UNDER_CARD destination field has no empty slot', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const under = createDummyCard('under-c', 'Under Card');
+    const host: Card = {
+      ...createDummyCard('host', 'Host Card'),
+      underCards: [under],
+    };
+
+    // フロントラインの枠をすべて埋める
+    state.players.p1.frontLine = [
+      host,
+      createDummyCard('f-1', 'Card 1'),
+      createDummyCard('f-2', 'Card 2'),
+      createDummyCard('f-3', 'Card 3'),
+    ];
+
+    state = gameReducer(state, {
+      type: 'SEPARATE_UNDER_CARD',
+      payload: {
+        playerId: 'p1',
+        zone: 'frontLine',
+        slotIndex: 0,
+        underCardId: 'under-c',
+        destination: 'frontLine',
+      },
+    });
+
+    // 空き枠がないため、underCardsから取り出されずに保持される
+    expect(state.players.p1.frontLine[0]?.underCards.length).toBe(1);
+    expect(state.players.p1.frontLine[0]?.underCards[0].id).toBe('under-c');
+  });
 });

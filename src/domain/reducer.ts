@@ -64,6 +64,21 @@ function cardLogLabel(card: Card, disclose: boolean): string {
 }
 
 /**
+ * 補助関数: カードのアクティブ化（フリーズ状態を考慮）
+ * フリーズ状態の場合、アクティブ化されずにフリーズのみ解除される
+ * @returns フリーズ状態によりアクティブ化が阻止されフリーズが解除された場合は true
+ */
+function activateCard(card: Card | null): boolean {
+  if (!card) return false;
+  if (card.isFrozen) {
+    card.isFrozen = false;
+    return true;
+  }
+  card.isRested = false;
+  return false;
+}
+
+/**
  * 補助関数: プレイヤーの特定ゾーンからカードを取り出す
  */
 function removeCardFromLocation(player: PlayerState, loc: CardLocation, cardId?: string): Card | null {
@@ -424,7 +439,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // 公式ルール P12: レイドキャラがフィールドを離れる時、下敷きのレイド元カードはすべて場外へ送る
         if (isLeavingField && underCards.length > 0) {
           underCards.forEach((underCard) => {
-            toPlayer.graveyard.push(resetCardState(underCard));
+            fromPlayer.graveyard.push(resetCardState(underCard));
           });
           appendLog(
             draft,
@@ -474,6 +489,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         const underIndex = hostCard.underCards.findIndex((c) => c.id === underCardId);
         if (underIndex === -1) return;
+
+        if (destination === 'frontLine' || destination === 'energyLine') {
+          const targetSlots = destination === 'frontLine' ? player.frontLine : player.energyLine;
+          const targetIndex =
+            destSlotIndex !== undefined ? destSlotIndex : targetSlots.findIndex((c) => c === null);
+          if (targetIndex === -1 || targetSlots[targetIndex] !== null) return;
+        }
 
         const [separated] = hostCard.underCards.splice(underIndex, 1);
         const restored = resetCardState(separated);
@@ -611,30 +633,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (!player) return;
 
         player.frontLine.forEach((card) => {
-          if (card) {
-            if (card.isFrozen) {
-              card.isFrozen = false; // フリーズ解除されるが、アクティブにはならない
-              appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
-            } else {
-              card.isRested = false;
-            }
+          if (card && activateCard(card)) {
+            appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
           }
         });
         player.energyLine.forEach((card) => {
-          if (card) {
-            if (card.isFrozen) {
-              card.isFrozen = false;
-              appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
-            } else {
-              card.isRested = false;
-            }
+          if (card && activateCard(card)) {
+            appendLog(draft, `「${card.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
           }
         });
         player.apArea.forEach((card) => {
           card.isRested = false;
         });
 
-        appendLog(draft, `${player.name} が自陣のすべてのカードをアクティブにしました。`, playerId);
+        appendLog(
+          draft,
+          `🔄【リロール】${player.name} が自陣のカード・APをアクティブにしました。`,
+          playerId
+        );
         break;
       }
 
@@ -846,11 +862,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // レイド元から引っこ抜く
         removeCardFromLocation(draft.players[fromLocation.playerId], fromLocation);
 
+        const cleanTargetCard: Card = { ...targetCard, underCards: [] };
         // 公式ルール P12: 「レストの場合、アクティブにする」「エナジーLにある場合、フロントLへ移動できる」
         const newRaidCard: Card = {
           ...raidCard,
           isRested: false, // レイド登場時は強制アクティブ化！
-          underCards: [...(targetCard.underCards || []), targetCard],
+          underCards: [...(targetCard.underCards || []), cleanTargetCard],
         };
 
         if (targetZone === 'energyLine' && moveToFront) {
@@ -1018,11 +1035,39 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         );
         if (battle.shouldRetireDefender) {
           const [retired] = blockerPlayer.frontLine.splice(action.payload.blockerSlotIndex, 1, null);
-          if (retired) blockerPlayer.graveyard.push(resetCardState(retired));
+          if (retired) {
+            const underCards = retired.underCards || [];
+            blockerPlayer.graveyard.push(resetCardState(retired));
+            underCards.forEach((underCard) => {
+              blockerPlayer.graveyard.push(resetCardState(underCard));
+            });
+            if (underCards.length > 0) {
+              appendLog(
+                draft,
+                `「${retired.name}」の退場に伴い、下敷きのレイド元カード ${underCards.length} 枚（${underCards.map((c) => c.name).join(', ')}）が場外へ移動しました。`,
+                combat.defenderPlayerId,
+                'system'
+              );
+            }
+          }
         }
         if (battle.shouldRetireAttacker) {
           const [retired] = attackerPlayer[combat.attackerZone].splice(combat.attackerSlotIndex, 1, null);
-          if (retired) attackerPlayer.graveyard.push(resetCardState(retired));
+          if (retired) {
+            const underCards = retired.underCards || [];
+            attackerPlayer.graveyard.push(resetCardState(retired));
+            underCards.forEach((underCard) => {
+              attackerPlayer.graveyard.push(resetCardState(underCard));
+            });
+            if (underCards.length > 0) {
+              appendLog(
+                draft,
+                `「${retired.name}」の退場に伴い、下敷きのレイド元カード ${underCards.length} 枚（${underCards.map((c) => c.name).join(', ')}）が場外へ移動しました。`,
+                combat.attackerPlayerId,
+                'system'
+              );
+            }
+          }
         }
         draft.pendingCombat = null;
         break;
@@ -1157,13 +1202,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           if (activePlayer) {
             activePlayer.frontLine.forEach((c) => {
               if (c) {
-                c.isRested = false;
+                if (activateCard(c)) {
+                  appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, draft.activePlayerId, 'system');
+                }
                 c.bpModifier = 0;
               }
             });
             activePlayer.energyLine.forEach((c) => {
               if (c) {
-                c.isRested = false;
+                if (activateCard(c)) {
+                  appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, draft.activePlayerId, 'system');
+                }
                 c.bpModifier = 0;
               }
             });
@@ -1187,13 +1236,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (prevPlayer) {
           prevPlayer.frontLine.forEach((c) => {
             if (c) {
-              c.isRested = false;
+              if (activateCard(c)) {
+                appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
+              }
               c.bpModifier = 0;
             }
           });
           prevPlayer.energyLine.forEach((c) => {
             if (c) {
-              c.isRested = false;
+              if (activateCard(c)) {
+                appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, playerId, 'system');
+              }
               c.bpModifier = 0;
             }
           });
@@ -1218,8 +1271,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           nextPlayer.hasExtraDrawn = false;
 
           // リロール: 全カードアクティブ化
-          nextPlayer.frontLine.forEach((c) => { if (c) c.isRested = false; });
-          nextPlayer.energyLine.forEach((c) => { if (c) c.isRested = false; });
+          nextPlayer.frontLine.forEach((c) => {
+            if (c && activateCard(c)) {
+              appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, nextPlayerId, 'system');
+            }
+          });
+          nextPlayer.energyLine.forEach((c) => {
+            if (c && activateCard(c)) {
+              appendLog(draft, `「${c.name}」はフリーズ状態のためアクティブになりませんでした（フリーズ解除）。`, nextPlayerId, 'system');
+            }
+          });
           nextPlayer.apArea.forEach((c) => { c.isRested = false; });
 
           // 公式ルール P10: スタートフェイズのドロー（※先攻の1ターン目はドローなし）
