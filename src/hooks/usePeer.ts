@@ -57,6 +57,7 @@ export function usePeer(): UsePeerReturn {
   const startGuestConnectionRef = useRef<
     ((roomId: string, isReconnect: boolean) => Promise<void>) | null
   >(null);
+  const pendingOperationRejectRef = useRef<((reason: Error) => void) | null>(null);
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -66,6 +67,10 @@ export function usePeer(): UsePeerReturn {
   }, []);
 
   const disposeTransport = useCallback(() => {
+    const rejectPending = pendingOperationRejectRef.current;
+    pendingOperationRejectRef.current = null;
+    rejectPending?.(new Error('接続処理が中断されました。'));
+
     const connection = connRef.current;
     connRef.current = null;
     connection?.close();
@@ -191,13 +196,18 @@ export function usePeer(): UsePeerReturn {
         const resolveOnce = () => {
           if (settled) return;
           settled = true;
+          clearTimeout(peerOpenTimeout);
+          pendingOperationRejectRef.current = null;
           resolve();
         };
         const rejectOnce = (reason: Error) => {
           if (settled) return;
           settled = true;
+          clearTimeout(peerOpenTimeout);
+          pendingOperationRejectRef.current = null;
           reject(reason);
         };
+        pendingOperationRejectRef.current = rejectOnce;
 
         const peer = createPeerClient();
         peerRef.current = peer;
@@ -257,26 +267,39 @@ export function usePeer(): UsePeerReturn {
 
       return new Promise((resolve, reject) => {
         let settled = false;
+        const resolveOnce = (id: string) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(peerOpenTimeout);
+          pendingOperationRejectRef.current = null;
+          resolve(id);
+        };
+        const rejectOnce = (reason: Error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(peerOpenTimeout);
+          pendingOperationRejectRef.current = null;
+          reject(reason);
+        };
+        pendingOperationRejectRef.current = rejectOnce;
+
         const peer = createPeerClient();
         peerRef.current = peer;
         const peerOpenTimeout = setTimeout(() => {
           if (peerRef.current !== peer || settled) return;
-          settled = true;
           const timeoutError = new Error('ルーム作成がタイムアウトしました。');
           setError(timeoutError.message);
           setStatus('error');
-          reject(timeoutError);
+          rejectOnce(timeoutError);
         }, CONNECTION_TIMEOUT_MS);
 
         peer.on('open', (id) => {
           if (peerRef.current !== peer) return;
-          clearTimeout(peerOpenTimeout);
-          settled = true;
           setPeerId(id);
           roomIdRef.current = id;
           setLastRoomId(id);
           setStatus('waiting');
-          resolve(id);
+          resolveOnce(id);
         });
 
         peer.on('connection', (connection) => {
@@ -293,13 +316,9 @@ export function usePeer(): UsePeerReturn {
 
         peer.on('error', (peerError) => {
           if (peerRef.current !== peer) return;
-          clearTimeout(peerOpenTimeout);
           setError(`Peerエラー: ${peerError.type} - ${peerError.message}`);
           setStatus('error');
-          if (!settled) {
-            settled = true;
-            reject(peerError);
-          }
+          rejectOnce(peerError);
         });
       });
     },

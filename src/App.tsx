@@ -54,6 +54,7 @@ interface AppNavigationProps {
   onOpenPeerModal: () => void;
   peer: ReturnType<typeof useGame>['peer'];
   isHost: boolean;
+  isHosting?: boolean;
   currentRoomId: string | null;
   activePlayerId?: string;
   activePlayerName?: string;
@@ -69,6 +70,7 @@ function AppNavigation({
   onOpenPeerModal,
   peer,
   isHost,
+  isHosting = false,
   currentRoomId,
   activePlayerId,
   activePlayerName,
@@ -246,18 +248,23 @@ function AppNavigation({
               {/* 2. 部屋作成 (Host) */}
               <button
                 type="button"
+                disabled={isHosting}
                 onClick={async () => {
                   setIsPlayMenuOpen(false);
                   await onHostGame();
                 }}
-                className="w-full p-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-700/40 text-left transition flex items-center gap-2.5 text-xs text-emerald-200 font-bold group"
+                className="w-full p-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-700/40 text-left transition flex items-center gap-2.5 text-xs text-emerald-200 font-bold group disabled:opacity-60"
               >
                 <div className="p-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
-                  <Radio className="w-3.5 h-3.5" />
+                  {isHosting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
                 </div>
                 <div>
-                  <div className="text-white">🌐 部屋を作成 (Host)</div>
-                  <div className="text-[10px] text-slate-400 font-normal">URLを友達に送って通信対戦</div>
+                  <div className="text-white">
+                    {isHosting ? '🌐 部屋を作成中...' : '🌐 部屋を作成 (Host)'}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-normal">
+                    {isHosting ? '接続を確立しています...' : 'URLを友達に送って通信対戦'}
+                  </div>
                 </div>
               </button>
 
@@ -310,23 +317,32 @@ function AppNavigation({
                   <span className="hidden xl:inline">切断</span>
                 </button>
               </div>
-            ) : currentRoomId && isHost ? (
-              /* P2P ホスト待機中 */
+            ) : isHost ? (
+              /* P2P ホスト */
               <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/50 border border-amber-700/50 text-amber-300 text-[11px] font-semibold animate-pulse">
-                  <Radio className="w-3 h-3" />
-                  <span className="hidden xl:inline">
-                    {peer.status === 'reconnecting' ? '再接続待機中' : '相手待機中'}
-                  </span>
-                </div>
-                <button
-                  onClick={handleCopyInviteUrl}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold shadow transition"
-                  title="友達への招待リンクをコピー"
-                >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span className="hidden xl:inline">{copied ? 'コピー済' : 'URL招待'}</span>
-                </button>
+                {currentRoomId ? (
+                  <>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/50 border border-amber-700/50 text-amber-300 text-[11px] font-semibold animate-pulse">
+                      <Radio className="w-3 h-3" />
+                      <span className="hidden xl:inline">
+                        {peer.status === 'reconnecting' ? '再接続待機中' : '相手待機中'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleCopyInviteUrl}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold shadow transition"
+                      title="友達への招待リンクをコピー"
+                    >
+                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span className="hidden xl:inline">{copied ? 'コピー済' : 'URL招待'}</span>
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/50 border border-emerald-700/50 text-emerald-300 text-[11px] font-semibold animate-pulse">
+                    <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                    <span className="hidden xl:inline">部屋を作成中...</span>
+                  </div>
+                )}
               </div>
             ) : peer.role === 'guest' ? (
               <button
@@ -402,9 +418,10 @@ interface GameViewProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   onOpenPeerModal: () => void;
+  isHosting?: boolean;
 }
 
-function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameViewProps) {
+function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHosting = false }: GameViewProps) {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
   const hostParam = searchParams.get('host');
@@ -427,19 +444,30 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
 
   const navigate = useNavigate();
   const [isLogCollapsed, setIsLogCollapsed] = useState(
-    () => window.matchMedia('(max-width: 1023px)').matches
+    () =>
+      typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(max-width: 1023px)').matches
+        : false
   );
   const [isDeckPickerOpen, setIsDeckPickerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isFitMode, setIsFitMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('ua_fit_mode');
-    return saved !== null ? saved === 'true' : true;
+    try {
+      const saved = localStorage.getItem('ua_fit_mode');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
   });
 
   const handleToggleFitMode = () => {
     setIsFitMode((prev) => {
       const next = !prev;
-      localStorage.setItem('ua_fit_mode', String(next));
+      try {
+        localStorage.setItem('ua_fit_mode', String(next));
+      } catch {
+        // ignore storage errors
+      }
       return next;
     });
   };
@@ -453,14 +481,14 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
 
   // URLにホスト用roomがあるがPeer未作成の場合、作成を試行
   useEffect(() => {
-    if (isHost && peer.status === 'disconnected' && !peer.peerId && !peer.error) {
+    if (isHost && !isHosting && peer.status === 'disconnected' && !peer.peerId && !peer.error) {
       void createRoom().catch(() => undefined);
     }
-  }, [isHost, peer.status, peer.peerId, peer.error, createRoom]);
+  }, [isHost, isHosting, peer.status, peer.peerId, peer.error, createRoom]);
 
-  // mode=solo の場合でPeerが繋がっていれば切断
+  // mode=solo の場合でPeerが繋がっていれば切断（接続試行中は切断しない）
   useEffect(() => {
-    if (mode === 'solo' && peer.role !== null) {
+    if (mode === 'solo' && peer.role !== null && peer.status !== 'connecting') {
       peer.disconnect();
     }
   }, [mode, peer]);
@@ -711,10 +739,16 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal }: GameVi
           <div className="w-full max-w-md rounded-2xl border border-amber-600/50 bg-slate-900 p-5 text-center shadow-2xl">
             <RefreshCw className="mx-auto mb-3 h-8 w-8 animate-spin text-amber-400" />
             <h2 className="text-base font-bold text-white">
-              {isSynchronizing ? '盤面を再同期しています' : '対戦相手との接続を復旧しています'}
+              {isSynchronizing
+                ? '盤面を再同期しています'
+                : peer.role === 'host' && peer.status === 'connecting'
+                  ? '対戦部屋を作成しています'
+                  : '対戦相手との接続を復旧しています'}
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
-              同期が完了するまでゲーム操作を一時停止します。画面を閉じずにお待ちください。
+              {peer.role === 'host' && peer.status === 'connecting'
+                ? 'シグナリングサーバーと接続しています。しばらくお待ちください。'
+                : '同期が完了するまでゲーム操作を一時停止します。画面を閉じずにお待ちください。'}
             </p>
             {(peer.error || syncError) && (
               <p className="mt-3 rounded-lg border border-rose-800/60 bg-rose-950/50 p-2 text-xs text-rose-300">
@@ -792,16 +826,27 @@ export function App() {
     }
   }, [location, navigate]);
 
+  const [isHosting, setIsHosting] = useState(false);
+
   // ルーム作成（ホスト）
   const handleHostGame = useCallback(async () => {
+    if (peer.role === 'host' && peer.peerId) {
+      navigate(`/game?host=true&room=${encodeURIComponent(peer.peerId)}`);
+      return;
+    }
+
     try {
+      setIsHosting(true);
+      navigate('/game?host=true');
       const roomId = await createRoom();
-      navigate(`/game?host=true&room=${encodeURIComponent(roomId)}`);
+      navigate(`/game?host=true&room=${encodeURIComponent(roomId)}`, { replace: true });
     } catch (err) {
       console.error('Failed to create room:', err);
       setIsPeerModalOpen(true);
+    } finally {
+      setIsHosting(false);
     }
-  }, [createRoom, navigate]);
+  }, [peer.role, peer.peerId, createRoom, navigate]);
 
   // ルーム参加（ゲスト）
   const handleJoinGame = useCallback((roomId: string) => {
@@ -810,8 +855,11 @@ export function App() {
 
   // ソロプレイ開始
   const handleSoloPlay = useCallback(() => {
+    if (peer.role !== null) {
+      peer.disconnect();
+    }
     navigate('/game?mode=solo');
-  }, [navigate]);
+  }, [peer, navigate]);
 
   // デッキ選択してゲーム開始
   const handlePlayWithCustomDeck = useCallback(
@@ -853,6 +901,7 @@ export function App() {
         onOpenPeerModal={() => setIsPeerModalOpen(true)}
         peer={peer}
         isHost={isHost}
+        isHosting={isHosting}
         currentRoomId={currentRoomId}
         activePlayerId={game.gameState.activePlayerId}
         activePlayerName={game.gameState.players[game.gameState.activePlayerId]?.name || (game.gameState.activePlayerId === 'player-1' ? 'Player 1' : 'Player 2')}
@@ -894,6 +943,7 @@ export function App() {
               soundEnabled={soundEnabled}
               onToggleSound={handleToggleSound}
               onOpenPeerModal={() => setIsPeerModalOpen(true)}
+              isHosting={isHosting}
             />
           }
         />

@@ -245,4 +245,19 @@ describe('usePeer connection lifecycle', () => {
     expect(result.current.status).toBe('connected');
     expect(result.current.error).toBeNull();
   });
+
+  it('rejects room creation if disconnected before the room opens', async () => {
+    const { result } = renderHook(() => usePeer());
+
+    let roomPromise!: Promise<string>;
+    act(() => {
+      roomPromise = result.current.createRoom(vi.fn());
+    });
+
+    act(() => {
+      result.current.disconnect();
+    });
+
+    await expect(roomPromise).rejects.toThrow();
+  });
 });
