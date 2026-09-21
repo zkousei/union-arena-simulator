@@ -29,9 +29,11 @@ export const RaidOrMarkerModal: React.FC<RaidOrMarkerModalProps> = ({
   if (!isOpen || !incomingCard || !existingCard) return null;
 
   const isRaid = !!(
-    incomingCard.triggers?.includes('RAID') ||
-    incomingCard.effectText?.includes('【レイド】') ||
-    incomingCard.effectText?.includes('[レイド]')
+    incomingCard.cardType === 'CHARACTER' &&
+    existingCard.cardType === 'CHARACTER' &&
+    (incomingCard.triggers?.includes('RAID') ||
+      incomingCard.effectText?.includes('【レイド】') ||
+      incomingCard.effectText?.includes('[レイド]'))
   );
 
   return (

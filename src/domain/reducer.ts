@@ -948,7 +948,7 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
       case 'MODIFY_BP': {
         const { playerId, zone, slotIndex, delta } = action.payload;
         const player = draft.players[playerId];
-        if (!player) return;
+        if (!player || !Number.isInteger(delta)) return;
 
         const card = zone === 'frontLine' ? player.frontLine[slotIndex] : player.energyLine[slotIndex];
         if (card) {
@@ -965,7 +965,8 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         if (!player) return;
 
         const targetCard = targetZone === 'frontLine' ? player.frontLine[targetSlotIndex] : player.energyLine[targetSlotIndex];
-        if (!targetCard) return;
+        // 公式ルール: レイドはキャラクターカードの上に重ねて登場させる（フィールドの上にレイド不可、フィールドやイベントのレイド不可）
+        if (!targetCard || targetCard.cardType !== 'CHARACTER' || raidCard.cardType !== 'CHARACTER') return;
 
         // レイド元から引っこ抜く（カード実在性・ID一致を保証）
         const removedRaidCard = removeCardFromLocation(
@@ -1012,26 +1013,59 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
       case 'DRAW_CARD': {
         const { playerId, count = 1 } = action.payload;
         const player = draft.players[playerId];
-        if (!player || !Number.isInteger(count) || count <= 0 || player.deck.length === 0) return;
+        if (!player || !Number.isInteger(count) || count <= 0) return;
+
+        if (player.deck.length === 0) {
+          appendLog(
+            draft,
+            `👑【山札0枚】${player.name} は山札が 0 枚のためカードを引けませんでした（公式ルール上は敗北条件を満たします）。※手動での山札回復・リセットが可能です。`,
+            playerId,
+            'system'
+          );
+          return;
+        }
 
         let drawnCount = 0;
+        let deckRanOut = false;
         for (let i = 0; i < count; i++) {
           if (player.deck.length > 0) {
             const card = player.deck.shift()!;
             player.hand.push(resetCardState(card));
             drawnCount++;
+          } else {
+            deckRanOut = true;
           }
         }
         player.revealedTopDeckCard = null;
 
-        appendLog(draft, `${player.name} が山札から ${drawnCount} 枚引きました（手札: ${player.hand.length}枚、山札: ${player.deck.length}枚）。`, playerId);
+        if (drawnCount > 0) {
+          appendLog(draft, `${player.name} が山札から ${drawnCount} 枚引きました（手札: ${player.hand.length}枚、山札: ${player.deck.length}枚）。`, playerId);
+        }
+        if (deckRanOut) {
+          appendLog(
+            draft,
+            `👑【山札0枚】${player.name} はドロー中に山札が 0 枚になり、指定された枚数を引ききれませんでした（公式ルール上は敗北条件を満たします）。※手動での山札回復・リセットが可能です。`,
+            playerId,
+            'system'
+          );
+        }
         break;
       }
 
       case 'EXTRA_DRAW': {
         const { playerId } = action.payload;
         const player = draft.players[playerId];
-        if (!player || player.apCurrent < 1 || player.hasExtraDrawn || player.deck.length === 0) return;
+        if (!player || player.apCurrent < 1 || player.hasExtraDrawn) return;
+
+        if (player.deck.length === 0) {
+          appendLog(
+            draft,
+            `👑【山札0枚】${player.name} は山札が 0 枚のためエクストラドローを行えませんでした（公式ルール上は敗北条件を満たします）。※手動での山札回復・リセットが可能です。`,
+            playerId,
+            'system'
+          );
+          return;
+        }
 
         player.apCurrent -= 1;
         player.hasExtraDrawn = true;
@@ -1443,14 +1477,14 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
 
         appendLog(draft, `フェイズが「${phase}」に移行しました。`, draft.activePlayerId, 'phase');
 
-        // 公式ルール Ver 1.1 4.4.2: エンドフェイズ突入時、手札が9枚以上の場合は8枚になるよう選んでリムーブエリアに置く
+        // 公式ルール Ver 1.1 8.5.1: エンドフェイズ突入時、手札が9枚以上の場合は8枚になるよう選んで場外に置く
         if (phase === 'END') {
           const activePlayer = draft.players[draft.activePlayerId];
           if (activePlayer && activePlayer.hand.length > 8) {
             const excess = activePlayer.hand.length - 8;
             appendLog(
               draft,
-              `⚠️【手札上限超過】${activePlayer.name} の手札は現在 ${activePlayer.hand.length} 枚です。公式ルール（手札上限8枚）に従い、手札から ${excess} 枚選んでリムーブエリア（除外）に置いてください。`,
+              `⚠️【手札上限超過】${activePlayer.name} の手札は現在 ${activePlayer.hand.length} 枚です。公式ルール（手札上限8枚）に従い、手札から ${excess} 枚選んで場外に置いてください。`,
               draft.activePlayerId,
               'system'
             );
@@ -1468,6 +1502,17 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         const nextPlayer = draft.players[nextPlayerId];
 
         // 公式ルール P13: エンドフェイズ処理（押し忘れ対応）
+        // 手札上限超過チェック（エンドフェイズ押し忘れ時にも通知）
+        if (prevPlayer && prevPlayer.hand.length > 8) {
+          const excess = prevPlayer.hand.length - 8;
+          appendLog(
+            draft,
+            `⚠️【手札上限超過】${prevPlayer.name} の手札は現在 ${prevPlayer.hand.length} 枚です。公式ルール（手札上限8枚）に従い、手札から ${excess} 枚選んで場外に置いてください。`,
+            playerId,
+            'system'
+          );
+        }
+
         // ターンを終えるプレイヤーの全カード（フロント・エナジー・AP）をすべてアクティブ化し、一時BP補正をリセット
         if (prevPlayer) {
           prevPlayer.frontLine.forEach((c) => {
@@ -1521,9 +1566,18 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
 
           // 公式ルール P10: スタートフェイズのドロー（※先攻の1ターン目はドローなし）
           const isFirstTurnForFirstPlayer = draft.turn === 1 && nextPlayer.isFirst;
-          if (!isFirstTurnForFirstPlayer && nextPlayer.deck.length > 0) {
-            const card = nextPlayer.deck.shift()!;
-            nextPlayer.hand.push(resetCardState(card));
+          if (!isFirstTurnForFirstPlayer) {
+            if (nextPlayer.deck.length > 0) {
+              const card = nextPlayer.deck.shift()!;
+              nextPlayer.hand.push(resetCardState(card));
+            } else {
+              appendLog(
+                draft,
+                `👑【山札0枚】${nextPlayer.name} は山札が 0 枚のためスタートフェイズのドローができませんでした（公式ルール上は敗北条件を満たします）。※手動での山札回復・リセットが可能です。`,
+                nextPlayerId,
+                'system'
+              );
+            }
           }
         }
 

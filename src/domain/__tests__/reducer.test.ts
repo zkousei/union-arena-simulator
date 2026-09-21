@@ -428,12 +428,15 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].apCurrent).toBe(2);
   });
 
-  it('should keep drawing from an empty deck as a safe no-op', () => {
+  it('should notify defeat condition when drawing from an empty deck without affecting hand or crashing', () => {
     const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
 
     const nextState = gameReducer(state, { type: 'DRAW_CARD', payload: { playerId: 'p1', count: 1 } });
 
-    expect(nextState).toBe(state);
+    expect(nextState.players.p1.hand).toHaveLength(0);
+    expect(nextState.players.p1.deck).toHaveLength(0);
+    expect(nextState.status).toBe('PREPARING');
+    expect(nextState.logs.some((l) => l.message.includes('【山札0枚】'))).toBe(true);
   });
 
   it('should reject passing a turn for a player who is not active', () => {
@@ -2109,8 +2112,8 @@ describe('gameReducer Official Rules Unit Tests', () => {
     });
   });
 
-  describe('End Phase Hand Limit Notification (Remove Area)', () => {
-    it('notifies player to send excess hand cards to removed area when hand > 8 on END phase', () => {
+  describe('End Phase Hand Limit Notification (Graveyard)', () => {
+    it('notifies player to send excess hand cards to graveyard when hand > 8 on END phase', () => {
       let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
       state.status = 'PLAYING';
       state.phase = 'MAIN';
@@ -2126,7 +2129,8 @@ describe('gameReducer Official Rules Unit Tests', () => {
 
       const lastLog = state.logs[state.logs.length - 1];
       expect(lastLog.message).toContain('手札上限');
-      expect(lastLog.message).toContain('リムーブエリア（除外）');
+      expect(lastLog.message).toContain('場外');
+      expect(lastLog.message).not.toContain('リムーブエリア');
       expect(lastLog.message).toContain('2 枚');
     });
   });
@@ -2558,6 +2562,54 @@ describe('gameReducer Official Rules Unit Tests', () => {
       expect(stateAfterSearchToFront.players.p1.hand.some((c) => c.id === 'field-in-deck')).toBe(true);
     });
 
+    it('rejects RAID_CARD when target is a FIELD card or raidCard is not a CHARACTER', () => {
+      const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state.status = 'PLAYING';
+      const fieldCard = { ...createDummyCard('field-target', 'フィールド'), cardType: 'FIELD' as const };
+      const raidCharacter = { ...createDummyCard('raid-char', 'レイドキャラ'), cardType: 'CHARACTER' as const, triggers: ['RAID' as const] };
+      const nonCharCard = { ...createDummyCard('field-raid', 'レイドフィールド'), cardType: 'FIELD' as const };
+
+      state.players.p1.energyLine[0] = fieldCard;
+      state.players.p1.hand = [raidCharacter, nonCharCard];
+
+      // フィールドカードの上にレイドしようとする -> 拒否 (no-op)
+      const stateAfterRaidOnField = gameReducer(state, {
+        type: 'RAID_CARD',
+        payload: {
+          playerId: 'p1',
+          targetZone: 'energyLine',
+          targetSlotIndex: 0,
+          raidCard: raidCharacter,
+          fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+          moveToFront: false,
+        },
+      });
+      expect(stateAfterRaidOnField).toBe(state);
+      expect(stateAfterRaidOnField.players.p1.energyLine[0]?.id).toBe('field-target');
+      expect(stateAfterRaidOnField.players.p1.hand).toHaveLength(2);
+
+      // キャラの上に非CHARACTERカード（FIELD）をレイドしようとする -> 拒否 (no-op)
+      const state2 = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+      state2.status = 'PLAYING';
+      const normalChar = createDummyCard('char-target', '対象キャラ');
+      state2.players.p1.energyLine[1] = normalChar;
+      state2.players.p1.hand = [nonCharCard];
+      const stateAfterNonCharRaid = gameReducer(state2, {
+        type: 'RAID_CARD',
+        payload: {
+          playerId: 'p1',
+          targetZone: 'energyLine',
+          targetSlotIndex: 1,
+          raidCard: nonCharCard,
+          fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+          moveToFront: false,
+        },
+      });
+      expect(stateAfterNonCharRaid).toBe(state2);
+      expect(stateAfterNonCharRaid.players.p1.energyLine[1]?.id).toBe('char-target');
+      expect(stateAfterNonCharRaid.players.p1.hand).toHaveLength(1);
+    });
+
     it('places searched card on top of life (unshift) instead of bottom in SEARCH_DECK_CARD', () => {
       let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
       state.status = 'PLAYING';
@@ -2579,6 +2631,92 @@ describe('gameReducer Official Rules Unit Tests', () => {
       // ライフトップ (インデックス 0) に置かれていること
       expect(state.players.p1.life[0].id).toBe('searched-card');
       expect(state.players.p1.life[1].id).toBe('existing-life');
+    });
+
+    describe('empty deck draw defeat notifications', () => {
+      it('logs defeat condition when DRAW_CARD is executed with 0 cards in deck without setting status to FINISHED', () => {
+        let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+        state.status = 'PLAYING';
+        state.players.p1.deck = [];
+
+        state = gameReducer(state, {
+          type: 'DRAW_CARD',
+          payload: { playerId: 'p1', count: 1 },
+        });
+
+        expect(state.status).toBe('PLAYING');
+        expect(state.logs.some((l) => l.message.includes('【山札0枚】') && l.message.includes('カードを引けませんでした'))).toBe(true);
+      });
+
+      it('logs defeat condition when DRAW_CARD runs out of cards midway without setting status to FINISHED', () => {
+        let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+        state.status = 'PLAYING';
+        state.players.p1.deck = [createDummyCard('card-1', 'カード1')];
+
+        state = gameReducer(state, {
+          type: 'DRAW_CARD',
+          payload: { playerId: 'p1', count: 2 },
+        });
+
+        expect(state.status).toBe('PLAYING');
+        expect(state.players.p1.hand).toHaveLength(1);
+        expect(state.logs.some((l) => l.message.includes('【山札0枚】') && l.message.includes('指定された枚数を引ききれませんでした'))).toBe(true);
+      });
+
+      it('logs defeat condition when EXTRA_DRAW is executed with 0 cards in deck and does not consume AP', () => {
+        let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+        state.status = 'PLAYING';
+        state.players.p1.apCurrent = 1;
+        state.players.p1.deck = [];
+
+        state = gameReducer(state, {
+          type: 'EXTRA_DRAW',
+          payload: { playerId: 'p1' },
+        });
+
+        expect(state.status).toBe('PLAYING');
+        expect(state.players.p1.apCurrent).toBe(1);
+        expect(state.players.p1.hasExtraDrawn).toBe(false);
+        expect(state.logs.some((l) => l.message.includes('【山札0枚】') && l.message.includes('エクストラドローを行えませんでした'))).toBe(true);
+      });
+
+      it('logs defeat condition on PASS_TURN start phase draw when next player has 0 cards in deck', () => {
+        let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+        state.status = 'PLAYING';
+        state.turn = 1; // p1 turn 1 (先攻)
+        state.activePlayerId = 'p1';
+        state.players.p2.deck = []; // p2 (後攻) の山札が0枚
+
+        state = gameReducer(state, {
+          type: 'PASS_TURN',
+          payload: { playerId: 'p1' },
+        });
+
+        // ターンがp2に移り (turn 2)、p2は後攻1ターン目なのでドローしようとして山札0枚通知が出る
+        expect(state.turn).toBe(2);
+        expect(state.activePlayerId).toBe('p2');
+        expect(state.status).toBe('PLAYING');
+        expect(state.logs.some((l) => l.message.includes('【山札0枚】') && l.message.includes('スタートフェイズのドローができませんでした'))).toBe(true);
+      });
+
+      it('does not log defeat condition on PASS_TURN for first player on turn 1 even if deck is 0', () => {
+        let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+        state.status = 'PLAYING';
+        state.turn = 0;
+        state.activePlayerId = 'p2';
+        state.players.p1.deck = []; // p1 (先攻) の山札が0枚
+
+        // 仮想的に turn 0 から p1 にターンを渡す場合（通常はターン1から始まるが先攻1ターン目ドローなしの検証）
+        state = gameReducer(state, {
+          type: 'PASS_TURN',
+          payload: { playerId: 'p2' },
+        });
+
+        // turn 1、p1 (先攻) はルール上ドローなしなので通知は出ない
+        expect(state.turn).toBe(1);
+        expect(state.activePlayerId).toBe('p1');
+        expect(state.logs.some((l) => l.message.includes('【山札0枚】'))).toBe(false);
+      });
     });
   });
 });
