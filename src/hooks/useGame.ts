@@ -9,6 +9,7 @@ import {
   isNewerSnapshot,
   isValidPeerStateSnapshot,
 } from '../domain/peerSync';
+import { saveHostSession } from '../domain/hostSessionStorage';
 import { usePeer } from './usePeer';
 import { sound } from '../utils/audio';
 
@@ -183,8 +184,12 @@ export function useGame() {
     if (networkRoleRef.current === 'host') {
       hostRevisionRef.current = transition.snapshot.revision;
       broadcastSnapshot(transition.snapshot);
+      const roomId = peer.lastRoomId || peer.peerId;
+      if (roomId) {
+        saveHostSession(roomId, transition.snapshot);
+      }
     }
-  }, [broadcastSnapshot, replaceState, triggerActionSound]);
+  }, [broadcastSnapshot, peer.lastRoomId, peer.peerId, replaceState, triggerActionSound]);
 
   const applyRemoteSnapshot = useCallback((snapshot: PeerStateSnapshot, recordHistory: boolean) => {
     if (!isNewerSnapshot(snapshot, lastAppliedRevisionRef.current)) return;
@@ -216,8 +221,30 @@ export function useGame() {
       };
       hostRevisionRef.current = snapshot.revision;
       broadcastSnapshot(snapshot);
+      const roomId = peer.lastRoomId || peer.peerId;
+      if (roomId) {
+        saveHostSession(roomId, snapshot);
+      }
     }
-  }, [broadcastSnapshot]);
+  }, [broadcastSnapshot, peer.lastRoomId, peer.peerId]);
+
+  const restoreHostSession = useCallback(
+    (snapshot: PeerStateSnapshot) => {
+      gameStateRef.current = snapshot.state;
+      setGameState(snapshot.state);
+      hostRevisionRef.current = snapshot.revision;
+      historyRef.current = [];
+      setHistory([]);
+      const roomId = peer.lastRoomId || peer.peerId;
+      if (roomId) {
+        saveHostSession(roomId, snapshot);
+      }
+      if (peerStatusRef.current === 'connected') {
+        broadcastSnapshot(snapshot);
+      }
+    },
+    [broadcastSnapshot, peer.lastRoomId, peer.peerId]
+  );
 
   const hasProcessedRequest = useCallback((msg: PeerMessage) => {
     if (!msg.requestId) return false;
@@ -286,14 +313,19 @@ export function useGame() {
   ]);
 
   // ホストとして部屋作成
-  const handleCreateRoom = useCallback(async () => {
-    networkRoleRef.current = 'host';
-    myPlayerIdRef.current = 'player-1';
-    hostRevisionRef.current = 0;
-    processedRequestIdsRef.current.clear();
-    setMyPlayerId('player-1');
-    return createRoom(handlePeerMessage);
-  }, [createRoom, handlePeerMessage]);
+  const handleCreateRoom = useCallback(
+    async (preferredRoomId?: string) => {
+      networkRoleRef.current = 'host';
+      myPlayerIdRef.current = 'player-1';
+      if (!preferredRoomId) {
+        hostRevisionRef.current = 0;
+      }
+      processedRequestIdsRef.current.clear();
+      setMyPlayerId('player-1');
+      return createRoom(handlePeerMessage, preferredRoomId);
+    },
+    [createRoom, handlePeerMessage]
+  );
 
   // ゲストとして部屋参加
   const handleJoinRoom = useCallback(async (roomId: string) => {
@@ -383,5 +415,6 @@ export function useGame() {
     peer,
     createRoom: handleCreateRoom,
     joinRoom: handleJoinRoom,
+    restoreHostSession,
   };
 }

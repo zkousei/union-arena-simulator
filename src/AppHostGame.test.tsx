@@ -24,6 +24,17 @@ beforeEach(() => {
     },
   });
 
+  const sessionStorageStore = new Map<string, string>();
+  Object.defineProperty(window, 'sessionStorage', {
+    writable: true,
+    value: {
+      getItem: vi.fn((key: string) => sessionStorageStore.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => sessionStorageStore.set(key, value)),
+      removeItem: vi.fn((key: string) => sessionStorageStore.delete(key)),
+      clear: vi.fn(() => sessionStorageStore.clear()),
+    },
+  });
+
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query) => ({
@@ -102,7 +113,7 @@ describe('App room creation from navigation', () => {
       lastRoomId: null as string | null,
       isHost: false,
       error: null as string | null,
-      createRoom: createRoomMock as any,
+      createRoom: createRoomMock as unknown as () => Promise<string>,
       joinRoom: vi.fn(),
       reconnect: vi.fn(),
       sendMessage: vi.fn(),
@@ -117,7 +128,7 @@ describe('App room creation from navigation', () => {
       updatePeerState?.();
       return 'mock-room-456';
     });
-    currentPeer.createRoom = createRoomMock as any;
+    currentPeer.createRoom = createRoomMock as unknown as () => Promise<string>;
 
     mockUseGame.mockImplementation(() => ({
       gameState: createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1'),
@@ -243,5 +254,136 @@ describe('App room creation from navigation', () => {
     );
 
     expect(screen.getByText('部屋を作成中...')).toBeTruthy();
+  });
+
+  it('prompts host with session restore modal on reload if saved session exists', async () => {
+    const restoreHostSessionMock = vi.fn();
+    const savedState = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
+    savedState.turn = 3;
+    savedState.phase = 'MAIN';
+
+    window.sessionStorage.setItem(
+      'ua:host-session:reload-room-99',
+      JSON.stringify({
+        roomId: 'reload-room-99',
+        savedAt: Date.now(),
+        snapshot: {
+          state: savedState,
+          revision: 5,
+        },
+      })
+    );
+
+    mockUseGame.mockImplementation(() => ({
+      gameState: createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1'),
+      myPlayerId: 'player-1',
+      setMyPlayerId: vi.fn(),
+      dispatchAction: vi.fn(),
+      undo: vi.fn(),
+      canUndo: false,
+      isSynchronizing: false,
+      isInteractionLocked: false,
+      syncError: null,
+      retrySynchronization: vi.fn(),
+      peer: {
+        peerId: null,
+        remotePeerId: null,
+        status: 'disconnected',
+        role: 'host',
+        lastRoomId: null,
+        isHost: true,
+        error: null,
+        createRoom: createRoomMock,
+        joinRoom: vi.fn(),
+        reconnect: vi.fn(),
+        sendMessage: vi.fn(),
+        disconnect: disconnectMock,
+      },
+      createRoom: createRoomMock,
+      joinRoom: vi.fn(),
+      restoreHostSession: restoreHostSessionMock,
+    }));
+
+    render(
+      <MemoryRouter initialEntries={['/game?host=true&room=reload-room-99']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('対戦セッションの復元')).toBeTruthy();
+    expect(screen.getByText(/第 3 ターン/)).toBeTruthy();
+
+    const resumeBtn = screen.getByRole('button', { name: '復元して再開' });
+    fireEvent.click(resumeBtn);
+
+    expect(restoreHostSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        revision: 5,
+        state: expect.objectContaining({ turn: 3, phase: 'MAIN' }),
+      })
+    );
+  });
+
+  it('discards the saved session when host clicks discard', async () => {
+    const restoreHostSessionMock = vi.fn();
+    const savedState = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
+    savedState.turn = 2;
+
+    window.sessionStorage.setItem(
+      'ua:host-session:discard-room',
+      JSON.stringify({
+        roomId: 'discard-room',
+        savedAt: Date.now(),
+        snapshot: {
+          state: savedState,
+          revision: 2,
+        },
+      })
+    );
+
+    mockUseGame.mockImplementation(() => ({
+      gameState: createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1'),
+      myPlayerId: 'player-1',
+      setMyPlayerId: vi.fn(),
+      dispatchAction: vi.fn(),
+      undo: vi.fn(),
+      canUndo: false,
+      isSynchronizing: false,
+      isInteractionLocked: false,
+      syncError: null,
+      retrySynchronization: vi.fn(),
+      peer: {
+        peerId: null,
+        remotePeerId: null,
+        status: 'disconnected',
+        role: 'host',
+        lastRoomId: null,
+        isHost: true,
+        error: null,
+        createRoom: createRoomMock,
+        joinRoom: vi.fn(),
+        reconnect: vi.fn(),
+        sendMessage: vi.fn(),
+        disconnect: disconnectMock,
+      },
+      createRoom: createRoomMock,
+      joinRoom: vi.fn(),
+      restoreHostSession: restoreHostSessionMock,
+    }));
+
+    render(
+      <MemoryRouter initialEntries={['/game?host=true&room=discard-room']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('対戦セッションの復元')).toBeTruthy();
+
+    const discardBtn = screen.getByRole('button', { name: '破棄して最初から' });
+    fireEvent.click(discardBtn);
+
+    expect(restoreHostSessionMock).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('ua:host-session:discard-room')).toBeNull();
+    expect(screen.queryByText('対戦セッションの復元')).toBeNull();
   });
 });

@@ -6,21 +6,23 @@ const RECONNECT_DELAY_MS = 1_000;
 const CONNECTION_TIMEOUT_MS = 10_000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
-function createPeerClient(): Peer {
+function createPeerClient(id?: string): Peer {
   const host = import.meta.env.VITE_PEER_HOST;
 
   if (!host) {
-    return new Peer({ debug: 1 });
+    return id ? new Peer(id, { debug: 1 }) : new Peer({ debug: 1 });
   }
 
-  return new Peer({
+  const options = {
     host,
     port: Number(import.meta.env.VITE_PEER_PORT || 9000),
     path: import.meta.env.VITE_PEER_PATH || '/',
     key: import.meta.env.VITE_PEER_KEY || 'peerjs',
     secure: import.meta.env.VITE_PEER_SECURE === 'true',
     debug: 1,
-  });
+  };
+
+  return id ? new Peer(id, options) : new Peer(options);
 }
 
 export interface UsePeerReturn {
@@ -31,7 +33,7 @@ export interface UsePeerReturn {
   lastRoomId: string | null;
   isHost: boolean;
   error: string | null;
-  createRoom: (onMessage: (msg: PeerMessage) => void) => Promise<string>;
+  createRoom: (onMessage: (msg: PeerMessage) => void, preferredRoomId?: string) => Promise<string>;
   joinRoom: (roomId: string, onMessage: (msg: PeerMessage) => void) => Promise<void>;
   reconnect: () => Promise<void>;
   sendMessage: (msg: PeerMessage) => boolean;
@@ -252,7 +254,7 @@ export function usePeer(): UsePeerReturn {
   }, [startGuestConnection]);
 
   const createRoom = useCallback(
-    async (onMessage: (msg: PeerMessage) => void): Promise<string> => {
+    async (onMessage: (msg: PeerMessage) => void, preferredRoomId?: string): Promise<string> => {
       clearReconnectTimer();
       disposeTransport();
       manualDisconnectRef.current = false;
@@ -283,7 +285,7 @@ export function usePeer(): UsePeerReturn {
         };
         pendingOperationRejectRef.current = rejectOnce;
 
-        const peer = createPeerClient();
+        const peer = createPeerClient(preferredRoomId);
         peerRef.current = peer;
         const peerOpenTimeout = setTimeout(() => {
           if (peerRef.current !== peer || settled) return;

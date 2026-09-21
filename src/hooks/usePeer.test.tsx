@@ -42,9 +42,13 @@ const peerModuleMock = vi.hoisted(() => {
     destroyed = false;
     disconnected = false;
     connections: FakeConnection[] = [];
+    id?: string;
     private handlers = new Map<string, EventHandler[]>();
 
-    constructor() {
+    constructor(...args: unknown[]) {
+      if (typeof args[0] === 'string') {
+        this.id = args[0];
+      }
       FakePeer.instances.push(this);
     }
 
@@ -259,5 +263,23 @@ describe('usePeer connection lifecycle', () => {
     });
 
     await expect(roomPromise).rejects.toThrow();
+  });
+
+  it('allows a host to create a room with a preferred room id upon session resumption', async () => {
+    const { result } = renderHook(() => usePeer());
+
+    let roomPromise!: Promise<string>;
+    act(() => {
+      roomPromise = result.current.createRoom(vi.fn(), 'restored-room-id');
+    });
+
+    const peer = FakePeer.instances[0];
+    expect(peer.id).toBe('restored-room-id');
+
+    act(() => peer.emit('open', 'restored-room-id'));
+
+    await expect(roomPromise).resolves.toBe('restored-room-id');
+    expect(result.current.peerId).toBe('restored-room-id');
+    expect(result.current.lastRoomId).toBe('restored-room-id');
   });
 });

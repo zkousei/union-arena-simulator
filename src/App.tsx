@@ -5,8 +5,10 @@ import { ActionToolbar } from './components/controls/ActionToolbar';
 import { PreGameBar } from './components/controls/PreGameBar';
 import { GameLog } from './components/log/GameLog';
 import { PeerModal } from './components/peer/PeerModal';
+import { RestoreSessionModal } from './components/modals/RestoreSessionModal';
 import { HomePage } from './pages/Home';
 import type { UserDeck } from './domain/deckValidation';
+import { loadSavedHostSession, clearHostSession, type SavedHostSession } from './domain/hostSessionStorage';
 import {
   Swords,
   Layers,
@@ -131,6 +133,9 @@ function AppNavigation({
   };
 
   const handleDisconnect = () => {
+    if (currentRoomId) {
+      clearHostSession(currentRoomId);
+    }
     peer.disconnect();
     navigate('/game?mode=solo', { replace: true });
   };
@@ -435,12 +440,39 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
     peer,
     createRoom,
     joinRoom,
+    restoreHostSession,
     isSynchronizing,
     isInteractionLocked,
     syncError,
     retrySynchronization,
   } = game;
   const isHost = hostParam === 'true' || peer.role === 'host';
+
+  const [savedSessionCandidate, setSavedSessionCandidate] = useState<SavedHostSession | null>(null);
+  const checkedRoomRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isHost && roomParam && checkedRoomRef.current !== roomParam) {
+      checkedRoomRef.current = roomParam;
+      const saved = loadSavedHostSession(roomParam);
+      if (saved) {
+        setSavedSessionCandidate(saved);
+      }
+    }
+  }, [isHost, roomParam]);
+
+  const handleResumeSession = useCallback(() => {
+    if (!savedSessionCandidate) return;
+    restoreHostSession(savedSessionCandidate.snapshot);
+    setSavedSessionCandidate(null);
+  }, [restoreHostSession, savedSessionCandidate]);
+
+  const handleDiscardSession = useCallback(() => {
+    if (roomParam) {
+      clearHostSession(roomParam);
+    }
+    setSavedSessionCandidate(null);
+  }, [roomParam]);
 
   const navigate = useNavigate();
   const [isLogCollapsed, setIsLogCollapsed] = useState(
@@ -482,9 +514,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
   // URLにホスト用roomがあるがPeer未作成の場合、作成を試行
   useEffect(() => {
     if (isHost && !isHosting && peer.status === 'disconnected' && !peer.peerId && !peer.error) {
-      void createRoom().catch(() => undefined);
+      void createRoom(roomParam || undefined).catch(() => undefined);
     }
-  }, [isHost, isHosting, peer.status, peer.peerId, peer.error, createRoom]);
+  }, [isHost, isHosting, peer.status, peer.peerId, peer.error, createRoom, roomParam]);
 
   // mode=solo の場合でPeerが繋がっていれば切断（接続試行中は切断しない）
   useEffect(() => {
@@ -609,6 +641,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
   };
 
   const handleEndPeerSession = () => {
+    if (roomParam) {
+      clearHostSession(roomParam);
+    }
     peer.disconnect();
     navigate('/game?mode=solo', { replace: true });
   };
@@ -790,6 +825,15 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
           onNavigateToDeckBuilder={() => navigate('/deck-builder')}
         />
       </Suspense>
+
+      {/* 対戦セッション復元モーダル */}
+      {savedSessionCandidate && (
+        <RestoreSessionModal
+          session={savedSessionCandidate}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
     </div>
   );
 }
@@ -855,6 +899,10 @@ export function App() {
 
   // ソロプレイ開始
   const handleSoloPlay = useCallback(() => {
+    const activeRoom = peer.peerId || peer.lastRoomId || new URLSearchParams(window.location.search).get('room');
+    if (activeRoom) {
+      clearHostSession(activeRoom);
+    }
     if (peer.role !== null) {
       peer.disconnect();
     }

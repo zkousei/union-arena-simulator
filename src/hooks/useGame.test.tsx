@@ -523,4 +523,79 @@ describe('useGame P2P resynchronization', () => {
     expect(secondRequest.requestId).toBeDefined();
     expect(secondRequest.requestId).not.toBe(firstRequest.requestId);
   });
+
+  describe('host session restoration and persistence', () => {
+    it('restores a host session and serves the restored state to a connecting guest', async () => {
+      let hostMessageHandler: ((msg: PeerMessage) => void) | null = null;
+      peerMock.createRoom.mockImplementation(async (handler, preferredRoomId) => {
+        hostMessageHandler = handler;
+        return preferredRoomId || 'resumed-room';
+      });
+
+      const { result } = renderHook(() => useGame());
+
+      await act(async () => {
+        await result.current.createRoom('resumed-room');
+      });
+
+      expect(peerMock.createRoom).toHaveBeenCalledWith(expect.any(Function), 'resumed-room');
+
+      const savedState = createInitialGameState('player-1', 'Host', 'player-2', 'Guest', 'player-1');
+      savedState.turn = 5;
+      savedState.phase = 'MAIN';
+
+      act(() => {
+        result.current.restoreHostSession({
+          state: savedState,
+          revision: 15,
+        });
+      });
+
+      expect(result.current.gameState.turn).toBe(5);
+      expect(result.current.gameState.phase).toBe('MAIN');
+
+      peerMock.sendMessage.mockClear();
+      act(() => {
+        hostMessageHandler?.({
+          type: 'SYNC_REQUEST',
+          senderId: 'player-2',
+          timestamp: Date.now(),
+        });
+      });
+
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SYNC_RESPONSE',
+          payload: expect.objectContaining({
+            revision: 15,
+            state: expect.objectContaining({ turn: 5, phase: 'MAIN' }),
+          }),
+        })
+      );
+    });
+
+    it('persists authoritative transitions to sessionStorage when host is playing in a room', async () => {
+      sessionStorage.clear();
+      peerMock.role = 'host';
+      peerMock.lastRoomId = 'active-room-99';
+      peerMock.peerId = 'active-room-99';
+      peerMock.status = 'connected';
+
+      const { result } = renderHook(() => useGame());
+
+      act(() => {
+        result.current.dispatchAction({
+          type: 'SET_PHASE',
+          payload: { phase: 'MAIN' },
+        });
+      });
+
+      const savedJson = sessionStorage.getItem('ua:host-session:active-room-99');
+      expect(savedJson).not.toBeNull();
+      const parsed = JSON.parse(savedJson!);
+      expect(parsed.roomId).toBe('active-room-99');
+      expect(parsed.snapshot.state.phase).toBe('MAIN');
+      expect(parsed.snapshot.revision).toBe(1);
+    });
+  });
 });
