@@ -26,8 +26,16 @@ describe('calculateGeneratedEnergy', () => {
       .toEqual({ total: 3, byColor: { BLUE: 3 } });
   });
 
-  it('does not count rested or face-down cards', () => {
+  it('counts rested cards but not face-down cards', () => {
     expect(calculateGeneratedEnergy([card(1, true), { ...card(2), isFaceDown: true }]))
-      .toEqual({ total: 0, byColor: {} });
+      .toEqual({ total: 1, byColor: { BLUE: 1 } });
+  });
+
+  it('uses manual adjustments, including on a zero-energy card, without going below zero', () => {
+    expect(calculateGeneratedEnergy([
+      { ...card(1), genEnergyModifier: 1 },
+      { ...card(0), genEnergyModifier: 1 },
+      { ...card(1), genEnergyModifier: -1 },
+    ])).toEqual({ total: 3, byColor: { BLUE: 3 } });
   });
 });

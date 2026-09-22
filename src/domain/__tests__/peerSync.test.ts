@@ -29,6 +29,18 @@ describe('authoritative P2P synchronization', () => {
     vi.restoreAllMocks();
   });
 
+  it('commits only the owner-requested manual energy adjustment', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    state.players.p2.energyLine[0] = createCard(0);
+    const action = { type: 'MODIFY_ENERGY', payload: { playerId: 'p2', zone: 'energyLine', slotIndex: 0, delta: 1 } } as const;
+    expect(isActionRequestAllowed('p1', action)).toBe(false);
+    expect(isActionRequestAllowed('p2', action)).toBe(true);
+    const transition = createAuthoritativeTransition(state, action, 4);
+    expect(transition.snapshot.revision).toBe(5);
+    expect(transition.snapshot.state.players.p2.energyLine[0]?.genEnergyModifier).toBe(1);
+    expect(state.players.p2.energyLine[0]?.genEnergyModifier).toBeUndefined();
+  });
+
   it('shares the host-resolved shuffle instead of recomputing randomness on the guest', () => {
     const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
     state.players.p1.deck = Array.from({ length: 12 }, (_, index) => createCard(index));

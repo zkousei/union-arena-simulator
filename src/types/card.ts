@@ -40,6 +40,7 @@ export interface Card {
   // 盤面上の動的状態
   isRested: boolean;      // レスト状態
   bpModifier: number;     // 一時的BP補正 (+1000など)
+  genEnergyModifier?: number; // 盤面上で手動調整した発生エナジー
   underCards: Card[];     // レイド元などの下に重ねられたカード群
   isFaceDown?: boolean;   // 裏向き状態
   isFrozen?: boolean;     // フリーズ状態（次のターンアクティブにならない）

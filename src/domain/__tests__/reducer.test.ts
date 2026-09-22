@@ -575,6 +575,26 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(state.players['p1'].frontLine[0]?.bpModifier).toBe(0);
   });
 
+  it('adjusts energy on an energy-line card and clears it when the card leaves the field', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players.p1.energyLine[0] = { ...createDummyCard('e-1', 'Energy'), isRested: true };
+    state = gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: 1 } });
+    expect(state.players.p1.energyLine[0]?.genEnergyModifier).toBe(1);
+    state = gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: -1 } });
+    expect(state.players.p1.energyLine[0]?.genEnergyModifier).toBe(0);
+    state = gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: 1 } });
+    state = gameReducer(state, { type: 'MOVE_CARD', payload: { cardId: 'e-1', from: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 }, to: { playerId: 'p1', zone: 'hand' } } });
+    expect(state.players.p1.hand[0]?.genEnergyModifier).toBe(0);
+  });
+
+  it('ignores invalid energy adjustments without changing game state', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players.p1.energyLine[0] = createDummyCard('e-1', 'Energy');
+    expect(gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: -2 } })).toBe(state);
+    expect(gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 1, delta: 1 } })).toBe(state);
+    expect(gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: 0.5 } })).toBe(state);
+  });
+
   it('should look at top N cards of deck and route them to hand, graveyard, top or bottom', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].deck = [

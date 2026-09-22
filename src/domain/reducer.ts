@@ -961,6 +961,18 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         break;
       }
 
+      case 'MODIFY_ENERGY': {
+        const { playerId, zone, slotIndex, delta } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || zone !== 'energyLine' || !Number.isInteger(delta) || delta === 0) return;
+        const card = player.energyLine[slotIndex];
+        if (!card || card.isFaceDown || card.genEnergy + (card.genEnergyModifier || 0) + delta < 0) return;
+        card.genEnergyModifier = (card.genEnergyModifier || 0) + delta;
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        appendLog(draft, `${player.name} が「${card.name}」の発生エナジーを ${sign} しました（現在: ${card.genEnergy + card.genEnergyModifier}）。`, playerId);
+        break;
+      }
+
       case 'RAID_CARD': {
         const { playerId, targetZone, targetSlotIndex, raidCard, fromLocation, moveToFront } = action.payload;
         const player = draft.players[playerId];

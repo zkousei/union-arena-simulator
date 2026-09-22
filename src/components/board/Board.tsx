@@ -471,6 +471,10 @@ export const Board: React.FC<BoardProps> = ({
     });
   };
 
+  const handleModifyEnergy = (playerId: string, slotIndex: FieldSlotIndex, delta: number) => {
+    dispatchAction({ type: 'MODIFY_ENERGY', payload: { playerId, zone: 'energyLine', slotIndex, delta } });
+  };
+
   // フリーズ状態の切り替え
   const handleToggleFreeze = (playerId: string, zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => {
     dispatchAction({
@@ -1213,6 +1217,7 @@ export const Board: React.FC<BoardProps> = ({
             onSlotClick={(slotIdx) => handleSlotClick(topPlayerId, 'energyLine', slotIdx)}
             onToggleRest={(slotIdx) => handleToggleRest(topPlayerId, 'energyLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(topPlayerId, 'energyLine', slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(topPlayerId, slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(topPlayerId, 'energyLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'energyLine', slotIdx, dest)}
@@ -1348,6 +1353,7 @@ export const Board: React.FC<BoardProps> = ({
             onSlotClick={(slotIdx) => handleSlotClick(bottomPlayerId, 'energyLine', slotIdx)}
             onToggleRest={(slotIdx) => handleToggleRest(bottomPlayerId, 'energyLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(bottomPlayerId, 'energyLine', slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(bottomPlayerId, slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(bottomPlayerId, 'energyLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'energyLine', slotIdx, dest)}

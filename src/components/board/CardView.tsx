@@ -3,6 +3,7 @@ import { Card, CardColor, TriggerType } from '../../types/card';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
+import { getEffectiveGeneratedEnergy } from '../../domain/energy';
 import { ArrowRightLeft, Trash2, RotateCw, Swords, Layers, Snowflake, ArrowUpToLine, ArrowDownToLine, PlusCircle, ShieldAlert, Eye, ZoomIn, Zap, X } from 'lucide-react';
 
 interface CardViewProps {
@@ -12,6 +13,7 @@ interface CardViewProps {
   revealFaceDown?: boolean;
   onToggleRest?: () => void;
   onModifyBp?: (delta: number) => void;
+  onModifyEnergy?: (delta: number) => void;
   onToggleFreeze?: () => void;
   onAddMarker?: (from: 'deckTop' | 'hand') => void;
   onMoveTo?: (
@@ -63,6 +65,7 @@ export const CardView: React.FC<CardViewProps> = ({
   revealFaceDown = false,
   onToggleRest,
   onModifyBp,
+  onModifyEnergy,
   onToggleFreeze,
   onAddMarker,
   onMoveTo,
@@ -138,6 +141,10 @@ export const CardView: React.FC<CardViewProps> = ({
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
   const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const currentEnergy = getEffectiveGeneratedEnergy(card);
+  const energyModifier = card.genEnergyModifier || 0;
+  const printedEnergy = `${card.genEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`;
+  const energyLabel = `${currentEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`;
   const currentBp = (effectiveBp ?? 0) + card.bpModifier;
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
   const underCount = card.underCards?.length ?? 0;
@@ -173,6 +180,8 @@ export const CardView: React.FC<CardViewProps> = ({
     setMenuPos({ x: e.clientX, y: e.clientY });
     setShowMenu(true);
   };
+
+  const menuTop = Math.max(8, Math.min(menuPos.y, window.innerHeight - 450));
 
   return (
     <>
@@ -409,9 +418,9 @@ export const CardView: React.FC<CardViewProps> = ({
                 ⚡{card.reqEnergy}
               </span>
             )}
-            {card.genEnergy > 0 && (
-              <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${card.genEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`}>
-                {card.genEnergy}{effectiveHasGenEnergyPlus ? '+' : ''}
+            {(card.genEnergy > 0 || currentEnergy > 0) && (
+              <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${energyLabel}${energyModifier !== 0 ? `（印刷値 ${printedEnergy}、修正 ${energyModifier > 0 ? '+' : ''}${energyModifier}）` : ''}`}>
+                {energyLabel}
               </span>
             )}
           </div>
@@ -473,10 +482,11 @@ export const CardView: React.FC<CardViewProps> = ({
       {/* 右クリックコンテキストメニュー */}
       {showMenu && (
         <div
-          className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-2 w-56 max-w-[92vw] max-h-[calc(100vh-24px)] sm:max-h-[calc(100dvh-32px)] overflow-y-auto scrollbar-thin text-xs text-slate-200 flex flex-col gap-1"
+          className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-2 w-56 max-w-[92vw] overflow-y-auto scrollbar-thin text-xs text-slate-200 flex flex-col gap-1"
           style={{
-            top: Math.max(8, Math.min(menuPos.y, window.innerHeight - 450)),
+            top: menuTop,
             left: Math.max(8, Math.min(menuPos.x, window.innerWidth - 240)),
+            maxHeight: Math.max(0, window.innerHeight - menuTop - 8),
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -626,6 +636,25 @@ export const CardView: React.FC<CardViewProps> = ({
                 >
                   修正リセット (±0)
                 </button>
+              )}
+            </div>
+          )}
+
+          {location?.zone === 'energyLine' && onModifyEnergy && !card.isFaceDown && (
+            <div className="flex flex-col gap-1 p-1.5 bg-slate-800/70 rounded my-0.5 text-xs">
+              <div className="flex items-center justify-between text-[11px] font-medium">
+                <span className="text-slate-400">発生エナジー修正:</span>
+                <span className="font-bold text-emerald-300">
+                  {energyModifier > 0 ? `+${energyModifier}` : energyModifier}
+                  <span className="text-[10px] text-slate-400 font-normal ml-1">(計 {energyLabel})</span>
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <button type="button" onClick={() => onModifyEnergy(-1)} disabled={currentEnergy === 0} className="py-1 bg-rose-900/80 hover:bg-rose-700 disabled:opacity-40 rounded text-rose-200 font-bold" aria-label="エナジーを -1">-1</button>
+                <button type="button" onClick={() => onModifyEnergy(1)} className="py-1 bg-emerald-800/80 hover:bg-emerald-600 rounded text-emerald-200 font-bold" aria-label="エナジーを +1">+1</button>
+              </div>
+              {energyModifier !== 0 && (
+                <button type="button" onClick={() => onModifyEnergy(-energyModifier)} className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/60 py-0.5 rounded" aria-label="エナジー修正リセット">修正リセット (±0)</button>
               )}
             </div>
           )}

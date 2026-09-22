@@ -20,6 +20,7 @@ export function resetCardState(card: Card): Card {
     ...card,
     isRested: false,
     bpModifier: 0,
+    genEnergyModifier: 0,
     underCards: [],
     isFaceDown: false,
     isFrozen: false,

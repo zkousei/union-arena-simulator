@@ -34,6 +34,16 @@ describe('CardView', () => {
 
     expect(screen.getByTitle('発生エナジー: 2+').textContent).toBe('2+');
   });
+  it('shows adjusted energy and offers energy-line adjustments from the context menu', () => {
+    const onModifyEnergy = vi.fn();
+    const { container } = render(<CardView card={{ ...dummyCard, hasGenEnergyPlus: true, genEnergyModifier: 1 }} location={{ playerId: 'p1', zone: 'energyLine', slotIndex: 0 }} onModifyEnergy={onModifyEnergy} />);
+    expect(screen.getByTitle('発生エナジー: 2+（印刷値 1+、修正 +1）').textContent).toBe('2+');
+    fireEvent.contextMenu(container.querySelector('[draggable="true"]')!);
+    fireEvent.click(screen.getByRole('button', { name: 'エナジーを +1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'エナジーを -1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'エナジー修正リセット' }));
+    expect(onModifyEnergy.mock.calls).toEqual([[1], [-1], [-1]]);
+  });
   it('does not offer inspection for an opponent face-down card', () => {
     const handleInspect = vi.fn();
 

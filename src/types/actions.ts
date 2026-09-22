@@ -93,6 +93,15 @@ export type GameAction =
       };
     }
   | {
+      type: 'MODIFY_ENERGY';
+      payload: {
+        playerId: string;
+        zone: 'energyLine';
+        slotIndex: FieldSlotIndex;
+        delta: number;
+      };
+    }
+  | {
       type: 'RAID_CARD';
       payload: {
         playerId: string;

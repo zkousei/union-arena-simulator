@@ -139,6 +139,14 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
 
   const placedSlot = page.locator('#slot-player-1-energyLine-0');
   await expect(placedSlot.getByAltText(cardName!)).toBeVisible();
+  await placedSlot.locator('[draggable="true"]').click({ button: 'right' });
+  await expect(page.getByText('発生エナジー修正:')).toBeVisible();
+  await page.getByRole('button', { name: 'エナジーを +1' }).click();
+  await expect(placedSlot.locator('[title^="発生エナジー:"]')).toHaveAttribute('title', /修正 \+1/);
+  await page.getByRole('button', { name: 'エナジー修正リセット' }).click();
+  await expect(page.getByRole('button', { name: 'エナジー修正リセット' })).toBeHidden();
+  const energyHeader = page.getByText('あなた: エナジーライン').locator('..');
+  const energyBeforeRest = await energyHeader.textContent();
   const restToggle = placedSlot.getByTitle(/(レスト|アクティブ)にする/);
   const toggleTitle = await restToggle.getAttribute('title');
   await restToggle.click();
@@ -147,11 +155,34 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
   } else {
     await expect(placedSlot.getByText('REST')).toBeVisible();
   }
+  await expect(energyHeader).toHaveText(energyBeforeRest!);
 
   await page.getByRole('button', { name: /エンドへ/ }).click();
   await page.getByRole('button', { name: /ターン終了/ }).click();
   await expect(page.getByText('TURN 2')).toBeVisible();
   await expectNoHorizontalOverflow(page);
+});
+
+test('keeps every energy-card context-menu action reachable on a short screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/game?mode=solo');
+  await startSoloGame(page);
+  await page.getByRole('button', { name: /移動へ/ }).click();
+  await page.getByRole('button', { name: /メインへ/ }).click();
+  await page.getByRole('region', { name: 'あなた の手札' }).getByRole('button', { name: /手札カード: .+ \(キャラクター\)/ }).first().click();
+  await page.getByRole('button', { name: 'あなた: エナジーライン 枠 1' }).click();
+
+  await page.setViewportSize({ width: 390, height: 568 });
+  await page.locator('#slot-player-1-energyLine-0 [draggable="true"]').click({ button: 'right' });
+  const menu = page.locator('div.fixed.z-50').filter({ hasText: '発生エナジー修正:' });
+  await expect(menu).toBeVisible();
+  const box = await menu.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(568);
+  await menu.getByRole('button', { name: '除外する（リムーブ）' }).scrollIntoViewIfNeeded();
+  await expect(menu.getByRole('button', { name: '除外する（リムーブ）' })).toBeInViewport();
+  await menu.getByRole('button', { name: '除外する（リムーブ）' }).click();
+  await expect(page.locator('#slot-player-1-energyLine-0 [draggable="true"]')).toHaveCount(0);
 });
 
 test('keeps the main game dialogs reachable on mobile', async ({ page }) => {

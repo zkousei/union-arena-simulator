@@ -15,6 +15,7 @@ interface FieldZoneProps {
   onSlotClick?: (slotIndex: FieldSlotIndex) => void;
   onToggleRest?: (slotIndex: FieldSlotIndex) => void;
   onModifyBp?: (slotIndex: FieldSlotIndex, delta: number) => void;
+  onModifyEnergy?: (slotIndex: FieldSlotIndex, delta: number) => void;
   onToggleFreeze?: (slotIndex: FieldSlotIndex) => void;
   onAddMarker?: (slotIndex: FieldSlotIndex, from: 'deckTop' | 'hand') => void;
   onMoveTo?: (
@@ -51,6 +52,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
   onSlotClick,
   onToggleRest,
   onModifyBp,
+  onModifyEnergy,
   onToggleFreeze,
   onAddMarker,
   onMoveTo,
@@ -158,6 +160,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
                   isCompact={isCompact}
                   onToggleRest={() => onToggleRest && onToggleRest(slotIdx)}
                   onModifyBp={(delta) => onModifyBp && onModifyBp(slotIdx, delta)}
+                  onModifyEnergy={onModifyEnergy ? (delta) => onModifyEnergy(slotIdx, delta) : undefined}
                   onToggleFreeze={() => onToggleFreeze && onToggleFreeze(slotIdx)}
                   onAddMarker={(from) => onAddMarker && onAddMarker(slotIdx, from)}
                   onMoveTo={(dest) => onMoveTo && onMoveTo(slotIdx, dest)}
