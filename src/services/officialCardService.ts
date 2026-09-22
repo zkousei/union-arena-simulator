@@ -149,8 +149,12 @@ export function parseCardFromDetailHtml(
     if (!imgs || imgs.length === 0) {
       genEnergy = 0;
     } else {
-      const hasTwo = /purple2|green2|red2|blue2|yellow2|2\.png/.test(genMatch[1]);
-      genEnergy = hasTwo ? 2 : imgs.length;
+      // The official "+" icon marks a possible effect increase, not another energy.
+      // Its filename ends in 2 (or 4 for two base energy), so read the visible icons.
+      genEnergy = imgs.reduce((sum, img) => {
+        const alt = getHtmlAttribute(img, 'alt') || '';
+        return sum + (alt.match(/[紫緑赤青黄]/g)?.length || 0);
+      }, 0);
     }
   }
 

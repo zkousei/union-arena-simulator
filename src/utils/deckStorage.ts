@@ -51,6 +51,7 @@ export function loadSavedDecks(): UserDeck[] {
                   ...it.card,
                   bp: master.bp ?? it.card.bp,
                   hasBpPlus: master.hasBpPlus ?? it.card.hasBpPlus,
+                  genEnergy: master.genEnergy,
                 },
               }
             : it;
@@ -154,7 +155,10 @@ export function importDeckFromJson(jsonStr: string): UserDeck {
     id: `imported-${Date.now()}`,
     name: parsed.name,
     titleCode: parsed.titleCode,
-    items: parsed.items as UserDeck['items'],
+    items: (parsed.items as UserDeck['items']).map((item) => {
+      const master = CARD_DATABASE.find((card) => card.code === item.card.code);
+      return master ? { ...item, card: { ...item.card, genEnergy: master.genEnergy } } : item;
+    }),
     ...(parsed.apCards !== undefined ? { apCards: parsed.apCards as UserDeck['apCards'] } : {}),
     updatedAt: Date.now(),
   };

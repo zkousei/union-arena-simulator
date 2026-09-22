@@ -39,7 +39,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
           map.set(
             c.code,
             master
-              ? { ...c, bp: master.bp ?? c.bp, hasBpPlus: master.hasBpPlus ?? c.hasBpPlus }
+              ? { ...c, bp: master.bp ?? c.bp, hasBpPlus: master.hasBpPlus ?? c.hasBpPlus, genEnergy: master.genEnergy }
               : c
           );
         });

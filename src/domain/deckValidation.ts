@@ -146,6 +146,7 @@ export function flattenDeckToCards(deck: UserDeck, playerId: string = 'player-1'
           ...item.card,
           bp: master.bp ?? item.card.bp,
           hasBpPlus: master.hasBpPlus ?? item.card.hasBpPlus,
+          genEnergy: master.genEnergy,
         }
       : item.card;
 

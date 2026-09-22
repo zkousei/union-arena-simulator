@@ -72,6 +72,42 @@ describe('officialCardService Tests', () => {
     expect(card.imageUrl).toBe('https://example.com/cgh10.png');
   });
 
+  it.each([
+    ['purple1.png', '紫', 1],
+    ['purple2.png', '紫+', 1],
+    ['purple3.png', '紫紫', 2],
+    ['purple4.png', '紫紫+', 2],
+    ['green2.png', '緑+', 1],
+  ])('reads base generated energy from %s (%s)', (filename, alt, expected) => {
+    const html = `
+      <dl class="cardDataCol categoryData"><dd class="cardDataContents">キャラクター</dd></dl>
+      <dl class="cardDataCol generatedEnergyData"><dd class="cardDataContents">
+        <img src="/jp/images/cardlist/icon/resource/ico_resource_energy_${filename}" alt="${alt}">
+      </dd></dl>
+    `;
+
+    expect(parseCardFromDetailHtml(html, 'UA01BT/CGH-1-001').genEnergy).toBe(expected);
+  });
+
+  it('keeps an explicit empty generated energy field at zero', () => {
+    const html = `
+      <dl class="cardDataCol categoryData"><dd class="cardDataContents">キャラクター</dd></dl>
+      <dl class="cardDataCol generatedEnergyData"><dd class="cardDataContents">-</dd></dl>
+    `;
+
+    expect(parseCardFromDetailHtml(html, 'UA40BT/REZ-1-043').genEnergy).toBe(0);
+  });
+
+  it('keeps synchronized card energy in line with the official printed icons', () => {
+    const energy = (code: string) => CARD_DATABASE.find((card) => card.code === code)?.genEnergy;
+
+    expect(energy('UA01BT/CGH-1-001')).toBe(1); // 紫+
+    expect(energy('UA42ST/MGS-1-039')).toBe(2); // 紫紫
+    expect(energy('UA43BT/SMD-1-054')).toBe(2); // 紫紫+
+    expect(energy('UA01BT/CGH-1-047')).toBe(3); // 緑緑緑
+    expect(energy('UA40BT/REZ-1-043')).toBe(0); // -
+  });
+
   it('should parse rarity and parallel cards correctly', () => {
     const mockParallelDetailHtml = `
       <div class="cardNameNumCol">

@@ -82,6 +82,16 @@ describe('deckStorage', () => {
     expect(JSON.parse(store.get(STORAGE_KEY) ?? 'null')).toEqual([]);
   });
 
+  it('refreshes stale printed energy in saved and imported official cards', () => {
+    const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-001')!;
+    const stale = { ...master, genEnergy: 2 };
+    const deck = createDeck({ items: [{ card: stale, count: 4 }] });
+    store.set(STORAGE_KEY, JSON.stringify([deck]));
+
+    expect(loadSavedDecks()[0].items[0].card.genEnergy).toBe(1);
+    expect(importDeckFromJson(JSON.stringify(deck)).items[0].card.genEnergy).toBe(1);
+  });
+
   it('returns an empty list when saved data is malformed', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     store.set(STORAGE_KEY, '{broken');

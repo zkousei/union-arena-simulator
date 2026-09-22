@@ -16,6 +16,7 @@ import { RaidOrMarkerModal } from '../modals/RaidOrMarkerModal';
 import { AttackLineOverlay } from './AttackLineOverlay';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { Shield, ShieldAlert, X, Zap } from 'lucide-react';
+import { calculateGeneratedEnergy } from '../../domain/energy';
 
 interface BoardProps {
   gameState: GameState;
@@ -187,24 +188,6 @@ export const Board: React.FC<BoardProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleAdvancePhase, attackingState, pendingCombat, myPlayerId, isSoloMode, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
-
-  // 発生エナジー計算ヘルパー (公式ルール: エナジーラインのアクティブ状態のキャラから発生)
-  const calculateGeneratedEnergy = (slots: (Card | null)[]) => {
-    let total = 0;
-    const byColor: Partial<Record<CardColor, number>> = {};
-
-    slots.forEach((card) => {
-      if (card && !card.isRested && !card.isFaceDown) {
-        // カードデータ上の発生エナジー（未定義や0の場合はキャラなら最低1）
-        const gen = card.genEnergy > 0 ? card.genEnergy : (card.cardType === 'CHARACTER' ? 1 : 0);
-        total += gen;
-        const col = card.color || 'COLORLESS';
-        byColor[col] = (byColor[col] || 0) + gen;
-      }
-    });
-
-    return { total, byColor };
-  };
 
   const COLOR_BADGE_STYLE: Record<CardColor, { label: string; bg: string; text: string; dot: string }> = {
     PURPLE: { label: '紫', bg: 'bg-purple-950/80 border-purple-500/50', text: 'text-purple-300', dot: 'bg-purple-500' },

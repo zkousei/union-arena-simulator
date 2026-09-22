@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateDeck, UserDeck } from '../deckValidation';
+import { flattenDeckToCards, validateDeck, UserDeck } from '../deckValidation';
 import { CARD_DATABASE } from '../../data/cardDatabase';
 
 describe('Deck Validation Official Rules Tests', () => {
@@ -190,6 +190,19 @@ describe('Deck Validation Official Rules Tests', () => {
     expect(cardsP2[0].id).toContain('player-2-');
   });
 
+  it('uses current printed energy when starting a game from an older deck', () => {
+    const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-001')!;
+    const deck: UserDeck = {
+      id: 'old-energy',
+      name: 'Old energy',
+      titleCode: master.titleCode,
+      items: [{ card: { ...master, genEnergy: 2 }, count: 1 }],
+      updatedAt: 1,
+    };
+
+    expect(flattenDeckToCards(deck)[0].genEnergy).toBe(1);
+  });
+
   it('should not return default-cgh-deck in loadSavedDecks', async () => {
     const store = new Map<string, string>();
     const mockStorage = {
@@ -216,4 +229,3 @@ describe('Deck Validation Official Rules Tests', () => {
     vi.unstubAllGlobals();
   });
 });
-

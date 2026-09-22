@@ -25,7 +25,7 @@ const DEFAULT_SERIES = [
   { id: '570123', name: '進撃の巨人 【UA23BT】', code: 'AOT-BT' },
 ];
 
-function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
+export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
   const titleCodeMatch = cardNo.match(/\/([A-Z0-9]+)-/);
   const titleCode = titleCodeMatch ? titleCodeMatch[1] : 'OTHER';
 
@@ -103,8 +103,11 @@ function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
     if (!imgs || imgs.length === 0) {
       genEnergy = 0;
     } else {
-      const hasTwo = /purple2|green2|red2|blue2|yellow2|2\.png/.test(genMatch[1]);
-      genEnergy = hasTwo ? 2 : imgs.length;
+      // "+" denotes a possible effect increase, not an additional base energy.
+      genEnergy = imgs.reduce((sum, img) => {
+        const alt = img.match(/\balt\s*=\s*(["'])(.*?)\1/i)?.[2] || '';
+        return sum + (alt.match(/[紫緑赤青黄]/g)?.length || 0);
+      }, 0);
     }
   }
 
@@ -307,6 +310,7 @@ async function main() {
   const args = process.argv.slice(2);
   const syncAll = args.includes('--all');
   const includeParallel = args.includes('--include-parallel');
+  const refreshEnergy = args.includes('--refresh-energy');
 
   const outputPath = path.resolve(__dirname, '../src/data/officialCards.json');
   let existingCards = [];
@@ -316,6 +320,33 @@ async function main() {
     } catch (e) {
       console.warn('Could not read existing officialCards.json:', e.message);
     }
+  }
+
+  if (refreshEnergy) {
+    // Repair the synchronized card data without changing other card fields or
+    // depending on which series are selected for a normal incremental sync.
+    const refreshed = [];
+    for (let index = 0; index < existingCards.length; index += 16) {
+      const chunk = existingCards.slice(index, index + 16);
+      const results = await Promise.all(chunk.map(async (card) => {
+        if (card.cardType === 'EVENT' || (card.cardType === 'ACTION_POINT' && card.name.includes('アクションポイント'))) return card;
+        const detailUrl = `https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(card.code)}`;
+        const response = await fetchWithRetry(detailUrl);
+        const html = await response.text();
+        if (!html.includes('generatedEnergyData')) {
+          throw new Error(`Missing generated energy for ${card.code}`);
+        }
+        const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
+        return { ...card, genEnergy: parsed.genEnergy };
+      }));
+      refreshed.push(...results);
+      if (refreshed.length % 320 === 0 || refreshed.length === existingCards.length) {
+        console.log(`Energy refresh: ${refreshed.length}/${existingCards.length}`);
+      }
+    }
+    fs.writeFileSync(outputPath, JSON.stringify(refreshed, null, 2), 'utf-8');
+    console.log(`Refreshed generated energy for ${refreshed.length} cards.`);
+    return;
   }
 
   const cardMap = new Map();
@@ -366,4 +397,9 @@ async function main() {
   console.log(`========================================`);
 }
 
-main().catch(console.error);
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

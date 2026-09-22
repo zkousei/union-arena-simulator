@@ -65,7 +65,7 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
         </div>
         <div>
           <span className="text-slate-400">発生:</span>{' '}
-          <strong className="text-emerald-400">+{card.genEnergy}</strong>
+          <strong className="text-emerald-400">{card.genEnergy}</strong>
         </div>
       </div>
 
