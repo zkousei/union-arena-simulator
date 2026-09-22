@@ -25,9 +25,14 @@ const dummyCard: Card = {
 
 describe('CardView', () => {
   it('shows base generated energy without an effect-increase plus sign', () => {
-    render(<CardView card={{ ...dummyCard, genEnergy: 1 }} />);
+    render(<CardView card={{ ...dummyCard, genEnergy: 1, hasGenEnergyPlus: false }} />);
 
     expect(screen.getByTitle('発生エナジー: 1').textContent).toBe('1');
+  });
+  it('shows the printed plus mark after base generated energy', () => {
+    render(<CardView card={{ ...dummyCard, genEnergy: 2, hasGenEnergyPlus: true }} />);
+
+    expect(screen.getByTitle('発生エナジー: 2+').textContent).toBe('2+');
   });
   it('does not offer inspection for an opponent face-down card', () => {
     const handleInspect = vi.fn();

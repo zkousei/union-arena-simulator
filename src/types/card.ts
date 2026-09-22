@@ -23,6 +23,7 @@ export interface Card {
   apCost: number;         // APコスト (通常1)
   reqEnergy: number;      // 必要エナジー
   genEnergy: number;      // 発生エナジー (通常1〜2)
+  hasGenEnergyPlus?: boolean; // 発生エナジーに「+」表記があるカード（例: 1+）
   traits: string[];       // 特徴 (例: ["黒の騎士団", "生徒会"])
   triggers: TriggerType[];// トリガーアイコン
   effectText: string;     // カードテキスト
@@ -52,4 +53,3 @@ export interface Card {
 export function getBaseCardCode(code: string): string {
   return code.replace(/_p\d+$/i, '');
 }
-

@@ -96,6 +96,7 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
 
   const genMatch = detailHtml.match(/<dl class="cardDataCol generatedEnergyData">[\s\S]*?<dd class="cardDataContents">([\s\S]*?)<\/dd>/);
   let genEnergy = 1;
+  let hasGenEnergyPlus = false;
   if (cardType === 'EVENT') {
     genEnergy = 0;
   } else if (genMatch) {
@@ -106,6 +107,7 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
       // "+" denotes a possible effect increase, not an additional base energy.
       genEnergy = imgs.reduce((sum, img) => {
         const alt = img.match(/\balt\s*=\s*(["'])(.*?)\1/i)?.[2] || '';
+        if (/[+＋]/.test(alt)) hasGenEnergyPlus = true;
         return sum + (alt.match(/[紫緑赤青黄]/g)?.length || 0);
       }, 0);
     }
@@ -183,6 +185,7 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
     apCost,
     reqEnergy,
     genEnergy,
+    hasGenEnergyPlus,
     traits,
     triggers,
     effectText,
@@ -337,7 +340,10 @@ async function main() {
           throw new Error(`Missing generated energy for ${card.code}`);
         }
         const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
-        return { ...card, genEnergy: parsed.genEnergy };
+        const updated = { ...card, genEnergy: parsed.genEnergy };
+        if (parsed.hasGenEnergyPlus) updated.hasGenEnergyPlus = true;
+        else delete updated.hasGenEnergyPlus;
+        return updated;
       }));
       refreshed.push(...results);
       if (refreshed.length % 320 === 0 || refreshed.length === existingCards.length) {

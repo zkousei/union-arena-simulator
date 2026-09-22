@@ -196,11 +196,12 @@ describe('Deck Validation Official Rules Tests', () => {
       id: 'old-energy',
       name: 'Old energy',
       titleCode: master.titleCode,
-      items: [{ card: { ...master, genEnergy: 2 }, count: 1 }],
+      items: [{ card: { ...master, genEnergy: 2, hasGenEnergyPlus: false }, count: 1 }],
       updatedAt: 1,
     };
 
     expect(flattenDeckToCards(deck)[0].genEnergy).toBe(1);
+    expect(flattenDeckToCards(deck)[0].hasGenEnergyPlus).toBe(true);
   });
 
   it('should not return default-cgh-deck in loadSavedDecks', async () => {

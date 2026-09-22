@@ -22,6 +22,7 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
   const hasValidImage = !!card.imageUrl && !imgError;
 
   return (
@@ -65,7 +66,7 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
         </div>
         <div>
           <span className="text-slate-400">発生:</span>{' '}
-          <strong className="text-emerald-400">{card.genEnergy}</strong>
+          <strong className="text-emerald-400">{card.genEnergy}{effectiveHasGenEnergyPlus ? '+' : ''}</strong>
         </div>
       </div>
 

@@ -61,6 +61,7 @@ describe('deckStorage', () => {
     ['missing title code', JSON.stringify({ name: 'deck', items: [] })],
     ['invalid item count', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: CARD_DATABASE[0], count: 0 }] })],
     ['missing card data', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ count: 1 }] })],
+    ['invalid generated energy plus flag', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], hasGenEnergyPlus: 'yes' }, count: 1 }] })],
   ])('rejects structurally invalid imported JSON: %s', (_label, json) => {
     expect(() => importDeckFromJson(json)).toThrow('無効なデッキJSONフォーマットです');
   });
@@ -84,12 +85,14 @@ describe('deckStorage', () => {
 
   it('refreshes stale printed energy in saved and imported official cards', () => {
     const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-001')!;
-    const stale = { ...master, genEnergy: 2 };
+    const stale = { ...master, genEnergy: 2, hasGenEnergyPlus: false };
     const deck = createDeck({ items: [{ card: stale, count: 4 }] });
     store.set(STORAGE_KEY, JSON.stringify([deck]));
 
     expect(loadSavedDecks()[0].items[0].card.genEnergy).toBe(1);
+    expect(loadSavedDecks()[0].items[0].card.hasGenEnergyPlus).toBe(true);
     expect(importDeckFromJson(JSON.stringify(deck)).items[0].card.genEnergy).toBe(1);
+    expect(importDeckFromJson(JSON.stringify(deck)).items[0].card.hasGenEnergyPlus).toBe(true);
   });
 
   it('returns an empty list when saved data is malformed', () => {

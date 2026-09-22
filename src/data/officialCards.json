@@ -21,7 +21,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-002",
@@ -125,7 +126,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-006",
@@ -1061,7 +1063,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-043",
@@ -1135,7 +1138,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-046",
@@ -1554,7 +1558,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-062",
@@ -2003,7 +2008,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-080",
@@ -2077,7 +2083,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570101",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01BT/CGH-1-083",
@@ -2670,7 +2677,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-002",
@@ -2974,7 +2982,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-015",
@@ -3498,7 +3507,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-037",
@@ -3706,7 +3716,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-046",
@@ -4319,7 +4330,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-072",
@@ -4393,7 +4405,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570102",
-    "seriesName": "呪術廻戦 【UA02BT】"
+    "seriesName": "呪術廻戦 【UA02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02BT/JJK-1-075",
@@ -5233,7 +5246,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-004",
@@ -5371,7 +5385,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-010",
@@ -6415,7 +6430,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-052",
@@ -6589,7 +6605,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-059",
@@ -7085,7 +7102,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-080",
@@ -7221,7 +7239,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570103",
-    "seriesName": "HUNTER×HUNTER 【UA03BT】"
+    "seriesName": "HUNTER×HUNTER 【UA03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03BT/HTR-1-086",
@@ -7951,7 +7970,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-011",
@@ -8103,7 +8123,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-017",
@@ -8621,7 +8642,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-038",
@@ -8738,7 +8760,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-043",
@@ -9408,7 +9431,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-070",
@@ -9558,7 +9582,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-076",
@@ -9659,7 +9684,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570108",
-    "seriesName": "BLEACH 千年血戦篇 【UA08BT】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08BT/BLC-1-080",
@@ -10409,7 +10435,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-005",
@@ -10642,7 +10669,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-015",
@@ -11201,7 +11229,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-038",
@@ -11223,7 +11252,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-039",
@@ -12099,7 +12129,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-075",
@@ -12121,7 +12152,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570105",
-    "seriesName": "鬼滅の刃 【UA05BT】"
+    "seriesName": "鬼滅の刃 【UA05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05BT/KMY-1-076",
@@ -12880,7 +12912,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570001",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01ST】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01ST/CGH-1-002",
@@ -12930,7 +12963,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570001",
-    "seriesName": "コードギアス 反逆のルルーシュ 【UA01ST】"
+    "seriesName": "コードギアス 反逆のルルーシュ 【UA01ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01ST/CGH-1-008",
@@ -13368,7 +13402,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570002",
-    "seriesName": "呪術廻戦 【UA02ST】"
+    "seriesName": "呪術廻戦 【UA02ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02ST/JJK-1-037",
@@ -13436,7 +13471,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570002",
-    "seriesName": "呪術廻戦 【UA02ST】"
+    "seriesName": "呪術廻戦 【UA02ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02ST/JJK-1-056",
@@ -13897,7 +13933,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570003",
-    "seriesName": "HUNTER×HUNTER 【UA03ST】"
+    "seriesName": "HUNTER×HUNTER 【UA03ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03ST/HTR-1-083",
@@ -13941,7 +13978,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570003",
-    "seriesName": "HUNTER×HUNTER 【UA03ST】"
+    "seriesName": "HUNTER×HUNTER 【UA03ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03ST/HTR-1-090",
@@ -14204,7 +14242,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570003",
-    "seriesName": "HUNTER×HUNTER 【UA03ST】"
+    "seriesName": "HUNTER×HUNTER 【UA03ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA03ST/HTR-1-109",
@@ -14292,7 +14331,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-002",
@@ -14722,7 +14762,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-019",
@@ -15091,7 +15132,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-034",
@@ -15442,7 +15484,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-048",
@@ -15961,7 +16004,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-069",
@@ -16011,7 +16055,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570104",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04BT/IMS-1-071",
@@ -16952,7 +16997,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570005",
-    "seriesName": "鬼滅の刃 【UA05ST】"
+    "seriesName": "鬼滅の刃 【UA05ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05ST/KMY-1-005",
@@ -17021,7 +17067,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570005",
-    "seriesName": "鬼滅の刃 【UA05ST】"
+    "seriesName": "鬼滅の刃 【UA05ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA05ST/KMY-1-015",
@@ -17390,7 +17437,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-003",
@@ -17531,7 +17579,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-009",
@@ -18213,7 +18262,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-037",
@@ -18509,7 +18559,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-050",
@@ -19293,7 +19344,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-082",
@@ -19422,7 +19474,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-087",
@@ -19651,7 +19704,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570107",
-    "seriesName": "転生したらスライムだった件 【UA07BT】"
+    "seriesName": "転生したらスライムだった件 【UA07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07BT/TSK-1-096",
@@ -20181,7 +20235,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-013",
@@ -20271,7 +20326,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-017",
@@ -20696,7 +20752,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-035",
@@ -20927,7 +20984,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-045",
@@ -21611,7 +21669,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-074",
@@ -21914,7 +21973,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570110",
-    "seriesName": "僕のヒーローアカデミア 【UA10BT】"
+    "seriesName": "僕のヒーローアカデミア 【UA10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10BT/MHA-1-087",
@@ -22439,7 +22499,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-004",
@@ -22555,7 +22616,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-009",
@@ -23495,7 +23557,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-046",
@@ -23668,7 +23731,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-053",
@@ -24200,7 +24264,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-074",
@@ -24704,7 +24769,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-094",
@@ -24778,7 +24844,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570115",
-    "seriesName": "ソードアート・オンライン 【UA15BT】"
+    "seriesName": "ソードアート・オンライン 【UA15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15BT/SAO-1-097",
@@ -25127,7 +25194,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-002",
@@ -25152,7 +25220,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-003",
@@ -26029,7 +26098,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-037",
@@ -26079,7 +26149,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-039",
@@ -27199,7 +27270,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-082",
@@ -27571,7 +27643,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570118",
-    "seriesName": "勝利の女神：NIKKE 【UA18BT】"
+    "seriesName": "勝利の女神：NIKKE 【UA18BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18BT/NIK-1-096",
@@ -27886,7 +27959,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-003",
@@ -27959,7 +28033,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-006",
@@ -28461,7 +28536,8 @@
     "isUnrevealed": false,
     "seriesId": "570123",
     "seriesName": "進撃の巨人 【UA23BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-025",
@@ -28514,7 +28590,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-027",
@@ -29169,7 +29246,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-053",
@@ -29223,7 +29301,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-055",
@@ -29443,7 +29522,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-063",
@@ -29586,7 +29666,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-069",
@@ -30079,7 +30160,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570123",
-    "seriesName": "進撃の巨人 【UA23BT】"
+    "seriesName": "進撃の巨人 【UA23BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23BT/AOT-1-088",
@@ -31045,7 +31127,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-019",
@@ -31069,7 +31152,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-020",
@@ -31604,7 +31688,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-041",
@@ -31914,7 +31999,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-053",
@@ -32232,7 +32318,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-065",
@@ -32256,7 +32343,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570202",
-    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】"
+    "seriesName": "コードギアス 反逆のルルーシュ Vol.2 【EX02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX02BT/CGH-2-066",
@@ -33638,7 +33726,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570204",
-    "seriesName": "呪術廻戦 Vol.2 【EX04BT】"
+    "seriesName": "呪術廻戦 Vol.2 【EX04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX04BT/JJK-3-045",
@@ -34126,7 +34215,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570204",
-    "seriesName": "呪術廻戦 Vol.2 【EX04BT】"
+    "seriesName": "呪術廻戦 Vol.2 【EX04BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX04BT/JJK-3-064",
@@ -34638,7 +34728,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570702",
-    "seriesName": "NEW CARD SELECTION 呪術廻戦"
+    "seriesName": "NEW CARD SELECTION 呪術廻戦",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02NC/JJK-2-007",
@@ -34762,7 +34853,8 @@
     "isUnrevealed": false,
     "seriesId": "570702",
     "seriesName": "NEW CARD SELECTION 呪術廻戦",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA02NC/JJK-2-AP01",
@@ -34827,7 +34919,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570201",
-    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】"
+    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX01BT/HTR-2-003",
@@ -34849,7 +34942,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570201",
-    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】"
+    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX01BT/HTR-2-004",
@@ -36071,7 +36165,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570201",
-    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】"
+    "seriesName": "HUNTER×HUNTER Vol.2 【EX01BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX01BT/HTR-2-053",
@@ -36695,7 +36790,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570004",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04ST】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04ST/IMS-1-011",
@@ -36845,7 +36941,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570004",
-    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04ST】"
+    "seriesName": "アイドルマスター シャイニーカラーズ 【UA04ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04ST/IMS-1-028",
@@ -37855,7 +37952,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570203",
-    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX03BT/IMS-2-028",
@@ -38158,7 +38256,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570203",
-    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX03BT/IMS-2-040",
@@ -38811,7 +38910,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570203",
-    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】"
+    "seriesName": "アイドルマスター シャイニーカラーズ Vol.2 【EX03BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX03BT/IMS-2-066",
@@ -40959,7 +41059,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570205",
-    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】"
+    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX05BT/KMY-3-014",
@@ -41272,7 +41373,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570205",
-    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】"
+    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX05BT/KMY-3-027",
@@ -41450,7 +41552,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570205",
-    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】"
+    "seriesName": "鬼滅の刃 Vol.2 【EX05BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX05BT/KMY-3-034",
@@ -42742,7 +42845,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570701",
-    "seriesName": "NEW CARD SELECTION 鬼滅の刃"
+    "seriesName": "NEW CARD SELECTION 鬼滅の刃",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01NC/KMY-2-008",
@@ -42958,7 +43062,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570006",
-    "seriesName": "Tales of ARISE 【UA06ST】"
+    "seriesName": "Tales of ARISE 【UA06ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06ST/TOA-1-080",
@@ -43004,7 +43109,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570006",
-    "seriesName": "Tales of ARISE 【UA06ST】"
+    "seriesName": "Tales of ARISE 【UA06ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06ST/TOA-1-087",
@@ -43628,7 +43734,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-014",
@@ -43674,7 +43781,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-016",
@@ -44214,7 +44322,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-039",
@@ -44566,7 +44675,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-054",
@@ -45129,7 +45239,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-078",
@@ -45293,7 +45404,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570106",
-    "seriesName": "Tales of ARISE 【UA06BT】"
+    "seriesName": "Tales of ARISE 【UA06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA06BT/TOA-1-085",
@@ -45840,7 +45952,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570007",
-    "seriesName": "転生したらスライムだった件 【UA07ST】"
+    "seriesName": "転生したらスライムだった件 【UA07ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07ST/TSK-1-037",
@@ -45930,7 +46043,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570007",
-    "seriesName": "転生したらスライムだった件 【UA07ST】"
+    "seriesName": "転生したらスライムだった件 【UA07ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA07ST/TSK-1-050",
@@ -47317,7 +47431,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570209",
-    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】"
+    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX09BT/TSK-2-044",
@@ -47471,7 +47586,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570209",
-    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】"
+    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX09BT/TSK-2-050",
@@ -47949,7 +48065,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570209",
-    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】"
+    "seriesName": "転生したらスライムだった件 Vol.2 【EX09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX09BT/TSK-2-069",
@@ -48291,7 +48408,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570008",
-    "seriesName": "BLEACH 千年血戦篇 【UA08ST】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08ST/BLC-1-039",
@@ -48337,7 +48455,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570008",
-    "seriesName": "BLEACH 千年血戦篇 【UA08ST】"
+    "seriesName": "BLEACH 千年血戦篇 【UA08ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA08ST/BLC-1-046",
@@ -49241,7 +49360,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570207",
-    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX07BT/BLC-2-023",
@@ -49419,7 +49539,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570207",
-    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX07BT/BLC-2-030",
@@ -50250,7 +50371,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570207",
-    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.2 【EX07BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX07BT/BLC-2-063",
@@ -50759,7 +50881,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570704",
-    "seriesName": "NEW CARD SELECTION BLEACH 千年血戦篇"
+    "seriesName": "NEW CARD SELECTION BLEACH 千年血戦篇",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04NC/BLC-3-005",
@@ -50942,7 +51065,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570704",
-    "seriesName": "NEW CARD SELECTION BLEACH 千年血戦篇"
+    "seriesName": "NEW CARD SELECTION BLEACH 千年血戦篇",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA04NC/BLC-3-AP01",
@@ -51317,7 +51441,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570215",
-    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX15BT/BLC-4-015",
@@ -51370,7 +51495,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570215",
-    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX15BT/BLC-4-017",
@@ -52824,7 +52950,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570215",
-    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX15BT/BLC-4-075",
@@ -52851,7 +52978,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570215",
-    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】"
+    "seriesName": "BLEACH 千年血戦篇 Vol.3【EX15BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX15BT/BLC-4-076",
@@ -53193,7 +53321,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570401",
-    "seriesName": "BLEACH 千年血戦篇【UA01DC】"
+    "seriesName": "BLEACH 千年血戦篇【UA01DC】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA01DC/BLC-1-039",
@@ -53701,7 +53830,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570009",
-    "seriesName": "僕とロボコ 【UA09ST】"
+    "seriesName": "僕とロボコ 【UA09ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09ST/BTR-1-026",
@@ -53725,7 +53855,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570009",
-    "seriesName": "僕とロボコ 【UA09ST】"
+    "seriesName": "僕とロボコ 【UA09ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09ST/BTR-1-028",
@@ -54646,7 +54777,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-026",
@@ -54670,7 +54802,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-027",
@@ -55004,7 +55137,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-041",
@@ -55070,7 +55204,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-044",
@@ -56076,7 +56211,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-085",
@@ -56100,7 +56236,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570109",
-    "seriesName": "僕とロボコ 【UA09BT】"
+    "seriesName": "僕とロボコ 【UA09BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA09BT/BTR-1-086",
@@ -56619,7 +56756,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570010",
-    "seriesName": "僕のヒーローアカデミア 【UA10ST】"
+    "seriesName": "僕のヒーローアカデミア 【UA10ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10ST/MHA-1-036",
@@ -56685,7 +56823,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570010",
-    "seriesName": "僕のヒーローアカデミア 【UA10ST】"
+    "seriesName": "僕のヒーローアカデミア 【UA10ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10ST/MHA-1-052",
@@ -56989,7 +57128,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570010",
-    "seriesName": "僕のヒーローアカデミア 【UA10ST】"
+    "seriesName": "僕のヒーローアカデミア 【UA10ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA10ST/MHA-1-109",
@@ -57077,7 +57217,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570206",
-    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】"
+    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX06BT/MHA-2-002",
@@ -57123,7 +57264,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570206",
-    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】"
+    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX06BT/MHA-2-004",
@@ -57147,7 +57289,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570206",
-    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】"
+    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX06BT/MHA-2-005",
@@ -58548,7 +58691,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570206",
-    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】"
+    "seriesName": "僕のヒーローアカデミア Vol.2 【EX06BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX06BT/MHA-2-061",
@@ -59004,7 +59148,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570011",
-    "seriesName": "銀魂 【UA11ST】"
+    "seriesName": "銀魂 【UA11ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11ST/GNT-1-077",
@@ -59026,7 +59171,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570011",
-    "seriesName": "銀魂 【UA11ST】"
+    "seriesName": "銀魂 【UA11ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11ST/GNT-1-078",
@@ -59552,7 +59698,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-005",
@@ -59867,7 +60014,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-018",
@@ -60458,7 +60606,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-042",
@@ -60944,7 +61093,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-061",
@@ -61185,7 +61335,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-071",
@@ -61346,7 +61497,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570111",
-    "seriesName": "銀魂 【UA11BT】"
+    "seriesName": "銀魂 【UA11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA11BT/GNT-1-078",
@@ -62078,7 +62230,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570012",
-    "seriesName": "ブルーロック 【UA12ST】"
+    "seriesName": "ブルーロック 【UA12ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12ST/BLK-1-043",
@@ -62155,7 +62308,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570012",
-    "seriesName": "ブルーロック 【UA12ST】"
+    "seriesName": "ブルーロック 【UA12ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12ST/BLK-1-052",
@@ -62660,7 +62814,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-007",
@@ -63079,7 +63234,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-025",
@@ -63360,7 +63516,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-037",
@@ -63663,7 +63820,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-049",
@@ -64242,7 +64400,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-073",
@@ -64456,7 +64615,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-082",
@@ -64526,7 +64686,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570112",
-    "seriesName": "ブルーロック 【UA12BT】"
+    "seriesName": "ブルーロック 【UA12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA12BT/BLK-1-085",
@@ -65391,7 +65552,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570013",
-    "seriesName": "鉄拳7 【UA13ST】"
+    "seriesName": "鉄拳7 【UA13ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13ST/TKN-1-080",
@@ -65413,7 +65575,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570013",
-    "seriesName": "鉄拳7 【UA13ST】"
+    "seriesName": "鉄拳7 【UA13ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13ST/TKN-1-085",
@@ -65980,7 +66143,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-009",
@@ -66162,7 +66326,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-017",
@@ -66971,7 +67136,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-050",
@@ -67215,7 +67381,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-060",
@@ -67697,7 +67864,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-080",
@@ -67719,7 +67887,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570113",
-    "seriesName": "鉄拳7 【UA13BT】"
+    "seriesName": "鉄拳7 【UA13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA13BT/TKN-1-081",
@@ -68412,7 +68581,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570014",
-    "seriesName": "Dr.STONE 【UA14ST】"
+    "seriesName": "Dr.STONE 【UA14ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14ST/DST-1-076",
@@ -68490,7 +68660,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570014",
-    "seriesName": "Dr.STONE 【UA14ST】"
+    "seriesName": "Dr.STONE 【UA14ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14ST/DST-1-096",
@@ -68915,7 +69086,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-005",
@@ -69332,7 +69504,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-022",
@@ -69980,7 +70153,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-049",
@@ -70004,7 +70178,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-050",
@@ -70641,7 +70816,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-076",
@@ -71032,7 +71208,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-091",
@@ -71137,7 +71314,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570114",
-    "seriesName": "Dr.STONE 【UA14BT】"
+    "seriesName": "Dr.STONE 【UA14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA14BT/DST-1-095",
@@ -71532,7 +71710,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570015",
-    "seriesName": "ソードアート・オンライン 【UA15ST】"
+    "seriesName": "ソードアート・オンライン 【UA15ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA15ST/SAO-1-046",
@@ -72043,7 +72222,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570208",
-    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】"
+    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX08BT/SAO-2-007",
@@ -73103,7 +73283,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570208",
-    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】"
+    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX08BT/SAO-2-049",
@@ -73153,7 +73334,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570208",
-    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】"
+    "seriesName": "ソードアート・オンライン Vol.2 【EX08BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX08BT/SAO-2-051",
@@ -74129,7 +74311,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570016",
-    "seriesName": "SYNDUALITY Noir 【UA16ST】"
+    "seriesName": "SYNDUALITY Noir 【UA16ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16ST/SYN-1-031",
@@ -74560,7 +74743,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-006",
@@ -75121,7 +75305,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-028",
@@ -75357,7 +75542,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-038",
@@ -75826,7 +76012,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-056",
@@ -76146,7 +76333,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-069",
@@ -76504,7 +76692,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570116",
-    "seriesName": "SYNDUALITY Noir 【UA16BT】"
+    "seriesName": "SYNDUALITY Noir 【UA16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA16BT/SYN-1-083",
@@ -77138,7 +77327,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570017",
-    "seriesName": "トリコ 【UA17ST】"
+    "seriesName": "トリコ 【UA17ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17ST/TRK-1-050",
@@ -77162,7 +77352,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570017",
-    "seriesName": "トリコ 【UA17ST】"
+    "seriesName": "トリコ 【UA17ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17ST/TRK-1-052",
@@ -77692,7 +77883,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-006",
@@ -78152,7 +78344,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-024",
@@ -78728,7 +78921,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-048",
@@ -78798,7 +78992,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-051",
@@ -79450,7 +79645,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-077",
@@ -79603,7 +79799,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570117",
-    "seriesName": "トリコ 【UA17BT】"
+    "seriesName": "トリコ 【UA17BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA17BT/TRK-1-083",
@@ -80242,7 +80439,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570018",
-    "seriesName": "勝利の女神：NIKKE 【UA18ST】"
+    "seriesName": "勝利の女神：NIKKE 【UA18ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18ST/NIK-1-002",
@@ -80267,7 +80465,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570018",
-    "seriesName": "勝利の女神：NIKKE 【UA18ST】"
+    "seriesName": "勝利の女神：NIKKE 【UA18ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA18ST/NIK-1-004",
@@ -81750,7 +81949,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570302",
-    "seriesName": "勝利の女神：NIKKE【PC02BT】"
+    "seriesName": "勝利の女神：NIKKE【PC02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "PC02BT/NIK-2-036",
@@ -81961,7 +82161,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570302",
-    "seriesName": "勝利の女神：NIKKE【PC02BT】"
+    "seriesName": "勝利の女神：NIKKE【PC02BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "PC02BT/NIK-2-044",
@@ -82381,7 +82582,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570019",
-    "seriesName": "ハイキュー‼ 【UA19ST】"
+    "seriesName": "ハイキュー‼ 【UA19ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19ST/HIQ-1-083",
@@ -82485,7 +82687,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570019",
-    "seriesName": "ハイキュー‼ 【UA19ST】"
+    "seriesName": "ハイキュー‼ 【UA19ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19ST/HIQ-1-099",
@@ -83297,7 +83500,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-016",
@@ -83400,7 +83604,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-020",
@@ -83664,7 +83869,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-030",
@@ -84420,7 +84626,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-059",
@@ -84550,7 +84757,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-064",
@@ -84938,7 +85146,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-079",
@@ -85391,7 +85600,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570119",
-    "seriesName": "ハイキュー‼ 【UA19BT】"
+    "seriesName": "ハイキュー‼ 【UA19BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA19BT/HIQ-1-096",
@@ -85659,7 +85869,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570020",
-    "seriesName": "ブラッククローバー 【UA20ST】"
+    "seriesName": "ブラッククローバー 【UA20ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20ST/BCV-1-073",
@@ -85757,7 +85968,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570020",
-    "seriesName": "ブラッククローバー 【UA20ST】"
+    "seriesName": "ブラッククローバー 【UA20ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20ST/BCV-1-089",
@@ -86132,7 +86344,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570020",
-    "seriesName": "ブラッククローバー 【UA20ST】"
+    "seriesName": "ブラッククローバー 【UA20ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20ST/BCV-1-112",
@@ -86456,7 +86669,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-011",
@@ -86654,7 +86868,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-019",
@@ -87437,7 +87652,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-050",
@@ -87487,7 +87703,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-052",
@@ -87914,7 +88131,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-069",
@@ -88392,7 +88610,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570120",
-    "seriesName": "ブラッククローバー 【UA20BT】"
+    "seriesName": "ブラッククローバー 【UA20BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA20BT/BCV-1-088",
@@ -88949,7 +89168,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570021",
-    "seriesName": "幽☆遊☆白書 【UA21ST】"
+    "seriesName": "幽☆遊☆白書 【UA21ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21ST/YYH-1-055",
@@ -88971,7 +89191,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570021",
-    "seriesName": "幽☆遊☆白書 【UA21ST】"
+    "seriesName": "幽☆遊☆白書 【UA21ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21ST/YYH-1-057",
@@ -89643,7 +89864,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-011",
@@ -89902,7 +90124,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-022",
@@ -90279,7 +90502,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-038",
@@ -90566,7 +90790,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-050",
@@ -90707,7 +90932,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-056",
@@ -91155,7 +91381,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-075",
@@ -91267,7 +91494,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570121",
-    "seriesName": "幽☆遊☆白書 【UA21BT】"
+    "seriesName": "幽☆遊☆白書 【UA21BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA21BT/YYH-1-080",
@@ -91933,7 +92161,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570122",
-    "seriesName": "GAMERA -Rebirth- 【UA22BT】"
+    "seriesName": "GAMERA -Rebirth- 【UA22BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA22BT/GMR-1-002",
@@ -91977,7 +92206,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570122",
-    "seriesName": "GAMERA -Rebirth- 【UA22BT】"
+    "seriesName": "GAMERA -Rebirth- 【UA22BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA22BT/GMR-1-004",
@@ -93017,7 +93247,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570122",
-    "seriesName": "GAMERA -Rebirth- 【UA22BT】"
+    "seriesName": "GAMERA -Rebirth- 【UA22BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA22BT/GMR-1-046",
@@ -93191,7 +93422,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570122",
-    "seriesName": "GAMERA -Rebirth- 【UA22BT】"
+    "seriesName": "GAMERA -Rebirth- 【UA22BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA22BT/GMR-1-053",
@@ -93215,7 +93447,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570122",
-    "seriesName": "GAMERA -Rebirth- 【UA22BT】"
+    "seriesName": "GAMERA -Rebirth- 【UA22BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA22BT/GMR-1-054",
@@ -94185,7 +94418,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570023",
-    "seriesName": "進撃の巨人 【UA23ST】"
+    "seriesName": "進撃の巨人 【UA23ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23ST/AOT-1-070",
@@ -94313,7 +94547,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570023",
-    "seriesName": "進撃の巨人 【UA23ST】"
+    "seriesName": "進撃の巨人 【UA23ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA23ST/AOT-1-090",
@@ -94769,7 +95004,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570210",
-    "seriesName": "進撃の巨人 Vol.2 【EX10BT】"
+    "seriesName": "進撃の巨人 Vol.2 【EX10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX10BT/AOT-2-002",
@@ -94984,7 +95220,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570210",
-    "seriesName": "進撃の巨人 Vol.2 【EX10BT】"
+    "seriesName": "進撃の巨人 Vol.2 【EX10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX10BT/AOT-2-011",
@@ -95267,7 +95504,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570210",
-    "seriesName": "進撃の巨人 Vol.2 【EX10BT】"
+    "seriesName": "進撃の巨人 Vol.2 【EX10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX10BT/AOT-2-022",
@@ -95744,7 +95982,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570210",
-    "seriesName": "進撃の巨人 Vol.2 【EX10BT】"
+    "seriesName": "進撃の巨人 Vol.2 【EX10BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX10BT/AOT-2-041",
@@ -96894,7 +97133,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570124",
-    "seriesName": "SHY 【UA24BT】"
+    "seriesName": "SHY 【UA24BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA24BT/SHY-1-008",
@@ -96916,7 +97156,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570124",
-    "seriesName": "SHY 【UA24BT】"
+    "seriesName": "SHY 【UA24BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA24BT/SHY-1-009",
@@ -97763,7 +98004,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570124",
-    "seriesName": "SHY 【UA24BT】"
+    "seriesName": "SHY 【UA24BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA24BT/SHY-1-043",
@@ -98422,7 +98664,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570124",
-    "seriesName": "SHY 【UA24BT】"
+    "seriesName": "SHY 【UA24BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA24BT/SHY-1-069",
@@ -98548,7 +98791,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570124",
-    "seriesName": "SHY 【UA24BT】"
+    "seriesName": "SHY 【UA24BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA24BT/SHY-1-074",
@@ -99759,7 +100003,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570125",
-    "seriesName": "アンデッドアンラック 【UA25BT】"
+    "seriesName": "アンデッドアンラック 【UA25BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA25BT/AND-1-031",
@@ -99783,7 +100028,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570125",
-    "seriesName": "アンデッドアンラック 【UA25BT】"
+    "seriesName": "アンデッドアンラック 【UA25BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA25BT/AND-1-032",
@@ -100023,7 +100269,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570125",
-    "seriesName": "アンデッドアンラック 【UA25BT】"
+    "seriesName": "アンデッドアンラック 【UA25BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA25BT/AND-1-042",
@@ -100835,7 +101082,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570125",
-    "seriesName": "アンデッドアンラック 【UA25BT】"
+    "seriesName": "アンデッドアンラック 【UA25BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA25BT/AND-1-074",
@@ -100861,7 +101109,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570125",
-    "seriesName": "アンデッドアンラック 【UA25BT】"
+    "seriesName": "アンデッドアンラック 【UA25BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA25BT/AND-1-075",
@@ -101676,7 +101925,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570126",
-    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】"
+    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA26BT/RLY-1-017",
@@ -101798,7 +102048,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570126",
-    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】"
+    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA26BT/RLY-1-022",
@@ -102390,7 +102641,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570126",
-    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】"
+    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA26BT/RLY-1-046",
@@ -103021,7 +103273,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570126",
-    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】"
+    "seriesName": "君のことが大大大大大好きな100人の彼女 【UA26BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA26BT/RLY-1-072",
@@ -103949,7 +104202,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570127",
-    "seriesName": "学園アイドルマスター 【UA27BT】"
+    "seriesName": "学園アイドルマスター 【UA27BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA27BT/GIM-1-013",
@@ -103993,7 +104247,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570127",
-    "seriesName": "学園アイドルマスター 【UA27BT】"
+    "seriesName": "学園アイドルマスター 【UA27BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA27BT/GIM-1-015",
@@ -104299,7 +104554,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570127",
-    "seriesName": "学園アイドルマスター 【UA27BT】"
+    "seriesName": "学園アイドルマスター 【UA27BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA27BT/GIM-1-028",
@@ -104653,7 +104909,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570127",
-    "seriesName": "学園アイドルマスター 【UA27BT】"
+    "seriesName": "学園アイドルマスター 【UA27BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA27BT/GIM-1-043",
@@ -104959,7 +105216,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570127",
-    "seriesName": "学園アイドルマスター 【UA27BT】"
+    "seriesName": "学園アイドルマスター 【UA27BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA27BT/GIM-1-056",
@@ -106225,7 +106483,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570213",
-    "seriesName": "学園アイドルマスター Vol.2【EX13BT】"
+    "seriesName": "学園アイドルマスター Vol.2【EX13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX13BT/GIM-2-002",
@@ -106457,7 +106716,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570213",
-    "seriesName": "学園アイドルマスター Vol.2【EX13BT】"
+    "seriesName": "学園アイドルマスター Vol.2【EX13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX13BT/GIM-2-011",
@@ -106889,7 +107149,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570213",
-    "seriesName": "学園アイドルマスター Vol.2【EX13BT】"
+    "seriesName": "学園アイドルマスター Vol.2【EX13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX13BT/GIM-2-028",
@@ -107439,7 +107700,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570213",
-    "seriesName": "学園アイドルマスター Vol.2【EX13BT】"
+    "seriesName": "学園アイドルマスター Vol.2【EX13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX13BT/GIM-2-050",
@@ -107636,7 +107898,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570213",
-    "seriesName": "学園アイドルマスター Vol.2【EX13BT】"
+    "seriesName": "学園アイドルマスター Vol.2【EX13BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX13BT/GIM-2-058",
@@ -108826,7 +109089,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570128",
-    "seriesName": "怪獣８号 【UA28BT】"
+    "seriesName": "怪獣８号 【UA28BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA28BT/KJ8-1-026",
@@ -108986,7 +109250,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570128",
-    "seriesName": "怪獣８号 【UA28BT】"
+    "seriesName": "怪獣８号 【UA28BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA28BT/KJ8-1-033",
@@ -109410,7 +109675,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570128",
-    "seriesName": "怪獣８号 【UA28BT】"
+    "seriesName": "怪獣８号 【UA28BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA28BT/KJ8-1-051",
@@ -109601,7 +109867,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570128",
-    "seriesName": "怪獣８号 【UA28BT】"
+    "seriesName": "怪獣８号 【UA28BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA28BT/KJ8-1-059",
@@ -109934,7 +110201,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570128",
-    "seriesName": "怪獣８号 【UA28BT】"
+    "seriesName": "怪獣８号 【UA28BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA28BT/KJ8-1-073",
@@ -110423,7 +110691,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570029",
-    "seriesName": "仮面ライダー 【UA29ST】"
+    "seriesName": "仮面ライダー 【UA29ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29ST/KMR-1-017",
@@ -111213,7 +111482,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-011",
@@ -111354,7 +111624,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-017",
@@ -112137,7 +112408,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-049",
@@ -112161,7 +112433,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-050",
@@ -112342,7 +112615,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-057",
@@ -112747,7 +113021,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-074",
@@ -113226,7 +113501,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570129",
-    "seriesName": "仮面ライダー 【UA29BT】"
+    "seriesName": "仮面ライダー 【UA29BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA29BT/KMR-1-094",
@@ -113686,7 +113962,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-007",
@@ -113952,7 +114229,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-018",
@@ -114297,7 +114575,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-032",
@@ -114693,7 +114972,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-048",
@@ -115148,7 +115428,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-067",
@@ -115796,7 +116077,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570212",
-    "seriesName": "仮面ライダー Vol.2 【EX12BT】"
+    "seriesName": "仮面ライダー Vol.2 【EX12BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX12BT/KMR-2-093",
@@ -116225,7 +116507,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570030",
-    "seriesName": "アークナイツ 【UA30ST】"
+    "seriesName": "アークナイツ 【UA30ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30ST/ARK-1-049",
@@ -116304,7 +116587,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570030",
-    "seriesName": "アークナイツ 【UA30ST】"
+    "seriesName": "アークナイツ 【UA30ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30ST/ARK-1-062",
@@ -117070,7 +117354,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-015",
@@ -117222,7 +117507,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-021",
@@ -117890,7 +118176,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-047",
@@ -118023,7 +118310,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-052",
@@ -118698,7 +118986,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-078",
@@ -119009,7 +119298,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570130",
-    "seriesName": "アークナイツ 【UA30BT】"
+    "seriesName": "アークナイツ 【UA30BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA30BT/ARK-1-090",
@@ -120079,7 +120369,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570211",
-    "seriesName": "アークナイツ Vol.2 【EX11BT】"
+    "seriesName": "アークナイツ Vol.2 【EX11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX11BT/ARK-2-026",
@@ -120415,7 +120706,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570211",
-    "seriesName": "アークナイツ Vol.2 【EX11BT】"
+    "seriesName": "アークナイツ Vol.2 【EX11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX11BT/ARK-2-040",
@@ -120752,7 +121044,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570211",
-    "seriesName": "アークナイツ Vol.2 【EX11BT】"
+    "seriesName": "アークナイツ Vol.2 【EX11BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX11BT/ARK-2-053",
@@ -121449,7 +121742,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570031",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31ST】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31ST/MMM-1-076",
@@ -121524,7 +121818,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570031",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31ST】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31ST/MMM-1-085",
@@ -122560,7 +122855,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-024",
@@ -122634,7 +122930,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-027",
@@ -123130,7 +123427,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-047",
@@ -123455,7 +123753,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-058",
@@ -123776,7 +124075,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-071",
@@ -123954,7 +124254,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-078",
@@ -124053,7 +124354,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570131",
-    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】"
+    "seriesName": "魔法少女まどか☆マギカ 【UA31BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA31BT/MMM-1-082",
@@ -125226,7 +125528,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570216",
-    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】"
+    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX16BT/MMM-2-022",
@@ -125566,7 +125869,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570216",
-    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】"
+    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX16BT/MMM-2-035",
@@ -125919,7 +126223,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570216",
-    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】"
+    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX16BT/MMM-2-048",
@@ -126104,7 +126409,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570216",
-    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】"
+    "seriesName": "魔法少女まどか☆マギカ Magia Exedra【EX16BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX16BT/MMM-2-055",
@@ -127107,7 +127413,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570132",
-    "seriesName": "シャングリラ・フロンティア 【UA32BT】"
+    "seriesName": "シャングリラ・フロンティア 【UA32BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA32BT/SNF-1-017",
@@ -127181,7 +127488,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570132",
-    "seriesName": "シャングリラ・フロンティア 【UA32BT】"
+    "seriesName": "シャングリラ・フロンティア 【UA32BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA32BT/SNF-1-020",
@@ -127890,7 +128198,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570132",
-    "seriesName": "シャングリラ・フロンティア 【UA32BT】"
+    "seriesName": "シャングリラ・フロンティア 【UA32BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA32BT/SNF-1-049",
@@ -128150,7 +128459,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570132",
-    "seriesName": "シャングリラ・フロンティア 【UA32BT】"
+    "seriesName": "シャングリラ・フロンティア 【UA32BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA32BT/SNF-1-060",
@@ -128411,7 +128721,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570132",
-    "seriesName": "シャングリラ・フロンティア 【UA32BT】"
+    "seriesName": "シャングリラ・フロンティア 【UA32BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA32BT/SNF-1-071",
@@ -129009,7 +129320,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570133",
-    "seriesName": "2.5次元の誘惑 【UA33BT】"
+    "seriesName": "2.5次元の誘惑 【UA33BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA33BT/NGR-1-004",
@@ -129105,7 +129417,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570133",
-    "seriesName": "2.5次元の誘惑 【UA33BT】"
+    "seriesName": "2.5次元の誘惑 【UA33BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA33BT/NGR-1-008",
@@ -130011,7 +130324,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570133",
-    "seriesName": "2.5次元の誘惑 【UA33BT】"
+    "seriesName": "2.5次元の誘惑 【UA33BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA33BT/NGR-1-045",
@@ -130257,7 +130571,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570133",
-    "seriesName": "2.5次元の誘惑 【UA33BT】"
+    "seriesName": "2.5次元の誘惑 【UA33BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA33BT/NGR-1-055",
@@ -130495,7 +130810,8 @@
     "isUnrevealed": false,
     "seriesId": "570133",
     "seriesName": "2.5次元の誘惑 【UA33BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA33BT/NGR-1-064",
@@ -131295,7 +131611,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570134",
-    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】"
+    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA34BT/CGD-1-002",
@@ -131852,7 +132169,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570134",
-    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】"
+    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA34BT/CGD-1-024",
@@ -132340,7 +132658,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570134",
-    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】"
+    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA34BT/CGD-1-043",
@@ -132832,7 +133151,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570134",
-    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】"
+    "seriesName": "コードギアス 奪還のロゼ 【UA34BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA34BT/CGD-1-061",
@@ -133796,7 +134116,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570035",
-    "seriesName": "ワンパンマン 【UA35ST】"
+    "seriesName": "ワンパンマン 【UA35ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35ST/OPM-1-029",
@@ -134598,7 +134919,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-017",
@@ -134724,7 +135046,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-022",
@@ -135091,7 +135414,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-037",
@@ -135525,7 +135849,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-054",
@@ -136281,7 +136606,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-085",
@@ -136353,7 +136679,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570135",
-    "seriesName": "ワンパンマン 【UA35BT】"
+    "seriesName": "ワンパンマン 【UA35BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA35BT/OPM-1-088",
@@ -136829,7 +137156,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570036",
-    "seriesName": "「マクロス」シリーズ 【UA36ST】"
+    "seriesName": "「マクロス」シリーズ 【UA36ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36ST/MCR-1-055",
@@ -136933,7 +137261,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570036",
-    "seriesName": "「マクロス」シリーズ 【UA36ST】"
+    "seriesName": "「マクロス」シリーズ 【UA36ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36ST/MCR-1-059",
@@ -137297,7 +137626,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570036",
-    "seriesName": "「マクロス」シリーズ 【UA36ST】"
+    "seriesName": "「マクロス」シリーズ 【UA36ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36ST/MCR-1-111",
@@ -137416,7 +137746,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-002",
@@ -137532,7 +137863,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-007",
@@ -138261,7 +138593,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-037",
@@ -138685,7 +139018,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-054",
@@ -138815,7 +139149,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-059",
@@ -139130,7 +139465,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-071",
@@ -139508,7 +139844,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570136",
-    "seriesName": "「マクロス」シリーズ 【UA36BT】"
+    "seriesName": "「マクロス」シリーズ 【UA36BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA36BT/MCR-1-086",
@@ -140174,7 +140511,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570214",
-    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】"
+    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX14BT/MCR-2-007",
@@ -140634,7 +140972,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570214",
-    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】"
+    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX14BT/MCR-2-025",
@@ -140740,7 +141079,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570214",
-    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】"
+    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX14BT/MCR-2-029",
@@ -141059,7 +141399,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570214",
-    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】"
+    "seriesName": "｢マクロス｣シリーズ Vol.2【EX14BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "EX14BT/MCR-2-041",
@@ -142315,7 +142656,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570037",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37ST】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37ST/FMA-1-031",
@@ -142887,7 +143229,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-009",
@@ -143052,7 +143395,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-016",
@@ -143177,7 +143521,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-021",
@@ -143203,7 +143548,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-022",
@@ -143645,7 +143991,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-040",
@@ -143783,7 +144130,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-046",
@@ -144198,7 +144546,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-063",
@@ -144344,7 +144693,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-069",
@@ -144498,7 +144848,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-075",
@@ -144957,7 +145308,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570137",
-    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】"
+    "seriesName": "鋼の錬金術師 FULLMETAL ALCHEMIST 【UA37BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA37BT/FMA-1-093",
@@ -145740,7 +146092,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570138",
-    "seriesName": "WIND BREAKER 【UA38BT】"
+    "seriesName": "WIND BREAKER 【UA38BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA38BT/WBK-1-019",
@@ -146083,7 +146436,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570138",
-    "seriesName": "WIND BREAKER 【UA38BT】"
+    "seriesName": "WIND BREAKER 【UA38BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA38BT/WBK-1-032",
@@ -146423,7 +146777,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570138",
-    "seriesName": "WIND BREAKER 【UA38BT】"
+    "seriesName": "WIND BREAKER 【UA38BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA38BT/WBK-1-046",
@@ -146635,7 +146990,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570138",
-    "seriesName": "WIND BREAKER 【UA38BT】"
+    "seriesName": "WIND BREAKER 【UA38BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA38BT/WBK-1-054",
@@ -147938,7 +148294,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-011",
@@ -148450,7 +148807,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-030",
@@ -148476,7 +148834,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-031",
@@ -148795,7 +149154,8 @@
     "isUnrevealed": false,
     "seriesId": "570139",
     "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-044",
@@ -148846,7 +149206,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-046",
@@ -149025,7 +149386,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-053",
@@ -149227,7 +149589,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570139",
-    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】"
+    "seriesName": "『キン肉マン』完璧超人始祖編 【UA39BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA39BT/KIN-1-061",
@@ -150074,7 +150437,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570040",
-    "seriesName": "Re:ゼロから始める異世界生活 【UA40ST】"
+    "seriesName": "Re:ゼロから始める異世界生活 【UA40ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA40ST/REZ-1-022",
@@ -150439,7 +150803,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570040",
-    "seriesName": "Re:ゼロから始める異世界生活 【UA40ST】"
+    "seriesName": "Re:ゼロから始める異世界生活 【UA40ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA40ST/REZ-1-111",
@@ -150674,7 +151039,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570140",
-    "seriesName": "Re:ゼロから始める異世界生活 【UA40BT】"
+    "seriesName": "Re:ゼロから始める異世界生活 【UA40BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA40BT/REZ-1-007",
@@ -150909,7 +151275,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570140",
-    "seriesName": "Re:ゼロから始める異世界生活 【UA40BT】"
+    "seriesName": "Re:ゼロから始める異世界生活 【UA40BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA40BT/REZ-1-017",
@@ -153225,7 +153592,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570041",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41ST】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41ST/RNK-1-085",
@@ -153701,7 +154069,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-004",
@@ -154197,7 +154566,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-024",
@@ -154223,7 +154593,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-025",
@@ -154774,7 +155145,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-048",
@@ -154820,7 +155192,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-050",
@@ -154895,7 +155268,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-053",
@@ -155368,7 +155742,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-072",
@@ -155600,7 +155975,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-082",
@@ -155646,7 +156022,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570141",
-    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】"
+    "seriesName": "るろうに剣心 －明治剣客浪漫譚－ 【UA41BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA41BT/RNK-1-084",
@@ -156815,7 +157192,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-005",
@@ -157095,7 +157473,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-017",
@@ -157608,7 +157987,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-038",
@@ -157679,7 +158059,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-041",
@@ -158348,7 +158729,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-069",
@@ -158871,7 +159253,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570142",
-    "seriesName": "〈物語〉シリーズ 【UA42BT】"
+    "seriesName": "〈物語〉シリーズ 【UA42BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA42BT/MGS-1-091",
@@ -159325,7 +159708,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570143",
-    "seriesName": "SAKAMOTO DAYS【UA43BT】"
+    "seriesName": "SAKAMOTO DAYS【UA43BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA43BT/SMD-1-003",
@@ -159394,7 +159778,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570143",
-    "seriesName": "SAKAMOTO DAYS【UA43BT】"
+    "seriesName": "SAKAMOTO DAYS【UA43BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA43BT/SMD-1-006",
@@ -160603,7 +160988,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570143",
-    "seriesName": "SAKAMOTO DAYS【UA43BT】"
+    "seriesName": "SAKAMOTO DAYS【UA43BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA43BT/SMD-1-054",
@@ -160629,7 +161015,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570143",
-    "seriesName": "SAKAMOTO DAYS【UA43BT】"
+    "seriesName": "SAKAMOTO DAYS【UA43BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA43BT/SMD-1-055",
@@ -161090,7 +161477,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570143",
-    "seriesName": "SAKAMOTO DAYS【UA43BT】"
+    "seriesName": "SAKAMOTO DAYS【UA43BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA43BT/SMD-1-073",
@@ -161560,7 +161948,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570044",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44ST】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44ST/EVA-1-069",
@@ -161582,7 +161971,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570044",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44ST】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44ST/EVA-1-072",
@@ -162096,7 +162486,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-002",
@@ -162236,7 +162627,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-008",
@@ -162755,7 +163147,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-030",
@@ -162946,7 +163339,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-038",
@@ -163717,7 +164111,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-069",
@@ -163739,7 +164134,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-070",
@@ -163785,7 +164181,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570144",
-    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】"
+    "seriesName": "ヱヴァンゲリヲン新劇場版【UA44BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA44BT/EVA-1-072",
@@ -164655,7 +165052,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-004",
@@ -165394,7 +165792,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-034",
@@ -165447,7 +165846,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-036",
@@ -165471,7 +165871,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-037",
@@ -165944,7 +166345,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-057",
@@ -166133,7 +166535,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570145",
-    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】"
+    "seriesName": "To LOVEる-とらぶる- Memory of Heroines【UA45BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA45BT/TLR-1-065",
@@ -166904,7 +167307,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570146",
-    "seriesName": "カグラバチ【UA46BT】"
+    "seriesName": "カグラバチ【UA46BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA46BT/KGR-1-003",
@@ -167314,7 +167718,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570146",
-    "seriesName": "カグラバチ【UA46BT】"
+    "seriesName": "カグラバチ【UA46BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA46BT/KGR-1-020",
@@ -168157,7 +168562,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570146",
-    "seriesName": "カグラバチ【UA46BT】"
+    "seriesName": "カグラバチ【UA46BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA46BT/KGR-1-054",
@@ -168248,7 +168654,8 @@
     "isUnrevealed": false,
     "seriesId": "570146",
     "seriesName": "カグラバチ【UA46BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA46BT/KGR-1-058",
@@ -168346,7 +168753,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570146",
-    "seriesName": "カグラバチ【UA46BT】"
+    "seriesName": "カグラバチ【UA46BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA46BT/KGR-1-062",
@@ -169296,7 +169704,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570047",
-    "seriesName": "東京喰種トーキョーグール【UA47ST】"
+    "seriesName": "東京喰種トーキョーグール【UA47ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47ST/TKG-1-057",
@@ -169318,7 +169727,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570047",
-    "seriesName": "東京喰種トーキョーグール【UA47ST】"
+    "seriesName": "東京喰種トーキョーグール【UA47ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47ST/TKG-1-058",
@@ -169781,7 +170191,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-004",
@@ -169831,7 +170242,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-006",
@@ -170142,7 +170554,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-018",
@@ -171101,7 +171514,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-057",
@@ -171123,7 +171537,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-058",
@@ -171932,7 +172347,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-091",
@@ -171982,7 +172398,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570147",
-    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】"
+    "seriesName": "「東京喰種トーキョーグール」シリーズ【UA47BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA47BT/TKG-1-093",
@@ -172326,7 +172743,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570048",
-    "seriesName": "キングダム【UA48ST】"
+    "seriesName": "キングダム【UA48ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48ST/KGD-1-036",
@@ -172350,7 +172768,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570048",
-    "seriesName": "キングダム【UA48ST】"
+    "seriesName": "キングダム【UA48ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48ST/KGD-1-045",
@@ -172742,7 +173161,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570048",
-    "seriesName": "キングダム【UA48ST】"
+    "seriesName": "キングダム【UA48ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48ST/KGD-1-109",
@@ -173176,7 +173596,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-012",
@@ -173486,7 +173907,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-024",
@@ -173756,7 +174178,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-035",
@@ -173806,7 +174229,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-037",
@@ -174867,7 +175291,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-078",
@@ -175186,7 +175611,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570148",
-    "seriesName": "キングダム【UA48BT】"
+    "seriesName": "キングダム【UA48BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA48BT/KGD-1-090",
@@ -176037,7 +176463,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-018",
@@ -176169,7 +176596,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-023",
@@ -176383,7 +176811,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-031",
@@ -176790,7 +177219,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-047",
@@ -176840,7 +177270,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-049",
@@ -177312,7 +177743,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-067",
@@ -177553,7 +177985,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570149",
-    "seriesName": "魔都精兵のスレイブ【UA49BT】"
+    "seriesName": "魔都精兵のスレイブ【UA49BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA49BT/MSS-1-076",
@@ -178211,7 +178644,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570150",
-    "seriesName": "犬夜叉【UA50BT】"
+    "seriesName": "犬夜叉【UA50BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA50BT/IYS-1-012",
@@ -178257,7 +178691,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570150",
-    "seriesName": "犬夜叉【UA50BT】"
+    "seriesName": "犬夜叉【UA50BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA50BT/IYS-1-014",
@@ -178357,7 +178792,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570150",
-    "seriesName": "犬夜叉【UA50BT】"
+    "seriesName": "犬夜叉【UA50BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA50BT/IYS-1-018",
@@ -179284,7 +179720,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570150",
-    "seriesName": "犬夜叉【UA50BT】"
+    "seriesName": "犬夜叉【UA50BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA50BT/IYS-1-056",
@@ -179495,7 +179932,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570150",
-    "seriesName": "犬夜叉【UA50BT】"
+    "seriesName": "犬夜叉【UA50BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA50BT/IYS-1-065",
@@ -180198,7 +180636,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570151",
-    "seriesName": "俺だけレベルアップな件【UA51BT】"
+    "seriesName": "俺だけレベルアップな件【UA51BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA51BT/SLG-1-004",
@@ -180269,7 +180708,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570151",
-    "seriesName": "俺だけレベルアップな件【UA51BT】"
+    "seriesName": "俺だけレベルアップな件【UA51BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA51BT/SLG-1-007",
@@ -180434,7 +180874,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570151",
-    "seriesName": "俺だけレベルアップな件【UA51BT】"
+    "seriesName": "俺だけレベルアップな件【UA51BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA51BT/SLG-1-014",
@@ -181110,7 +181551,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570151",
-    "seriesName": "俺だけレベルアップな件【UA51BT】"
+    "seriesName": "俺だけレベルアップな件【UA51BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA51BT/SLG-1-042",
@@ -181132,7 +181574,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570151",
-    "seriesName": "俺だけレベルアップな件【UA51BT】"
+    "seriesName": "俺だけレベルアップな件【UA51BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA51BT/SLG-1-043",
@@ -182773,7 +183216,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-019",
@@ -182843,7 +183287,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-022",
@@ -183349,7 +183794,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-043",
@@ -183581,7 +184027,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-052",
@@ -183817,7 +184264,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-061",
@@ -183896,7 +184344,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-064",
@@ -184086,7 +184535,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-071",
@@ -184166,7 +184616,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570152",
-    "seriesName": "陰の実力者になりたくて！【UA52BT】"
+    "seriesName": "陰の実力者になりたくて！【UA52BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA52BT/KJN-1-074",
@@ -184702,7 +185153,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570153",
-    "seriesName": "チェンソーマン【UA53BT】"
+    "seriesName": "チェンソーマン【UA53BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA53BT/CSM-1-004",
@@ -184748,7 +185200,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570153",
-    "seriesName": "チェンソーマン【UA53BT】"
+    "seriesName": "チェンソーマン【UA53BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA53BT/CSM-1-006",
@@ -185791,7 +186244,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570153",
-    "seriesName": "チェンソーマン【UA53BT】"
+    "seriesName": "チェンソーマン【UA53BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA53BT/CSM-1-050",
@@ -186027,7 +186481,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570153",
-    "seriesName": "チェンソーマン【UA53BT】"
+    "seriesName": "チェンソーマン【UA53BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA53BT/CSM-1-060",
@@ -186264,7 +186719,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570153",
-    "seriesName": "チェンソーマン【UA53BT】"
+    "seriesName": "チェンソーマン【UA53BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA53BT/CSM-1-070",
@@ -187155,7 +187611,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570154",
-    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-017",
@@ -187461,7 +187918,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570154",
-    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-030",
@@ -187838,7 +188296,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570154",
-    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-046",
@@ -187861,7 +188320,8 @@
     "isUnrevealed": false,
     "seriesId": "570154",
     "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-047",
@@ -188102,7 +188562,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570154",
-    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-057",
@@ -188511,7 +188972,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570154",
-    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】"
+    "seriesName": "無職転生 ～異世界行ったら本気だす～【UA54BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA54BT/MST-1-073",
@@ -189035,7 +189497,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570055",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55ST】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55ST/IMC-1-091",
@@ -189529,7 +189992,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570055",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55ST】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55ST】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55ST/IMC-1-AP01",
@@ -189572,7 +190036,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-002",
@@ -189673,7 +190138,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-006",
@@ -190113,7 +190579,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-023",
@@ -190241,7 +190708,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-028",
@@ -190411,7 +190879,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-035",
@@ -190726,7 +191195,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-046",
@@ -191301,7 +191771,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-068",
@@ -191690,7 +192161,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-083",
@@ -191896,7 +192368,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570155",
-    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】"
+    "seriesName": "アイドルマスター シンデレラガールズ【UA55BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA55BT/IMC-1-091",
@@ -192478,7 +192951,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-003",
@@ -192711,7 +193185,8 @@
     "isUnrevealed": false,
     "seriesId": "570156",
     "seriesName": "天元突破グレンラガン【UA56BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-012",
@@ -192814,7 +193289,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-016",
@@ -192867,7 +193343,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-018",
@@ -192891,7 +193368,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-019",
@@ -192915,7 +193393,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-020",
@@ -192994,7 +193473,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-023",
@@ -193042,7 +193522,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-025",
@@ -193284,7 +193765,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-034",
@@ -193311,7 +193793,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-035",
@@ -193716,7 +194199,8 @@
     "isUnrevealed": false,
     "seriesId": "570156",
     "seriesName": "天元突破グレンラガン【UA56BT】",
-    "hasBpPlus": true
+    "hasBpPlus": true,
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-051",
@@ -193969,7 +194453,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-061",
@@ -194045,7 +194530,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-064",
@@ -194119,7 +194605,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570156",
-    "seriesName": "天元突破グレンラガン【UA56BT】"
+    "seriesName": "天元突破グレンラガン【UA56BT】",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UA56BT/TTG-1-067",
@@ -195140,7 +195627,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPB/GIM-2-030",
@@ -196625,7 +197113,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/ARK-1-040",
@@ -196728,7 +197217,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/ARK-1-077",
@@ -196753,7 +197243,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/ARK-1-084",
@@ -197257,7 +197748,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/BLC-2-032",
@@ -197668,7 +198160,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/BTR-1-044",
@@ -197921,7 +198414,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/CGD-1-027",
@@ -198224,7 +198718,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/CGH-2-066",
@@ -198455,7 +198950,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/CSM-1-008",
@@ -198873,7 +199369,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/EVA-1-079",
@@ -200664,7 +201161,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/IMC-1-041",
@@ -201644,7 +202142,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/JJK-1-053",
@@ -203001,7 +203500,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/KMY-1-089",
@@ -203245,7 +203745,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/MCR-1-005",
@@ -205166,7 +205667,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/REZ-1-090",
@@ -207336,7 +207838,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/TOA-P-003",
@@ -207899,7 +208402,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/TTG-1-015",
@@ -207925,7 +208429,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/TTG-1-052",
@@ -208178,7 +208683,8 @@
     "isParallel": false,
     "isUnrevealed": false,
     "seriesId": "570901",
-    "seriesName": "プロモーションカード"
+    "seriesName": "プロモーションカード",
+    "hasGenEnergyPlus": true
   },
   {
     "code": "UAPR/YYH-1-081",

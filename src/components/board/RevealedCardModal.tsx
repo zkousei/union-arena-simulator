@@ -111,6 +111,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
 
   const hasValidImage = !!card.imageUrl && !imgError;
 
@@ -218,7 +219,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-slate-400">発生エナジー</span>
-                  <span className="font-black text-emerald-400 text-sm">{card.genEnergy}</span>
+                  <span className="font-black text-emerald-400 text-sm">{card.genEnergy}{effectiveHasGenEnergyPlus ? '+' : ''}</span>
                 </div>
               </div>
 

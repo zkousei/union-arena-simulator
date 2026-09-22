@@ -52,6 +52,7 @@ export function loadSavedDecks(): UserDeck[] {
                   bp: master.bp ?? it.card.bp,
                   hasBpPlus: master.hasBpPlus ?? it.card.hasBpPlus,
                   genEnergy: master.genEnergy,
+                  hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
                 },
               }
             : it;
@@ -118,6 +119,7 @@ function isValidImportedCard(value: unknown): boolean {
     typeof value.apCost === 'number' &&
     typeof value.reqEnergy === 'number' &&
     typeof value.genEnergy === 'number' &&
+    (value.hasGenEnergyPlus === undefined || typeof value.hasGenEnergyPlus === 'boolean') &&
     isStringArray(value.traits) &&
     isStringArray(value.triggers) &&
     typeof value.effectText === 'string'
@@ -157,7 +159,7 @@ export function importDeckFromJson(jsonStr: string): UserDeck {
     titleCode: parsed.titleCode,
     items: (parsed.items as UserDeck['items']).map((item) => {
       const master = CARD_DATABASE.find((card) => card.code === item.card.code);
-      return master ? { ...item, card: { ...item.card, genEnergy: master.genEnergy } } : item;
+      return master ? { ...item, card: { ...item.card, genEnergy: master.genEnergy, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false } } : item;
     }),
     ...(parsed.apCards !== undefined ? { apCards: parsed.apCards as UserDeck['apCards'] } : {}),
     updatedAt: Date.now(),

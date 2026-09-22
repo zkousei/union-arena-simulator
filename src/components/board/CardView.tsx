@@ -137,6 +137,7 @@ export const CardView: React.FC<CardViewProps> = ({
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
   const currentBp = (effectiveBp ?? 0) + card.bpModifier;
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
   const underCount = card.underCards?.length ?? 0;
@@ -409,8 +410,8 @@ export const CardView: React.FC<CardViewProps> = ({
               </span>
             )}
             {card.genEnergy > 0 && (
-              <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${card.genEnergy}`}>
-                {card.genEnergy}
+              <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${card.genEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`}>
+                {card.genEnergy}{effectiveHasGenEnergyPlus ? '+' : ''}
               </span>
             )}
           </div>

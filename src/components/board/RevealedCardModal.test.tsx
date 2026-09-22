@@ -24,6 +24,17 @@ const dummyCard: Card = {
 };
 
 describe('RevealedCardModal', () => {
+  it('shows the printed generated energy plus mark in card details', () => {
+    render(
+      <RevealedCardModal
+        revealed={null}
+        inspectCard={{ ...dummyCard, hasGenEnergyPlus: true }}
+        onDismissRevealed={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('1+')).toBeTruthy();
+  });
   it('renders trigger resolution buttons when revealed card is a trigger (isTrigger: true)', () => {
     const onDismissRevealed = vi.fn();
     render(

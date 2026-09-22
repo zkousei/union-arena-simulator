@@ -142,6 +142,7 @@ export function parseCardFromDetailHtml(
     /<dl class="cardDataCol generatedEnergyData">[\s\S]*?<dd class="cardDataContents">([\s\S]*?)<\/dd>/
   );
   let genEnergy = 1;
+  let hasGenEnergyPlus = false;
   if (cardType === 'EVENT') {
     genEnergy = 0;
   } else if (genMatch) {
@@ -153,6 +154,7 @@ export function parseCardFromDetailHtml(
       // Its filename ends in 2 (or 4 for two base energy), so read the visible icons.
       genEnergy = imgs.reduce((sum, img) => {
         const alt = getHtmlAttribute(img, 'alt') || '';
+        if (/[+＋]/.test(alt)) hasGenEnergyPlus = true;
         return sum + (alt.match(/[紫緑赤青黄]/g)?.length || 0);
       }, 0);
     }
@@ -250,6 +252,7 @@ export function parseCardFromDetailHtml(
     apCost,
     reqEnergy,
     genEnergy,
+    hasGenEnergyPlus,
     traits,
     triggers,
     effectText,

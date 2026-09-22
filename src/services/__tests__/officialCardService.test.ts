@@ -73,12 +73,12 @@ describe('officialCardService Tests', () => {
   });
 
   it.each([
-    ['purple1.png', '紫', 1],
-    ['purple2.png', '紫+', 1],
-    ['purple3.png', '紫紫', 2],
-    ['purple4.png', '紫紫+', 2],
-    ['green2.png', '緑+', 1],
-  ])('reads base generated energy from %s (%s)', (filename, alt, expected) => {
+    ['purple1.png', '紫', 1, false],
+    ['purple2.png', '紫+', 1, true],
+    ['purple3.png', '紫紫', 2, false],
+    ['purple4.png', '紫紫+', 2, true],
+    ['green2.png', '緑+', 1, true],
+  ])('reads base generated energy and plus mark from %s (%s)', (filename, alt, expected, hasPlus) => {
     const html = `
       <dl class="cardDataCol categoryData"><dd class="cardDataContents">キャラクター</dd></dl>
       <dl class="cardDataCol generatedEnergyData"><dd class="cardDataContents">
@@ -86,7 +86,9 @@ describe('officialCardService Tests', () => {
       </dd></dl>
     `;
 
-    expect(parseCardFromDetailHtml(html, 'UA01BT/CGH-1-001').genEnergy).toBe(expected);
+    const card = parseCardFromDetailHtml(html, 'UA01BT/CGH-1-001');
+    expect(card.genEnergy).toBe(expected);
+    expect(card.hasGenEnergyPlus).toBe(hasPlus);
   });
 
   it('keeps an explicit empty generated energy field at zero', () => {
@@ -96,16 +98,20 @@ describe('officialCardService Tests', () => {
     `;
 
     expect(parseCardFromDetailHtml(html, 'UA40BT/REZ-1-043').genEnergy).toBe(0);
+    expect(parseCardFromDetailHtml(html, 'UA40BT/REZ-1-043').hasGenEnergyPlus).toBe(false);
   });
 
   it('keeps synchronized card energy in line with the official printed icons', () => {
-    const energy = (code: string) => CARD_DATABASE.find((card) => card.code === code)?.genEnergy;
+    const energy = (code: string) => CARD_DATABASE.find((card) => card.code === code);
 
-    expect(energy('UA01BT/CGH-1-001')).toBe(1); // 紫+
-    expect(energy('UA42ST/MGS-1-039')).toBe(2); // 紫紫
-    expect(energy('UA43BT/SMD-1-054')).toBe(2); // 紫紫+
-    expect(energy('UA01BT/CGH-1-047')).toBe(3); // 緑緑緑
-    expect(energy('UA40BT/REZ-1-043')).toBe(0); // -
+    expect(energy('UA01BT/CGH-1-001')).toMatchObject({ genEnergy: 1, hasGenEnergyPlus: true });
+    expect(energy('UA42ST/MGS-1-039')).toMatchObject({ genEnergy: 2 });
+    expect(energy('UA42ST/MGS-1-039')?.hasGenEnergyPlus).not.toBe(true);
+    expect(energy('UA43BT/SMD-1-054')).toMatchObject({ genEnergy: 2, hasGenEnergyPlus: true });
+    expect(energy('UA01BT/CGH-1-047')).toMatchObject({ genEnergy: 3 });
+    expect(energy('UA01BT/CGH-1-047')?.hasGenEnergyPlus).not.toBe(true);
+    expect(energy('UA40BT/REZ-1-043')).toMatchObject({ genEnergy: 0 });
+    expect(energy('UA40BT/REZ-1-043')?.hasGenEnergyPlus).not.toBe(true);
   });
 
   it('should parse rarity and parallel cards correctly', () => {
