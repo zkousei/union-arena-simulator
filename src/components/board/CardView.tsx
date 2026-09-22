@@ -143,10 +143,14 @@ export const CardView: React.FC<CardViewProps> = ({
   const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
   const currentEnergy = getEffectiveGeneratedEnergy(card);
   const energyModifier = card.genEnergyModifier || 0;
+  const frontLineEnergy = card.frontLineGeneratedEnergy || 0;
   const printedEnergy = `${card.genEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`;
   const energyLabel = `${currentEnergy}${effectiveHasGenEnergyPlus ? '+' : ''}`;
   const currentBp = (effectiveBp ?? 0) + card.bpModifier;
+  const isFrontLine = location?.zone === 'frontLine';
   const isFieldCard = location?.zone === 'frontLine' || location?.zone === 'energyLine';
+  const manualEnergy = isFrontLine ? frontLineEnergy : energyModifier;
+  const displayedEnergy = isFrontLine ? frontLineEnergy : currentEnergy;
   const underCount = card.underCards?.length ?? 0;
   const raidBaseCount = card.underCards?.filter((c) => !c.isMarker).length ?? 0;
   const markerCount = card.underCards?.filter((c) => !!c.isMarker).length ?? 0;
@@ -412,7 +416,7 @@ export const CardView: React.FC<CardViewProps> = ({
         <div className={`relative z-10 flex items-center justify-between gap-0.5 ${isCompact ? 'text-[8px] p-0.5' : 'text-[9px] sm:text-[10px] p-1'} font-bold leading-none pointer-events-none ${
           card.isFaceDown ? (isCompact ? 'pt-2.5' : 'pt-3.5') : ''
         }`}>
-          <div className="flex items-center gap-0.5">
+          <div className="flex flex-wrap items-center gap-0.5">
             {card.reqEnergy > 0 && (
               <span className={`bg-slate-900/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-amber-300 border border-amber-500/40`} title={`必要エナジー: ${card.reqEnergy}`}>
                 ⚡{card.reqEnergy}
@@ -421,6 +425,11 @@ export const CardView: React.FC<CardViewProps> = ({
             {(card.genEnergy > 0 || currentEnergy > 0) && (
               <span className={`bg-emerald-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-emerald-300 border border-emerald-500/40`} title={`発生エナジー: ${energyLabel}${energyModifier !== 0 ? `（印刷値 ${printedEnergy}、修正 ${energyModifier > 0 ? '+' : ''}${energyModifier}）` : ''}`}>
                 {energyLabel}
+              </span>
+            )}
+            {isFrontLine && frontLineEnergy > 0 && (
+              <span className={`bg-teal-950/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-teal-200 border border-teal-500/40`} title={`フロントラインで発生するエナジー: ${frontLineEnergy}`}>
+                効果⚡{frontLineEnergy}
               </span>
             )}
           </div>
@@ -640,23 +649,26 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-          {location?.zone === 'energyLine' && onModifyEnergy && !card.isFaceDown && (
-            <div className="flex flex-col gap-1 p-1.5 bg-slate-800/70 rounded my-0.5 text-xs">
-              <div className="flex items-center justify-between text-[11px] font-medium">
-                <span className="text-slate-400">発生エナジー修正:</span>
-                <span className="font-bold text-emerald-300">
-                  {energyModifier > 0 ? `+${energyModifier}` : energyModifier}
-                  <span className="text-[10px] text-slate-400 font-normal ml-1">(計 {energyLabel})</span>
-                </span>
+          {isFieldCard && onModifyEnergy && !card.isFaceDown && (
+            <details className="p-1.5 bg-slate-800/70 rounded my-0.5 text-xs" open={!isFrontLine ? true : undefined}>
+              <summary className="cursor-pointer text-[11px] font-medium text-slate-300">発生エナジー調整</summary>
+              <div className="flex flex-col gap-1 mt-1">
+                <div className="flex items-center justify-between text-[11px] font-medium">
+                  <span className="text-slate-400">{isFrontLine ? 'フロントL発生:' : '発生エナジー修正:'}</span>
+                  <span className="font-bold text-emerald-300">
+                    {manualEnergy > 0 ? `+${manualEnergy}` : manualEnergy}
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">(計 {isFrontLine ? frontLineEnergy : energyLabel})</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  <button type="button" onClick={() => onModifyEnergy(-1)} disabled={displayedEnergy === 0} className="py-1 bg-rose-900/80 hover:bg-rose-700 disabled:opacity-40 rounded text-rose-200 font-bold" aria-label="エナジーを -1">-1</button>
+                  <button type="button" onClick={() => onModifyEnergy(1)} className="py-1 bg-emerald-800/80 hover:bg-emerald-600 rounded text-emerald-200 font-bold" aria-label="エナジーを +1">+1</button>
+                </div>
+                {manualEnergy !== 0 && (
+                  <button type="button" onClick={() => onModifyEnergy(-manualEnergy)} className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/60 py-0.5 rounded" aria-label="エナジー修正リセット">修正リセット (±0)</button>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-1 text-[10px]">
-                <button type="button" onClick={() => onModifyEnergy(-1)} disabled={currentEnergy === 0} className="py-1 bg-rose-900/80 hover:bg-rose-700 disabled:opacity-40 rounded text-rose-200 font-bold" aria-label="エナジーを -1">-1</button>
-                <button type="button" onClick={() => onModifyEnergy(1)} className="py-1 bg-emerald-800/80 hover:bg-emerald-600 rounded text-emerald-200 font-bold" aria-label="エナジーを +1">+1</button>
-              </div>
-              {energyModifier !== 0 && (
-                <button type="button" onClick={() => onModifyEnergy(-energyModifier)} className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/60 py-0.5 rounded" aria-label="エナジー修正リセット">修正リセット (±0)</button>
-              )}
-            </div>
+            </details>
           )}
 
           {isFieldCard && onAddMarker && (

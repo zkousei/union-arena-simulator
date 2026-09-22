@@ -185,6 +185,31 @@ test('keeps every energy-card context-menu action reachable on a short screen', 
   await expect(page.locator('#slot-player-1-energyLine-0 [draggable="true"]')).toHaveCount(0);
 });
 
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 568 },
+  { name: 'desktop', width: 1440, height: 900 },
+]) {
+  test(`counts only manually enabled front-line effect energy on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/game?mode=solo');
+    await startSoloGame(page);
+    await page.getByRole('button', { name: /移動へ/ }).click();
+    await page.getByRole('button', { name: /メインへ/ }).click();
+    await page.getByRole('region', { name: 'あなた の手札' }).getByRole('button', { name: /手札カード: .+ \(キャラクター\)/ }).first().click();
+    await page.getByRole('button', { name: 'あなた: フロントライン 枠 1' }).click();
+
+    const energyHeader = page.getByText('あなた: エナジーライン').locator('..');
+    await expect(energyHeader).toContainText('⚡ 発生: 0');
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const frontCard = page.locator('#slot-player-1-frontLine-0 [draggable="true"]');
+    await frontCard.click({ button: 'right' });
+    await page.getByText('発生エナジー調整').click();
+    await page.getByRole('button', { name: 'エナジーを +1' }).click();
+    await expect(page.locator('#slot-player-1-frontLine-0').getByTitle('フロントラインで発生するエナジー: 1')).toBeVisible();
+    await expect(energyHeader).toContainText('⚡ 発生: 1');
+  });
+}
+
 test('keeps the main game dialogs reachable on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/game?mode=solo');

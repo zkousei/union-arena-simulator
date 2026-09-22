@@ -44,6 +44,18 @@ describe('CardView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'エナジー修正リセット' }));
     expect(onModifyEnergy.mock.calls).toEqual([[1], [-1], [-1]]);
   });
+  it('offers an opt-in front-line energy control without counting the printed energy', () => {
+    const onModifyEnergy = vi.fn();
+    const { container } = render(<CardView card={{ ...dummyCard, frontLineGeneratedEnergy: 1 }} location={{ playerId: 'p1', zone: 'frontLine', slotIndex: 0 }} onModifyEnergy={onModifyEnergy} />);
+    expect(screen.getByTitle('フロントラインで発生するエナジー: 1').textContent).toBe('効果⚡1');
+    fireEvent.contextMenu(container.querySelector('[draggable="true"]')!);
+    fireEvent.click(screen.getByText('発生エナジー調整'));
+    expect(screen.getByText('フロントL発生:')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'エナジーを +1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'エナジーを -1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'エナジー修正リセット' }));
+    expect(onModifyEnergy.mock.calls).toEqual([[1], [-1], [-1]]);
+  });
   it('does not offer inspection for an opponent face-down card', () => {
     const handleInspect = vi.fn();
 

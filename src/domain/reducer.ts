@@ -450,15 +450,15 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
 
             // スワップ
             if (from.zone === 'frontLine') {
-              fromPlayer.frontLine[fromSlot] = toCard;
+              fromPlayer.frontLine[fromSlot] = to.zone === 'frontLine' ? toCard : { ...toCard, frontLineGeneratedEnergy: 0 };
             } else {
-              fromPlayer.energyLine[fromSlot] = toCard;
+              fromPlayer.energyLine[fromSlot] = to.zone === 'frontLine' ? { ...toCard, frontLineGeneratedEnergy: 0 } : toCard;
             }
 
             if (to.zone === 'frontLine') {
-              toPlayer.frontLine[toSlot] = fromCard;
+              toPlayer.frontLine[toSlot] = from.zone === 'energyLine' ? { ...fromCard, frontLineGeneratedEnergy: 0 } : fromCard;
             } else {
-              toPlayer.energyLine[toSlot] = fromCard;
+              toPlayer.energyLine[toSlot] = from.zone === 'frontLine' ? { ...fromCard, frontLineGeneratedEnergy: 0 } : fromCard;
             }
 
             appendLog(
@@ -499,6 +499,9 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         const underCards = card.underCards || [];
 
         let cardToAdd = isLeavingField ? resetCardState(card) : card;
+        if ((from.zone === 'frontLine' && to.zone !== 'frontLine') || (from.zone === 'energyLine' && to.zone === 'frontLine')) {
+          cardToAdd = { ...cardToAdd, frontLineGeneratedEnergy: 0 };
+        }
 
         // 公式ルール P1: キャラクターやフィールドは手札からの「登場時はレスト（横向き）」で置く
         if (from.zone === 'hand' && isEnteringField) {
@@ -973,6 +976,18 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         break;
       }
 
+      case 'MODIFY_FRONT_ENERGY': {
+        const { playerId, slotIndex, delta } = action.payload;
+        const player = draft.players[playerId];
+        if (!player || !Number.isInteger(delta) || delta === 0) return;
+        const card = player.frontLine[slotIndex];
+        if (!card || card.isFaceDown || (card.frontLineGeneratedEnergy || 0) + delta < 0) return;
+        card.frontLineGeneratedEnergy = (card.frontLineGeneratedEnergy || 0) + delta;
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        appendLog(draft, `${player.name} が「${card.name}」のフロントラインでの発生エナジーを ${sign} しました（現在: ${card.frontLineGeneratedEnergy}）。`, playerId);
+        break;
+      }
+
       case 'RAID_CARD': {
         const { playerId, targetZone, targetSlotIndex, raidCard, fromLocation, moveToFront } = action.payload;
         const player = draft.players[playerId];
@@ -990,16 +1005,18 @@ function internalGameReducer(state: GameState, action: GameAction): GameState {
         );
         if (!removedRaidCard) return;
 
-        const cleanTargetCard: Card = { ...targetCard, underCards: [], isMarker: false };
+        const cleanTargetCard: Card = { ...targetCard, underCards: [], isMarker: false, frontLineGeneratedEnergy: 0 };
         // 下敷きカードのすべての要素も確実に underCards: [] にフラット化
         const flattenedExistingUnders = (targetCard.underCards || []).map((c) => ({
           ...c,
           underCards: [],
+          frontLineGeneratedEnergy: 0,
         }));
         // 公式ルール P12: 「レストの場合、アクティブにする」「エナジーLにある場合、フロントLへ移動できる」
         const newRaidCard: Card = {
           ...raidCard,
           isRested: false, // レイド登場時は強制アクティブ化！
+          frontLineGeneratedEnergy: 0,
           underCards: [...flattenedExistingUnders, cleanTargetCard],
         };
 

@@ -102,6 +102,14 @@ export type GameAction =
       };
     }
   | {
+      type: 'MODIFY_FRONT_ENERGY';
+      payload: {
+        playerId: string;
+        slotIndex: FieldSlotIndex;
+        delta: number;
+      };
+    }
+  | {
       type: 'RAID_CARD';
       payload: {
         playerId: string;

@@ -38,4 +38,11 @@ describe('calculateGeneratedEnergy', () => {
       { ...card(1), genEnergyModifier: -1 },
     ])).toEqual({ total: 3, byColor: { BLUE: 3 } });
   });
+
+  it('counts only manually enabled front-line energy in addition to the energy line', () => {
+    expect(calculateGeneratedEnergy(
+      [card(1, true)],
+      [card(2), { ...card(1, true), frontLineGeneratedEnergy: 2 }, { ...card(1), frontLineGeneratedEnergy: 1, isFaceDown: true }],
+    )).toEqual({ total: 3, byColor: { BLUE: 3 } });
+  });
 });

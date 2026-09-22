@@ -21,6 +21,7 @@ export function resetCardState(card: Card): Card {
     isRested: false,
     bpModifier: 0,
     genEnergyModifier: 0,
+    frontLineGeneratedEnergy: 0,
     underCards: [],
     isFaceDown: false,
     isFrozen: false,

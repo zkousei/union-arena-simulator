@@ -595,6 +595,44 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(gameReducer(state, { type: 'MODIFY_ENERGY', payload: { playerId: 'p1', zone: 'energyLine', slotIndex: 0, delta: 0.5 } })).toBe(state);
   });
 
+  it('enables front-line energy manually and clears it when moved to the energy line', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players.p1.frontLine[0] = createDummyCard('front-energy', 'Energy source');
+    state = gameReducer(state, { type: 'MODIFY_FRONT_ENERGY', payload: { playerId: 'p1', slotIndex: 0, delta: 1 } });
+    expect(state.players.p1.frontLine[0]?.frontLineGeneratedEnergy).toBe(1);
+    state = gameReducer(state, { type: 'MOVE_CARD', payload: { cardId: 'front-energy', from: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 }, to: { playerId: 'p1', zone: 'frontLine', slotIndex: 1 } } });
+    expect(state.players.p1.frontLine[1]?.frontLineGeneratedEnergy).toBe(1);
+    state = gameReducer(state, { type: 'MOVE_CARD', payload: { cardId: 'front-energy', from: { playerId: 'p1', zone: 'frontLine', slotIndex: 1 }, to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 } } });
+    expect(state.players.p1.energyLine[0]?.frontLineGeneratedEnergy).toBe(0);
+  });
+
+  it('clears front-line energy on a cross-line swap without clearing energy-line adjustments', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players.p1.frontLine[0] = { ...createDummyCard('front-energy', 'Energy source'), frontLineGeneratedEnergy: 1 };
+    state.players.p1.energyLine[0] = { ...createDummyCard('energy-card', 'Energy line'), genEnergyModifier: 1 };
+    state = gameReducer(state, { type: 'MOVE_CARD', payload: { cardId: 'front-energy', from: { playerId: 'p1', zone: 'frontLine', slotIndex: 0 }, to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 } } });
+    expect(state.players.p1.energyLine[0]?.frontLineGeneratedEnergy).toBe(0);
+    expect(state.players.p1.frontLine[0]?.genEnergyModifier).toBe(1);
+  });
+
+  it('ignores invalid front-line energy adjustments', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    state.players.p1.frontLine[0] = createDummyCard('front-energy', 'Energy source');
+    expect(gameReducer(state, { type: 'MODIFY_FRONT_ENERGY', payload: { playerId: 'p1', slotIndex: 0, delta: -1 } })).toBe(state);
+    expect(gameReducer(state, { type: 'MODIFY_FRONT_ENERGY', payload: { playerId: 'p1', slotIndex: 1, delta: 1 } })).toBe(state);
+    expect(gameReducer(state, { type: 'MODIFY_FRONT_ENERGY', payload: { playerId: 'p1', slotIndex: 0, delta: 0.5 } })).toBe(state);
+  });
+
+  it('clears front-line energy when a card becomes a raid base', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const raidCard = createDummyCard('raid-energy', 'Raid');
+    state.players.p1.frontLine[0] = { ...createDummyCard('base-energy', 'Base'), frontLineGeneratedEnergy: 1 };
+    state.players.p1.hand = [raidCard];
+    state = gameReducer(state, { type: 'RAID_CARD', payload: { playerId: 'p1', targetZone: 'frontLine', targetSlotIndex: 0, raidCard, fromLocation: { playerId: 'p1', zone: 'hand', index: 0 } } });
+    expect(state.players.p1.frontLine[0]?.frontLineGeneratedEnergy ?? 0).toBe(0);
+    expect(state.players.p1.frontLine[0]?.underCards[0].frontLineGeneratedEnergy).toBe(0);
+  });
+
   it('should look at top N cards of deck and route them to hand, graveyard, top or bottom', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     state.players['p1'].deck = [

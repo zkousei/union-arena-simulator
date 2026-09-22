@@ -28,6 +28,7 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'SET_ALL_ACTIVE':
     case 'MODIFY_BP':
     case 'MODIFY_ENERGY':
+    case 'MODIFY_FRONT_ENERGY':
     case 'RAID_CARD':
     case 'SEPARATE_UNDER_CARD':
     case 'SEPARATE_PARENT_CARD':

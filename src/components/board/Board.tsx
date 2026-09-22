@@ -198,10 +198,10 @@ export const Board: React.FC<BoardProps> = ({
     COLORLESS: { label: '無', bg: 'bg-slate-900/80 border-slate-600/50', text: 'text-slate-300', dot: 'bg-slate-400' },
   };
 
-  const renderEnergyBadge = (slots: (Card | null)[]) => {
-    const { total, byColor } = calculateGeneratedEnergy(slots);
+  const renderEnergyBadge = (energyLine: (Card | null)[], frontLine: (Card | null)[]) => {
+    const { total, byColor } = calculateGeneratedEnergy(energyLine, frontLine);
     return (
-      <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-700/80 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">
+      <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-700/80 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm" title="エナジーラインとフロントラインの発生エナジー合計">
         <span className="flex items-center gap-1 text-amber-400">
           ⚡ 発生: <span className="text-white text-sm font-black">{total}</span>
         </span>
@@ -471,8 +471,12 @@ export const Board: React.FC<BoardProps> = ({
     });
   };
 
-  const handleModifyEnergy = (playerId: string, slotIndex: FieldSlotIndex, delta: number) => {
-    dispatchAction({ type: 'MODIFY_ENERGY', payload: { playerId, zone: 'energyLine', slotIndex, delta } });
+  const handleModifyEnergy = (playerId: string, zone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex, delta: number) => {
+    if (zone === 'frontLine') {
+      dispatchAction({ type: 'MODIFY_FRONT_ENERGY', payload: { playerId, slotIndex, delta } });
+    } else {
+      dispatchAction({ type: 'MODIFY_ENERGY', payload: { playerId, zone, slotIndex, delta } });
+    }
   };
 
   // フリーズ状態の切り替え
@@ -1213,11 +1217,11 @@ export const Board: React.FC<BoardProps> = ({
             isControllable={isSoloMode}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
-            extraHeaderBadge={renderEnergyBadge(topPlayer.energyLine)}
+            extraHeaderBadge={renderEnergyBadge(topPlayer.energyLine, topPlayer.frontLine)}
             onSlotClick={(slotIdx) => handleSlotClick(topPlayerId, 'energyLine', slotIdx)}
             onToggleRest={(slotIdx) => handleToggleRest(topPlayerId, 'energyLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(topPlayerId, 'energyLine', slotIdx, delta)}
-            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(topPlayerId, slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(topPlayerId, 'energyLine', slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(topPlayerId, 'energyLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'energyLine', slotIdx, dest)}
@@ -1254,6 +1258,7 @@ export const Board: React.FC<BoardProps> = ({
             }}
             onToggleRest={(slotIdx) => handleToggleRest(topPlayerId, 'frontLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(topPlayerId, 'frontLine', slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(topPlayerId, 'frontLine', slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(topPlayerId, 'frontLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'frontLine', slotIdx, dest)}
@@ -1331,6 +1336,7 @@ export const Board: React.FC<BoardProps> = ({
             }}
             onToggleRest={(slotIdx) => handleToggleRest(bottomPlayerId, 'frontLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(bottomPlayerId, 'frontLine', slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(bottomPlayerId, 'frontLine', slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(bottomPlayerId, 'frontLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'frontLine', slotIdx, dest)}
@@ -1349,11 +1355,11 @@ export const Board: React.FC<BoardProps> = ({
             isControllable={true}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
-            extraHeaderBadge={renderEnergyBadge(bottomPlayer.energyLine)}
+            extraHeaderBadge={renderEnergyBadge(bottomPlayer.energyLine, bottomPlayer.frontLine)}
             onSlotClick={(slotIdx) => handleSlotClick(bottomPlayerId, 'energyLine', slotIdx)}
             onToggleRest={(slotIdx) => handleToggleRest(bottomPlayerId, 'energyLine', slotIdx)}
             onModifyBp={(slotIdx, delta) => handleModifyBp(bottomPlayerId, 'energyLine', slotIdx, delta)}
-            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(bottomPlayerId, slotIdx, delta)}
+            onModifyEnergy={(slotIdx, delta) => handleModifyEnergy(bottomPlayerId, 'energyLine', slotIdx, delta)}
             onToggleFreeze={(slotIdx) => handleToggleFreeze(bottomPlayerId, 'energyLine', slotIdx)}
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'energyLine', slotIdx, dest)}
