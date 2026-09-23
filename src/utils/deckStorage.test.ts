@@ -6,6 +6,7 @@ import {
   exportDeckToJson,
   importDeckFromJson,
   loadSavedDecks,
+  loadSavedDecksWithIssues,
   saveDeck,
 } from './deckStorage';
 
@@ -100,5 +101,37 @@ describe('deckStorage', () => {
     store.set(STORAGE_KEY, '{broken');
 
     expect(loadSavedDecks()).toEqual([]);
+  });
+
+  it('repairs incomplete official cards and skips invalid custom cards without discarding raw data', () => {
+    const incompleteOfficial = createDeck({
+      id: 'official-old',
+      items: [{ card: { code: CARD_DATABASE[0].code, name: 'old' } as UserDeck['items'][number]['card'], count: 1 }],
+    });
+    const invalidCustom = createDeck({
+      id: 'custom-broken',
+      items: [{ card: { code: 'CUSTOM-1', name: 'broken' } as UserDeck['items'][number]['card'], count: 1 }],
+    });
+    const raw = JSON.stringify([invalidCustom, incompleteOfficial]);
+    store.set(STORAGE_KEY, raw);
+
+    const result = loadSavedDecksWithIssues();
+    expect(result.decks.map((deck) => deck.id)).toEqual(['official-old']);
+    expect(result.decks[0].items[0].card.triggers).toEqual(CARD_DATABASE[0].triggers);
+    expect(result.skippedCount).toBe(1);
+    expect(result.backupJson).toBe(raw);
+    expect(store.get(STORAGE_KEY)).toBe(raw);
+
+    saveDeck(createDeck({ id: 'new-deck' }));
+    expect(JSON.parse(store.get(STORAGE_KEY)!)).toEqual(expect.arrayContaining([invalidCustom]));
+  });
+
+  it('does not overwrite unreadable saved JSON when saving', () => {
+    store.set(STORAGE_KEY, '{broken');
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(loadSavedDecksWithIssues()).toMatchObject({ decks: [], skippedCount: 0, backupJson: '{broken' });
+    expect(saveDeck(createDeck())).toBe(false);
+    expect(store.get(STORAGE_KEY)).toBe('{broken');
   });
 });

@@ -1,7 +1,15 @@
 import { UserDeck } from '../domain/deckValidation';
-import { CARD_DATABASE } from '../data/cardDatabase';
+import { CARD_DATABASE, CardMaster } from '../data/cardDatabase';
 
 const STORAGE_KEY = 'union_arena_saved_decks';
+const officialCardsByCode = new Map(CARD_DATABASE.map((card) => [card.code, card]));
+
+export interface SavedDeckLoadResult {
+  decks: UserDeck[];
+  skippedCount: number;
+  backupJson: string | null;
+  unreadable: boolean;
+}
 
 // デフォルトのサンプルデッキ生成
 export function createDefaultSampleDeck(): UserDeck {
@@ -30,61 +38,105 @@ export function createDefaultSampleDeck(): UserDeck {
 }
 
 // 保存済みデッキ一覧の読み込み
-export function loadSavedDecks(): UserDeck[] {
+function readStoredDecks(): { entries: unknown[] | null; raw: string | null } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const decks = JSON.parse(raw) as UserDeck[];
-    // 初期サンプルデッキ (default-cgh-deck) は除外し、カード情報を最新のCARD_DATABASEで修復
-    return decks
-      .filter((d) => d.id !== 'default-cgh-deck')
-      .map((d) => ({
-        ...d,
-        items: (d.items || []).map((it) => {
-          const master = CARD_DATABASE.find((c) => c.code === it.card?.code);
-          return master
-            ? {
-                ...it,
-                card: {
-                  ...it.card,
-                  bp: master.bp ?? it.card.bp,
-                  hasBpPlus: master.hasBpPlus ?? it.card.hasBpPlus,
-                  genEnergy: master.genEnergy,
-                  hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
-                },
-              }
-            : it;
-        }),
-      }));
+    if (!raw) return { entries: [], raw: null };
+    const entries: unknown = JSON.parse(raw);
+    if (!Array.isArray(entries)) return { entries: null, raw };
+    return { entries, raw };
   } catch (e) {
     console.error('Failed to load decks from localStorage:', e);
-    return [];
+    let raw: string | null = null;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+    return { entries: null, raw };
   }
 }
 
-// デッキの保存または更新
-export function saveDeck(deck: UserDeck): void {
-  try {
-    const existing = loadSavedDecks();
-    const index = existing.findIndex((d) => d.id === deck.id);
-    if (index >= 0) {
-      existing[index] = { ...deck, updatedAt: Date.now() };
-    } else {
-      existing.unshift({ ...deck, updatedAt: Date.now() });
+function repairStoredCard(value: unknown): CardMaster | null {
+  if (!isRecord(value) || typeof value.code !== 'string') return null;
+  const master = officialCardsByCode.get(value.code);
+  const card = master ? { ...value, ...master } : value;
+  return isValidImportedCard(card) ? card as unknown as CardMaster : null;
+}
+
+function repairStoredDeck(value: unknown): UserDeck | null {
+  if (!isRecord(value) ||
+      typeof value.id !== 'string' || !value.id ||
+      typeof value.name !== 'string' ||
+      typeof value.titleCode !== 'string' ||
+      !Array.isArray(value.items)) return null;
+  const items: UserDeck['items'] = [];
+  for (const item of value.items) {
+    if (!isRecord(item) || !Number.isInteger(item.count) || (item.count as number) <= 0) return null;
+    const card = repairStoredCard(item.card);
+    if (!card) return null;
+    items.push({ card, count: item.count as number });
+  }
+  let apCards: CardMaster[] | undefined;
+  if (value.apCards !== undefined) {
+    if (!Array.isArray(value.apCards)) return null;
+    apCards = [];
+    for (const rawCard of value.apCards) {
+      const card = repairStoredCard(rawCard);
+      if (!card) return null;
+      apCards.push(card);
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    titleCode: value.titleCode,
+    items,
+    ...(apCards ? { apCards } : {}),
+    updatedAt: typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) ? value.updatedAt : 0,
+  };
+}
+
+export function loadSavedDecksWithIssues(): SavedDeckLoadResult {
+  const { entries, raw } = readStoredDecks();
+  if (!entries) return { decks: [], skippedCount: 0, backupJson: raw, unreadable: true };
+  const decks: UserDeck[] = [];
+  let skippedCount = 0;
+  for (const entry of entries) {
+    if (isRecord(entry) && entry.id === 'default-cgh-deck') continue;
+    const deck = repairStoredDeck(entry);
+    if (deck) decks.push(deck);
+    else skippedCount++;
+  }
+  return { decks, skippedCount, backupJson: skippedCount > 0 ? raw : null, unreadable: false };
+}
+
+export function loadSavedDecks(): UserDeck[] {
+  return loadSavedDecksWithIssues().decks;
+}
+
+// デッキの保存または更新。不正な元データは削除せず保持する。
+export function saveDeck(deck: UserDeck): boolean {
+  try {
+    const { entries } = readStoredDecks();
+    if (!entries) return false;
+    const index = entries.findIndex((entry) => isRecord(entry) && entry.id === deck.id && repairStoredDeck(entry) !== null);
+    if (index >= 0) {
+      entries[index] = { ...deck, updatedAt: Date.now() };
+    } else {
+      entries.unshift({ ...deck, updatedAt: Date.now() });
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    return true;
   } catch (e) {
     console.error('Failed to save deck:', e);
+    return false;
   }
 }
 
 // デッキの削除
 export function deleteDeck(deckId: string): void {
   try {
-    const existing = loadSavedDecks().filter((d) => d.id !== deckId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    const { entries } = readStoredDecks();
+    if (!entries) return;
+    const retained = entries.filter((entry) => !isRecord(entry) || entry.id !== deckId || repairStoredDeck(entry) === null);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(retained));
   } catch (e) {
     console.error('Failed to delete deck:', e);
   }

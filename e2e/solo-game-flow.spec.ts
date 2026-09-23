@@ -15,6 +15,16 @@ test('opens the main SPA routes directly', async ({ page }) => {
   await expect(page.getByRole('button', { name: /対戦開始/ })).toBeDisabled();
 });
 
+test('shows a recovery screen when the deck-builder module cannot load', async ({ page }) => {
+  await page.route('**/src/pages/DeckBuilder.tsx*', (route) => route.abort());
+  await page.goto('/');
+  await page.getByRole('link', { name: 'デッキ構築' }).click();
+
+  await expect(page).toHaveURL(/\/deck-builder$/);
+  await expect(page.getByRole('alert')).toContainText('デッキビルダーを表示できませんでした');
+  await expect(page.getByRole('button', { name: '再読み込み' })).toBeVisible();
+});
+
 test('completes solo setup with both preset decks and starts the game', async ({ page }) => {
   await page.goto('/game?mode=solo');
 
