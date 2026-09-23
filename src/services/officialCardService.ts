@@ -179,7 +179,10 @@ export function parseCardFromDetailHtml(
   );
   const triggers: TriggerType[] = [];
   if (triggerMatch) {
-    const trg = triggerMatch[1];
+    // The text after the icon describes its effect and can mention another
+    // trigger name (e.g. a COLOR effect puts a character into play active).
+    const icon = triggerMatch[1].match(/<img\b[^>]*>/i)?.[0];
+    const trg = icon ? getHtmlAttribute(icon, 'alt') || '' : '';
     if (/ドロー|draw/i.test(trg)) triggers.push('DRAW');
     if (/ゲット|get/i.test(trg)) triggers.push('GET');
     if (/アクティブ|active/i.test(trg)) triggers.push('ACTIVE');

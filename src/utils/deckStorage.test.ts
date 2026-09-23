@@ -126,6 +126,15 @@ describe('deckStorage', () => {
     expect(JSON.parse(store.get(STORAGE_KEY)!)).toEqual(expect.arrayContaining([invalidCustom]));
   });
 
+  it('uses corrected official triggers when loading an older saved deck', () => {
+    const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-003')!;
+    store.set(STORAGE_KEY, JSON.stringify([createDeck({
+      items: [{ card: { ...master, triggers: ['ACTIVE', 'COLOR'] }, count: 1 }],
+    })]));
+
+    expect(loadSavedDecks()[0].items[0].card.triggers).toEqual(['COLOR']);
+  });
+
   it('does not overwrite unreadable saved JSON when saving', () => {
     store.set(STORAGE_KEY, '{broken');
     vi.spyOn(console, 'error').mockImplementation(() => undefined);

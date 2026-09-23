@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCardFromDetailHtml } from './sync-official-cards.js';
+import { parseCardFromDetailHtml, repairSynchronizedTriggers } from './sync-official-cards.js';
 
 describe('sync-official-cards generated energy', () => {
   it.each([
@@ -19,5 +19,28 @@ describe('sync-official-cards generated energy', () => {
     const card = parseCardFromDetailHtml(html, 'UA01BT/CGH-1-001');
     expect(card.genEnergy).toBe(expected);
     expect(card.hasGenEnergyPlus).toBe(hasPlus);
+  });
+});
+
+describe('sync-official-cards trigger parsing', () => {
+  it('ignores trigger names mentioned in the effect description', () => {
+    const html = `<dl class="cardDataCol triggerData"><dd class="cardDataContents">
+      <img alt="カラー">自分の場にアクティブで登場させる。<img alt="アクティブ">
+    </dd></dl>`;
+
+    expect(parseCardFromDetailHtml(html, 'UA01BT/CGH-1-003').triggers).toEqual(['COLOR']);
+  });
+
+  it('repairs the known false ACTIVE plus COLOR pair without changing other cards', () => {
+    const cards = [
+      { code: 'A', triggers: ['ACTIVE', 'COLOR'] },
+      { code: 'B', triggers: ['DRAW'] },
+    ];
+
+    expect(repairSynchronizedTriggers(cards)).toEqual([
+      { code: 'A', triggers: ['COLOR'] },
+      { code: 'B', triggers: ['DRAW'] },
+    ]);
+    expect(cards[0].triggers).toEqual(['ACTIVE', 'COLOR']);
   });
 });

@@ -17,6 +17,20 @@ import { Card } from '../types/card';
 
 const CUSTOM_CARDS_STORAGE_KEY = 'UA_CUSTOM_CARDS';
 
+function mergeWithOfficialCard(card: CardMaster): CardMaster {
+  const master = CARD_DATABASE.find((candidate) => candidate.code === card.code);
+  return master
+    ? {
+        ...card,
+        bp: master.bp ?? card.bp,
+        hasBpPlus: master.hasBpPlus ?? card.hasBpPlus,
+        genEnergy: master.genEnergy,
+        hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
+        triggers: master.triggers,
+      }
+    : card;
+}
+
 interface DeckBuilderPageProps {
   onPlayWithDeck: (deck: UserDeck) => void;
 }
@@ -37,13 +51,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         const map = new Map<string, CardMaster>();
         CARD_DATABASE.forEach((c) => map.set(c.code, c));
         extraCards.forEach((c) => {
-          const master = CARD_DATABASE.find((m) => m.code === c.code);
-          map.set(
-            c.code,
-            master
-              ? { ...c, bp: master.bp ?? c.bp, hasBpPlus: master.hasBpPlus ?? c.hasBpPlus, genEnergy: master.genEnergy, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false }
-              : c
-          );
+          map.set(c.code, mergeWithOfficialCard(c));
         });
         return Array.from(map.values());
       }
@@ -88,7 +96,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
     setCardPool((prev) => {
       const map = new Map<string, CardMaster>();
       prev.forEach((c) => map.set(c.code, c));
-      newCards.forEach((c) => map.set(c.code, c));
+      newCards.forEach((c) => map.set(c.code, mergeWithOfficialCard(c)));
       const updated = Array.from(map.values());
       try {
         const baseSet = new Set(CARD_DATABASE.map((c) => c.code));

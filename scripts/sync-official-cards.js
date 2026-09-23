@@ -126,7 +126,8 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
   const triggerMatch = detailHtml.match(/<dl class="cardDataCol triggerData">[\s\S]*?<dd class="cardDataContents">\s*([\s\S]*?)\s*<\/dd>/);
   const triggers = [];
   if (triggerMatch) {
-    const trg = triggerMatch[1];
+    const icon = triggerMatch[1].match(/<img\b[^>]*>/i)?.[0];
+    const trg = icon?.match(/\balt\s*=\s*(["'])(.*?)\1/i)?.[2] || '';
     if (/ドロー|draw/i.test(trg)) triggers.push('DRAW');
     if (/ゲット|get/i.test(trg)) triggers.push('GET');
     if (/アクティブ|active/i.test(trg)) triggers.push('ACTIVE');
@@ -309,11 +310,20 @@ async function syncSeries(series, includeParallel = false, existingCardMap = new
   return { allInSeries: cardsSummary, newCards };
 }
 
+export function repairSynchronizedTriggers(cards) {
+  return cards.map((card) =>
+    card.triggers?.length === 2 && card.triggers.includes('ACTIVE') && card.triggers.includes('COLOR')
+      ? { ...card, triggers: ['COLOR'] }
+      : card
+  );
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const syncAll = args.includes('--all');
   const includeParallel = args.includes('--include-parallel');
   const refreshEnergy = args.includes('--refresh-energy');
+  const repairTriggers = args.includes('--repair-triggers');
 
   const outputPath = path.resolve(__dirname, '../src/data/officialCards.json');
   let existingCards = [];
@@ -323,6 +333,14 @@ async function main() {
     } catch (e) {
       console.warn('Could not read existing officialCards.json:', e.message);
     }
+  }
+
+  if (repairTriggers) {
+    const repaired = repairSynchronizedTriggers(existingCards);
+    const changed = repaired.filter((card, index) => card !== existingCards[index]).length;
+    fs.writeFileSync(outputPath, JSON.stringify(repaired, null, 2), 'utf-8');
+    console.log(`Repaired ${changed} synchronized trigger entries without network access.`);
+    return;
   }
 
   if (refreshEnergy) {
