@@ -8,7 +8,7 @@ import { DeckBuilderImportModal } from '../components/deckBuilder/DeckBuilderImp
 import { OfficialImportModal } from '../components/deck/OfficialImportModal';
 import { RevealedCardModal } from '../components/board/RevealedCardModal';
 import {
-  loadSavedDecks,
+  loadSavedDecksWithIssues,
   saveDeck,
   deleteDeck,
   exportDeckToJson,
@@ -23,6 +23,8 @@ interface DeckBuilderPageProps {
 
 export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck }) => {
   const [savedDecks, setSavedDecks] = useState<UserDeck[]>([]);
+  const [savedDeckIssue, setSavedDeckIssue] = useState<ReturnType<typeof loadSavedDecksWithIssues> | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [activeDeck, setActiveDeck] = useState<UserDeck | null>(null);
   const [mobilePane, setMobilePane] = useState<'library' | 'deck'>('library');
 
@@ -57,6 +59,30 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
   const [inspectCard, setInspectCard] = useState<Card | null>(null);
   const [saveToast, setSaveToast] = useState(false);
 
+  const refreshSavedDecks = () => {
+    const result = loadSavedDecksWithIssues();
+    setSavedDecks(result.decks);
+    setSavedDeckIssue(result.backupJson !== null || result.unreadable ? result : null);
+    return result.decks;
+  };
+
+  const persistDeck = (deck: UserDeck) => {
+    const saved = saveDeck(deck);
+    setSaveFailed(!saved);
+    return saved;
+  };
+
+  const handleDownloadBackup = () => {
+    if (!savedDeckIssue?.backupJson) return;
+    const blob = new Blob([savedDeckIssue.backupJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'union-arena-saved-decks-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // カードプールに新しいカード群を追加（差分のみLocalStorageに保存して5MB容量制限を回避）
   const handleAddCardsToPool = (newCards: CardMaster[]) => {
     setCardPool((prev) => {
@@ -84,18 +110,21 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
       items,
       updatedAt: Date.now(),
     };
-    saveDeck(importedDeck);
-    const updated = loadSavedDecks();
-    setSavedDecks(updated);
+    const saved = persistDeck(importedDeck);
+    refreshSavedDecks();
     setActiveDeck(importedDeck);
-    setSaveToast(true);
-    setTimeout(() => setSaveToast(false), 2000);
+    if (saved) {
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2000);
+    }
   };
 
   // 初回ロード
   useEffect(() => {
-    const decks = loadSavedDecks();
+    const result = loadSavedDecksWithIssues();
+    const decks = result.decks;
     setSavedDecks(decks);
+    setSavedDeckIssue(result.backupJson !== null || result.unreadable ? result : null);
     if (decks.length > 0) {
       setActiveDeck(decks[0]);
     } else {
@@ -184,8 +213,8 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
   // 保存
   const handleSave = () => {
     if (!activeDeck) return;
-    saveDeck(activeDeck);
-    setSavedDecks(loadSavedDecks());
+    if (!persistDeck(activeDeck)) return;
+    refreshSavedDecks();
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 2000);
   };
@@ -199,17 +228,15 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
       items: [],
       updatedAt: Date.now(),
     };
-    saveDeck(newDeck);
-    const updated = loadSavedDecks();
-    setSavedDecks(updated);
+    persistDeck(newDeck);
+    refreshSavedDecks();
     setActiveDeck(newDeck);
   };
 
   // デッキ削除
   const handleDeleteDeck = (deckId: string) => {
     deleteDeck(deckId);
-    const updated = loadSavedDecks();
-    setSavedDecks(updated);
+    const updated = refreshSavedDecks();
     if (activeDeck?.id === deckId && updated.length > 0) {
       setActiveDeck(updated[0]);
     }
@@ -235,11 +262,29 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
   const totalCards = activeDeck.items.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
       {/* 保存完了トースト */}
       {saveToast && (
         <div className="absolute top-4 right-4 z-40 bg-emerald-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xl animate-in fade-in slide-in-from-top-2">
           デッキを保存しました！
+        </div>
+      )}
+
+      {(savedDeckIssue || saveFailed) && (
+        <div role="alert" className="shrink-0 flex flex-wrap items-center gap-2 border-b border-amber-500/40 bg-amber-950/70 px-3 py-2 text-xs text-amber-100">
+          <span>
+            {savedDeckIssue?.unreadable
+              ? '保存データを読み込めませんでした。元データは保持しています。'
+              : savedDeckIssue
+                ? `保存データの一部を読み込めませんでした（${savedDeckIssue.skippedCount}件）。元データは保持しています。`
+                : 'デッキを保存できませんでした。'}
+            {saveFailed && savedDeckIssue && ' デッキの保存にも失敗しました。'}
+          </span>
+          {savedDeckIssue?.backupJson && (
+            <button type="button" onClick={handleDownloadBackup} className="rounded border border-amber-400/50 px-2 py-1 font-bold hover:bg-amber-800/60">
+              元データをバックアップ
+            </button>
+          )}
         </div>
       )}
 
@@ -273,51 +318,53 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         </button>
       </div>
 
-      {/* 左: カードプールライブラリ */}
-      <div
-        className={`${mobilePane === 'library' ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 min-h-0 overflow-hidden`}
-      >
-        <DeckBuilderLibraryPane
-          cards={cardPool}
-          deckCardCounts={deckCardCounts}
-          onAddCard={handleAddCard}
-          onOpenOfficialImport={() => setIsOfficialImportOpen(true)}
-          onInspectCard={(c) => {
-            setInspectCard({
-              ...c,
-              id: `inspect-${c.code}`,
-              isRested: false,
-              bpModifier: 0,
-              underCards: [],
-            });
-          }}
-        />
-      </div>
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+        {/* 左: カードプールライブラリ */}
+        <div
+          className={`${mobilePane === 'library' ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 min-h-0 overflow-hidden`}
+        >
+          <DeckBuilderLibraryPane
+            cards={cardPool}
+            deckCardCounts={deckCardCounts}
+            onAddCard={handleAddCard}
+            onOpenOfficialImport={() => setIsOfficialImportOpen(true)}
+            onInspectCard={(c) => {
+              setInspectCard({
+                ...c,
+                id: `inspect-${c.code}`,
+                isRested: false,
+                bpModifier: 0,
+                underCards: [],
+              });
+            }}
+          />
+        </div>
 
-      {/* 右: デッキ構築ペイン */}
-      <div
-        className={`${mobilePane === 'deck' ? 'flex' : 'hidden'} md:flex w-full md:w-[420px] flex-1 md:flex-none min-h-0 border-l border-slate-800 overflow-hidden flex-col`}
-      >
-        <DeckBuilderDeckPane
-          deck={activeDeck}
-          onUpdateDeckName={handleUpdateName}
-          onIncrementCard={handleIncrementCard}
-          onDecrementCard={handleDecrementCard}
-          onRemoveCard={handleRemoveCard}
-          onSave={handleSave}
-          onOpenMyDecks={() => setIsMyDecksOpen(true)}
-          onExportJson={handleExportJson}
-          onPlayWithDeck={() => onPlayWithDeck(activeDeck)}
-          onInspectCard={(c) => {
-            setInspectCard({
-              ...c,
-              id: `inspect-${c.code}`,
-              isRested: false,
-              bpModifier: 0,
-              underCards: [],
-            });
-          }}
-        />
+        {/* 右: デッキ構築ペイン */}
+        <div
+          className={`${mobilePane === 'deck' ? 'flex' : 'hidden'} md:flex w-full md:w-[420px] flex-1 md:flex-none min-h-0 border-l border-slate-800 overflow-hidden flex-col`}
+        >
+          <DeckBuilderDeckPane
+            deck={activeDeck}
+            onUpdateDeckName={handleUpdateName}
+            onIncrementCard={handleIncrementCard}
+            onDecrementCard={handleDecrementCard}
+            onRemoveCard={handleRemoveCard}
+            onSave={handleSave}
+            onOpenMyDecks={() => setIsMyDecksOpen(true)}
+            onExportJson={handleExportJson}
+            onPlayWithDeck={() => onPlayWithDeck(activeDeck)}
+            onInspectCard={(c) => {
+              setInspectCard({
+                ...c,
+                id: `inspect-${c.code}`,
+                isRested: false,
+                bpModifier: 0,
+                underCards: [],
+              });
+            }}
+          />
+        </div>
       </div>
 
       {/* マイデッキモーダル */}
@@ -339,8 +386,8 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
       <DeckBuilderImportModal
         isOpen={isImportOpen}
         onImportSuccess={(deck) => {
-          saveDeck(deck);
-          setSavedDecks(loadSavedDecks());
+          persistDeck(deck);
+          refreshSavedDecks();
           setActiveDeck(deck);
         }}
         onClose={() => setIsImportOpen(false)}

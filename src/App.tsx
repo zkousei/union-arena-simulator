@@ -8,6 +8,7 @@ import { GameLog } from './components/log/GameLog';
 import { PeerModal } from './components/peer/PeerModal';
 import { RestoreSessionModal } from './components/modals/RestoreSessionModal';
 import { HomePage } from './pages/Home';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import type { UserDeck } from './domain/deckValidation';
 import { loadSavedHostSession, clearHostSession, type SavedHostSession } from './domain/hostSessionStorage';
 import {
@@ -977,15 +978,17 @@ export function App() {
         <Route
           path="/deck-builder"
           element={
-            <Suspense
-              fallback={
-                <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                  デッキビルダーを読み込んでいます...
-                </div>
-              }
-            >
-              <DeckBuilderPage onPlayWithDeck={handlePlayWithCustomDeck} />
-            </Suspense>
+            <RouteErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+                    デッキビルダーを読み込んでいます...
+                  </div>
+                }
+              >
+                <DeckBuilderPage onPlayWithDeck={handlePlayWithCustomDeck} />
+              </Suspense>
+            </RouteErrorBoundary>
           }
         />
         <Route

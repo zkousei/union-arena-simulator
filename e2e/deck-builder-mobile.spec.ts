@@ -50,6 +50,31 @@ test('saves and restores a deck from the mobile deck pane', async ({ page }) => 
   await expect(deckName).toHaveValue('モバイル保存テスト');
 });
 
+test('opens with incomplete saved cards and preserves a backup of skipped decks', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('union_arena_saved_decks', JSON.stringify([
+      { id: 'old-official', name: '旧デッキ', titleCode: 'CGH', items: [{ card: { code: 'UA01BT/CGH-1-001' }, count: 1 }], updatedAt: 1 },
+      { id: 'broken-custom', name: '不完全なデッキ', titleCode: 'TEST', items: [{ card: { code: 'CUSTOM-1' }, count: 1 }], updatedAt: 1 },
+    ]));
+  });
+  await page.goto('/deck-builder');
+
+  await expect(page.getByRole('alert')).toContainText('保存データの一部を読み込めませんでした');
+  await page.getByRole('button', { name: /現在のデッキ/ }).click();
+  await expect(page.getByPlaceholder('デッキ名を入力...')).toHaveValue('旧デッキ');
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '元データをバックアップ' }).click();
+  expect((await download).suggestedFilename()).toBe('union-arena-saved-decks-backup.json');
+  await page.getByRole('button', { name: '保存' }).click();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('union_arena_saved_decks')!));
+  expect(saved.some((deck: { id: string }) => deck.id === 'broken-custom')).toBe(true);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.getByPlaceholder('カード名、特徴、テキスト、レアリティで検索...')).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
 test('rejects invalid JSON and persists a valid imported deck on mobile', async ({ page }) => {
   await page.goto('/deck-builder');
   await page.getByRole('button', { name: /現在のデッキ/ }).click();
