@@ -75,6 +75,21 @@ test('opens with incomplete saved cards and preserves a backup of skipped decks'
   await expectNoHorizontalOverflow(page);
 });
 
+test('uses corrected official triggers for a previously cached card', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('UA_CUSTOM_CARDS', JSON.stringify([{
+      code: 'UA01BT/CGH-1-003', name: '紅月 カレン', title: 'コードギアス 反逆のルルーシュ', titleCode: 'CGH',
+      cardType: 'CHARACTER', color: 'PURPLE', bp: 2000, apCost: 1, reqEnergy: 1, genEnergy: 1,
+      traits: ['黒の騎士団'], triggers: ['ACTIVE', 'COLOR'], effectText: '',
+    }]));
+  });
+  await page.goto('/deck-builder');
+  await page.getByPlaceholder('カード名、特徴、テキスト、レアリティで検索...').fill('UA01BT/CGH-1-003');
+
+  await expect(page.getByText('カラー', { exact: true })).toBeVisible();
+  await expect(page.getByText('アクティブ', { exact: true })).toHaveCount(0);
+});
+
 test('rejects invalid JSON and persists a valid imported deck on mobile', async ({ page }) => {
   await page.goto('/deck-builder');
   await page.getByRole('button', { name: /現在のデッキ/ }).click();

@@ -72,6 +72,18 @@ describe('officialCardService Tests', () => {
     expect(card.imageUrl).toBe('https://example.com/cgh10.png');
   });
 
+  it('reads trigger icons without treating their effect descriptions as extra triggers', () => {
+    const html = `<dl class="cardDataCol triggerData"><dd class="cardDataContents">
+      <img alt="カラー">自分の場にアクティブで登場させる。<img alt="アクティブ">
+    </dd></dl>`;
+
+    expect(parseCardFromDetailHtml(html, 'UA01BT/CGH-1-003').triggers).toEqual(['COLOR']);
+  });
+
+  it('has no multi-trigger entries in synchronized official card data', () => {
+    expect(CARD_DATABASE.filter((card) => card.triggers.length > 1).map((card) => card.code)).toEqual([]);
+  });
+
   it.each([
     ['purple1.png', '紫', 1, false],
     ['purple2.png', '紫+', 1, true],
