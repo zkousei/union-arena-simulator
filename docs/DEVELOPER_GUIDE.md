@@ -264,6 +264,8 @@ git diff --check      # 空白・インデント・構文異常チェック
   }
   ```
 - クライアントルーティング（`/`, `/game`, `/deck-builder`）を `index.html` にルーティングする設定が含まれています。
+- Vercel Web Analytics を有効にする場合は、Vercel プロジェクトで Web Analytics を有効化し、対象環境に `VITE_ENABLE_VERCEL_ANALYTICS=true` を設定して再デプロイします。Analytics は本番ビルドかつこのフラグが設定された場合だけ読み込まれます。
+- `/game` の計測URLはソロ、P2Pホスト、P2Pゲストの区分だけを保持し、`room` を含むクエリ文字列とハッシュは送信前に除去されます。
 
 ### WebRTC / PeerJS Cloud 設定
 - デフォルトでは PeerJS 公式の無料シグナリングサーバー（`0.peerjs.com`）を使用します。

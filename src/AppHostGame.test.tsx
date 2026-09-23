@@ -12,7 +12,27 @@ vi.mock('./hooks/useGame', () => ({
   useGame: () => mockUseGame(),
 }));
 
+const analyticsMock = vi.hoisted(() => ({
+  props: [] as Array<{
+    beforeSend?: (event: { url: string }) => { url: string } | null;
+    debug?: boolean;
+  }>,
+}));
+
+vi.mock('@vercel/analytics/react', () => ({
+  Analytics: (props: {
+    beforeSend?: (event: { url: string }) => { url: string } | null;
+    debug?: boolean;
+  }) => {
+    analyticsMock.props.push(props);
+    return <div data-testid="vercel-analytics" />;
+  },
+}));
+
 beforeEach(() => {
+  analyticsMock.props = [];
+  vi.unstubAllEnvs();
+
   const store = new Map<string, string>();
   Object.defineProperty(window, 'localStorage', {
     writable: true,
@@ -100,6 +120,39 @@ describe('App room creation from navigation', () => {
       },
       createRoom: createRoomMock,
       joinRoom: vi.fn(),
+    });
+  });
+
+  it('does not render Vercel Analytics unless explicitly enabled for production', () => {
+    vi.stubEnv('PROD', true);
+
+    render(
+      <MemoryRouter initialEntries={['/analytics-test']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId('vercel-analytics')).toBeNull();
+    expect(analyticsMock.props).toHaveLength(0);
+  });
+
+  it('renders Vercel Analytics in enabled production builds with game URL redaction', () => {
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('VITE_ENABLE_VERCEL_ANALYTICS', 'true');
+
+    render(
+      <MemoryRouter initialEntries={['/analytics-test']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('vercel-analytics')).toBeTruthy();
+    expect(analyticsMock.props).toHaveLength(1);
+    expect(analyticsMock.props[0]?.debug).toBe(false);
+    expect(analyticsMock.props[0]?.beforeSend?.({
+      url: 'https://example.com/game?host=true&room=ROOM123',
+    })).toEqual({
+      url: 'https://example.com/game/p2p-host',
     });
   });
 

@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Routes, Route, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from './hooks/useGame';
 import { ActionToolbar } from './components/controls/ActionToolbar';
@@ -32,6 +33,10 @@ import {
 } from 'lucide-react';
 import { sound } from './utils/audio';
 import { isSoloGameRoute } from './utils/gameMode';
+import {
+  redactVercelAnalyticsEvent,
+  shouldEnableVercelAnalytics,
+} from './utils/vercelAnalytics';
 
 const Board = lazy(() =>
   import('./components/board/Board').then((module) => ({ default: module.Board }))
@@ -1045,6 +1050,10 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {shouldEnableVercelAnalytics(import.meta.env) && (
+        <Analytics beforeSend={redactVercelAnalyticsEvent} debug={false} />
       )}
     </div>
   );
