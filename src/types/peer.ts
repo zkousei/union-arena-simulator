@@ -9,7 +9,12 @@ export type PeerMessageType =
   | 'SYNC_RESPONSE'
   | 'CHAT'
   | 'PING'
-  | 'PONG';
+  | 'PONG'
+  | 'CONNECTION_ACCEPTED'
+  | 'CONNECTION_REJECTED'
+  | 'SPECTATOR_LEAVE'
+  | 'SESSION_ENDED'
+  | 'SYNC_PENDING';
 
 export interface PeerMessage {
   type: PeerMessageType;
@@ -56,4 +61,24 @@ export type ConnectionStatus =
   | 'reconnecting'
   | 'error';
 
-export type PeerRole = 'host' | 'guest' | null;
+export type PeerRole = 'host' | 'guest' | 'spectator' | null;
+
+export type RemoteConnectionRole = 'guest' | 'spectator';
+
+export interface PeerMessageContext {
+  connectionId: string;
+  role: RemoteConnectionRole | 'host';
+}
+
+export interface PeerConnectionMetadata {
+  protocolVersion: 1;
+  connectionRole: RemoteConnectionRole;
+  clientSessionId: string;
+}
+
+export type ConnectionRejectedReason =
+  | 'protocol-version-mismatch'
+  | 'player-slot-occupied'
+  | 'spectating-disabled'
+  | 'spectator-limit'
+  | 'invalid-metadata';

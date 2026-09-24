@@ -112,14 +112,22 @@ describe('App room creation from navigation', () => {
         lastRoomId: null,
         isHost: false,
         error: null,
+        spectatorCount: 0,
+        maxSpectatorConnections: 8,
+        spectatingEnabled: true,
         createRoom: createRoomMock,
         joinRoom: vi.fn(),
+        spectateRoom: vi.fn(),
         reconnect: vi.fn(),
         sendMessage: vi.fn(),
+        broadcastMessage: vi.fn(),
+        sendToConnection: vi.fn(),
+        setSpectatingEnabled: vi.fn(),
         disconnect: disconnectMock,
       },
       createRoom: createRoomMock,
       joinRoom: vi.fn(),
+      spectateRoom: vi.fn(),
     });
   });
 
@@ -134,6 +142,159 @@ describe('App room creation from navigation', () => {
 
     expect(screen.queryByTestId('vercel-analytics')).toBeNull();
     expect(analyticsMock.props).toHaveLength(0);
+  });
+
+  it('joins spectator URLs in read-only spectator mode instead of joining as a guest', async () => {
+    const spectateRoom = vi.fn().mockResolvedValue(undefined);
+    const joinRoom = vi.fn().mockResolvedValue(undefined);
+    const current = mockUseGame();
+    mockUseGame.mockReturnValue({
+      ...current,
+      peer: { ...current.peer, role: null, status: 'disconnected' },
+      joinRoom,
+      spectateRoom,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/game?spectator=true&room=watch-room']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(spectateRoom).toHaveBeenCalledWith('watch-room'));
+    expect(joinRoom).not.toHaveBeenCalled();
+    expect(screen.getByText(/観戦中/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '視点を反転' })).toBeTruthy();
+  });
+
+  it('shares one room code with guests and spectators from a connected host', () => {
+    const clipboardWrite = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWrite },
+    });
+    const current = mockUseGame();
+    mockUseGame.mockReturnValue({
+      ...current,
+      peer: {
+        ...current.peer,
+        peerId: 'ABC123',
+        lastRoomId: 'ABC123',
+        role: 'host',
+        isHost: true,
+        status: 'connected',
+        spectatorCount: 2,
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/game?host=true&room=ABC123']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'ルームコードをコピー' }));
+
+    expect(clipboardWrite).toHaveBeenCalledOnce();
+    expect(clipboardWrite).toHaveBeenCalledWith('ABC123');
+    expect(screen.getByText(/ルームID.*ABC123/)).toBeTruthy();
+  });
+
+  it('ends the active host session before joining another room from the top menu', async () => {
+    const joinRoom = vi.fn().mockResolvedValue(undefined);
+    const endSession = vi.fn();
+    const current = mockUseGame();
+    const peerState = {
+      ...current.peer,
+      peerId: 'HOST12' as string | null,
+      lastRoomId: 'HOST12' as string | null,
+      role: 'host' as 'host' | 'guest' | null,
+      isHost: true,
+      status: 'waiting' as ConnectionStatus,
+      endSession,
+    };
+    let refreshPeerState: (() => void) | null = null;
+
+    endSession.mockImplementation(() => {
+      peerState.peerId = null;
+      peerState.role = null;
+      peerState.isHost = false;
+      peerState.status = 'disconnected';
+      refreshPeerState?.();
+    });
+    mockUseGame.mockImplementation(() => ({
+      ...current,
+      peer: { ...peerState },
+      joinRoom,
+    }));
+
+    const view = (
+      <MemoryRouter initialEntries={['/game?host=true&room=HOST12']}>
+        <App />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view);
+    refreshPeerState = () => rerender(view);
+
+    fireEvent.click(screen.getByRole('button', { name: '対戦メニュー' }));
+    fireEvent.change(screen.getByPlaceholderText('ルームID（例: ABC123）'), {
+      target: { value: 'GUEST1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '参加' }));
+
+    await waitFor(() => expect(endSession).toHaveBeenCalledOnce());
+    await waitFor(() => expect(joinRoom).toHaveBeenCalledWith('GUEST1'));
+  });
+
+  it('uses the guest route while stale host state is being cleared', async () => {
+    const joinRoom = vi.fn().mockResolvedValue(undefined);
+    const current = mockUseGame();
+    mockUseGame.mockReturnValue({
+      ...current,
+      peer: {
+        ...current.peer,
+        peerId: null,
+        role: 'host',
+        isHost: true,
+        status: 'disconnected',
+      },
+      joinRoom,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/game?host=false&room=GUEST1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(joinRoom).toHaveBeenCalledWith('GUEST1'));
+    expect(createRoomMock).not.toHaveBeenCalled();
+  });
+
+  it('shows spectator-specific reconnect copy and retry action', () => {
+    const retrySynchronization = vi.fn().mockResolvedValue(undefined);
+    const current = mockUseGame();
+    mockUseGame.mockReturnValue({
+      ...current,
+      isInteractionLocked: true,
+      retrySynchronization,
+      peer: {
+        ...current.peer,
+        role: 'spectator',
+        status: 'error',
+        error: '観戦ルームに接続できませんでした。',
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/game?spectator=true&room=watch-room']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: '観戦ルームへ再接続しています' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '再試行' }));
+    expect(retrySynchronization).toHaveBeenCalledOnce();
   });
 
   it('renders Vercel Analytics in enabled production builds with game URL redaction', () => {

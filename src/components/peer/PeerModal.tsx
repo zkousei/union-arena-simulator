@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UsePeerReturn } from '../../hooks/usePeer';
-import { Copy, Check, Users, Radio, LogOut, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Copy, Check, Users, Radio, LogOut, ArrowRight, ShieldCheck, Eye } from 'lucide-react';
+import { normalizeRoomId } from '../../domain/roomId';
 
 interface PeerModalProps {
   peer: UsePeerReturn;
@@ -20,7 +21,7 @@ export const PeerModal: React.FC<PeerModalProps> = ({
   onDisconnect,
 }) => {
   const [joinId, setJoinId] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [roomIdCopied, setRoomIdCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -38,19 +39,21 @@ export const PeerModal: React.FC<PeerModalProps> = ({
     if (!joinId.trim()) return;
     try {
       setLoading(true);
-      await onJoinRoom(joinId.trim());
+      const trimmed = joinId.trim();
+      const roomId = normalizeRoomId(trimmed);
+      if (!roomId) return;
+      await onJoinRoom(roomId);
       onClose();
     } finally {
       setLoading(false);
     }
   };
 
-  const copyRoomUrl = () => {
+  const copyRoomId = () => {
     if (!peer.peerId) return;
-    const url = `${window.location.origin}${window.location.pathname}?room=${peer.peerId}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(peer.peerId);
+    setRoomIdCopied(true);
+    setTimeout(() => setRoomIdCopied(false), 2000);
   };
 
   return (
@@ -59,7 +62,7 @@ export const PeerModal: React.FC<PeerModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="peer-modal-title"
-        className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4 text-xs"
+        className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 shadow-2xl flex flex-col gap-4 text-xs"
       >
         {/* ヘッダー */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -91,13 +94,13 @@ export const PeerModal: React.FC<PeerModalProps> = ({
             />
             <span className="font-semibold text-slate-300">
               {peer.status === 'connected'
-                ? '接続完了 (対戦中)'
+                ? peer.role === 'spectator' ? '観戦ルームに接続中' : '接続完了 (対戦中)'
                 : peer.status === 'connecting'
-                ? '接続待機・ネゴシエーション中...'
+                ? peer.role === 'spectator' ? '観戦ルームに接続しています...' : '接続待機・ネゴシエーション中...'
                 : peer.status === 'waiting'
                 ? '対戦相手の参加待ち'
                 : peer.status === 'reconnecting'
-                ? '切断を検知・再接続中...'
+                ? peer.role === 'spectator' ? '観戦ルームへ再接続しています...' : '切断を検知・再接続中...'
                 : peer.status === 'error'
                 ? '接続エラー'
                 : '未接続'}
@@ -121,7 +124,7 @@ export const PeerModal: React.FC<PeerModalProps> = ({
             className="space-y-2 bg-rose-950/50 border border-rose-800 text-rose-300 p-2.5 rounded-lg"
           >
             <p>{peer.error}</p>
-            {peer.role === 'guest' && (
+            {(peer.role === 'guest' || peer.role === 'spectator') && (
               <button
                 type="button"
                 onClick={() => void peer.reconnect()}
@@ -134,7 +137,7 @@ export const PeerModal: React.FC<PeerModalProps> = ({
         )}
 
         {/* ホストとして部屋作成 */}
-        {peer.role !== 'guest' && (
+        {(peer.role === null || peer.role === 'host') && (
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
           <div className="flex items-center gap-1.5 font-bold text-slate-200">
             <Radio className="w-4 h-4 text-indigo-400" />
@@ -150,29 +153,52 @@ export const PeerModal: React.FC<PeerModalProps> = ({
               {loading ? 'ルーム生成中...' : 'ルームを作成する'}
             </button>
           ) : (
-            <div className="space-y-2">
-              <div className="text-slate-400 text-[11px]">
-                対戦相手に以下の招待URLまたはルームIDを共有してください：
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={peer.peerId}
-                  className="flex-1 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-[11px]"
-                />
+            <div className="space-y-3">
+              <div className="rounded-xl border border-indigo-700/60 bg-indigo-950/30 p-3 text-center">
+                <p className="text-[10px] font-bold text-indigo-300">共通ルームコード</p>
+                <p className="mt-1 font-mono text-2xl font-black tracking-[0.25em] text-white">{peer.peerId}</p>
+                <p className="mt-1 text-[10px] text-slate-400">このコードをゲストと観戦者に共有してください。</p>
                 <button
-                  onClick={copyRoomUrl}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold"
+                  type="button"
+                  onClick={copyRoomId}
+                  className="mt-2 inline-flex items-center gap-1 rounded-lg bg-indigo-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-600"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'コピー済' : 'URL共有'}
+                  {roomIdCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {roomIdCopied ? 'ルームコードをコピー済み' : 'ルームコードをコピー'}
                 </button>
               </div>
+              <section className="space-y-2 rounded-xl border border-sky-800/70 bg-sky-950/30 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="flex items-center gap-1.5 font-bold text-sky-200">
+                      <Eye className="h-3.5 w-3.5" />
+                      観戦受付
+                    </h4>
+                    <p className="mt-0.5 text-[10px] text-slate-400">観戦者も上の共通ルームコードで接続します。</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-sky-700/60 bg-sky-950 px-2 py-0.5 text-[10px] font-bold text-sky-300">
+                    観戦者 {peer.spectatorCount} / {peer.maxSpectatorConnections}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={peer.spectatingEnabled}
+                      onChange={(event) => peer.setSpectatingEnabled(event.target.checked)}
+                    />
+                    観戦受付
+                  </label>
+                  <span className={peer.spectatingEnabled ? 'text-emerald-300' : 'text-rose-300'}>
+                    {peer.spectatingEnabled ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+              </section>
+
               {peer.status === 'waiting' && (
                 <div className="text-[11px] text-amber-400 flex items-center gap-1 animate-pulse">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  相手の接続を待機しています...
+                  対戦相手の接続を待機しています...
                 </div>
               )}
             </div>
@@ -190,7 +216,7 @@ export const PeerModal: React.FC<PeerModalProps> = ({
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="ホストのルームIDを入力"
+                placeholder="ルームID（例: ABC123）"
                 value={joinId}
                 onChange={(e) => setJoinId(e.target.value)}
                 className="flex-1 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-200 placeholder-slate-500 text-xs"

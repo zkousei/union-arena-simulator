@@ -178,15 +178,21 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
             <span>ライフ</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={onOpenLifeSelectModal}
-              disabled={player.life.length === 0}
-              className="text-base font-extrabold text-white px-2 py-0.5 bg-rose-950/80 hover:bg-rose-900 rounded border border-rose-500/50 cursor-pointer disabled:cursor-default transition-colors"
-              title="クリックでライフ一覧・選択モーダルを開く"
-            >
-              {player.life.length}
-            </button>
+            {onOpenLifeSelectModal ? (
+              <button
+                type="button"
+                onClick={onOpenLifeSelectModal}
+                disabled={player.life.length === 0}
+                className="text-base font-extrabold text-white px-2 py-0.5 bg-rose-950/80 hover:bg-rose-900 rounded border border-rose-500/50 cursor-pointer disabled:cursor-default transition-colors"
+                title="クリックでライフ一覧・選択モーダルを開く"
+              >
+                {player.life.length}
+              </button>
+            ) : (
+              <span className="text-base font-extrabold text-white px-2 py-0.5 bg-rose-950/80 rounded border border-rose-500/50">
+                {player.life.length}
+              </span>
+            )}
             {isOpponent ? (
               <div className="flex items-center gap-1">
                 {onOpenLifeSelectModal && (

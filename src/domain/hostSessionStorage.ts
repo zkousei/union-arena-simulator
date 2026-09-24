@@ -81,7 +81,11 @@ export function loadSavedHostSession(roomId: string): SavedHostSession | null {
 
   try {
     const parsed = JSON.parse(raw) as Partial<SavedHostSession>;
-    if (!parsed || parsed.roomId !== roomId || typeof parsed.savedAt !== 'number') {
+    if (
+      !parsed ||
+      parsed.roomId !== roomId ||
+      typeof parsed.savedAt !== 'number'
+    ) {
       window.sessionStorage.removeItem(key);
       return null;
     }

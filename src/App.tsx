@@ -11,6 +11,7 @@ import { HomePage } from './pages/Home';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import type { UserDeck } from './domain/deckValidation';
 import { loadSavedHostSession, clearHostSession, type SavedHostSession } from './domain/hostSessionStorage';
+import { normalizeRoomId } from './domain/roomId';
 import {
   Swords,
   Layers,
@@ -124,16 +125,8 @@ function AppNavigation({
     const trimmed = navJoinId.trim();
     if (!trimmed) return;
 
-    let roomId = trimmed;
-    if (trimmed.includes('room=')) {
-      try {
-        const url = new URL(trimmed.startsWith('http') ? trimmed : `http://dummy.com/${trimmed}`);
-        roomId = url.searchParams.get('room') || trimmed;
-      } catch {
-        const match = trimmed.match(/room=([^&]+)/);
-        if (match) roomId = decodeURIComponent(match[1]);
-      }
-    }
+    const roomId = normalizeRoomId(trimmed);
+    if (!roomId) return;
     setIsPlayMenuOpen(false);
     onJoinGame(roomId);
   };
@@ -142,14 +135,13 @@ function AppNavigation({
     if (currentRoomId) {
       clearHostSession(currentRoomId);
     }
-    peer.disconnect();
+    peer.endSession();
     navigate('/game?mode=solo', { replace: true });
   };
 
-  const handleCopyInviteUrl = () => {
+  const handleCopyRoomCode = () => {
     if (!currentRoomId) return;
-    const url = `${window.location.origin}/game?host=false&room=${encodeURIComponent(currentRoomId)}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(currentRoomId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -274,7 +266,7 @@ function AppNavigation({
                     {isHosting ? '🌐 部屋を作成中...' : '🌐 部屋を作成 (Host)'}
                   </div>
                   <div className="text-[10px] text-slate-400 font-normal">
-                    {isHosting ? '接続を確立しています...' : 'URLを友達に送って通信対戦'}
+                    {isHosting ? '接続を確立しています...' : 'ルームコードを共有して通信対戦'}
                   </div>
                 </div>
               </button>
@@ -290,7 +282,7 @@ function AppNavigation({
                     type="text"
                     value={navJoinId}
                     onChange={(e) => setNavJoinId(e.target.value)}
-                    placeholder="ルームID または URL"
+                    placeholder="ルームID（例: ABC123）"
                     className="flex-1 min-w-0 px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                   <button
@@ -317,7 +309,7 @@ function AppNavigation({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-[11px] font-bold">
                   <Wifi className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span className="hidden xl:inline">P2P接続中 ({isHost ? 'ホスト' : 'ゲスト'})</span>
+                  <span className="hidden xl:inline">P2P接続中 ({isHost ? 'ホスト' : peer.role === 'spectator' ? '観戦' : 'ゲスト'})</span>
                 </div>
                 <button
                   onClick={handleDisconnect}
@@ -340,12 +332,12 @@ function AppNavigation({
                       </span>
                     </div>
                     <button
-                      onClick={handleCopyInviteUrl}
+                      onClick={handleCopyRoomCode}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold shadow transition"
-                      title="友達への招待リンクをコピー"
+                      title="ゲスト・観戦者用のルームコードをコピー"
                     >
                       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      <span className="hidden xl:inline">{copied ? 'コピー済' : 'URL招待'}</span>
+                      <span className="hidden xl:inline">{copied ? 'コピー済' : 'コード共有'}</span>
                     </button>
                   </>
                 ) : (
@@ -355,7 +347,7 @@ function AppNavigation({
                   </div>
                 )}
               </div>
-            ) : peer.role === 'guest' ? (
+            ) : peer.role === 'guest' || peer.role === 'spectator' ? (
               <button
                 onClick={onOpenPeerModal}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[11px] font-bold"
@@ -395,6 +387,18 @@ function AppNavigation({
               </div>
             )}
           </div>
+        )}
+
+        {isGame && isHost && currentRoomId && (
+          <button
+            type="button"
+            onClick={onOpenPeerModal}
+            className="hidden items-center gap-1 rounded-lg border border-sky-700/50 bg-sky-950/50 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-900/70 sm:flex"
+            title="ルームコードと観戦受付を管理"
+          >
+            <Users className="h-3 w-3" />
+            観戦者 {peer.spectatorCount ?? 0} / {peer.maxSpectatorConnections ?? 8}
+          </button>
         )}
 
         {/* サウンドトグル */}
@@ -437,6 +441,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
   const mode = searchParams.get('mode');
   const hostParam = searchParams.get('host');
   const roomParam = searchParams.get('room');
+  const spectatorParam = searchParams.get('spectator');
   const {
     gameState,
     myPlayerId,
@@ -446,15 +451,22 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
     peer,
     createRoom,
     joinRoom,
+    spectateRoom,
     restoreHostSession,
+    setHostSessionPending,
+    finishHostSessionDecision,
     isSynchronizing,
     isInteractionLocked,
     syncError,
     retrySynchronization,
   } = game;
-  const isHost = hostParam === 'true' || peer.role === 'host';
+  // URLが要求する役割を正とする。役割切替直後は前のpeer.roleが1レンダー残るため、
+  // peer.roleを混ぜるとゲストURLでホストを再作成してしまう。
+  const isHost = hostParam === 'true';
+  const isSpectator = mode !== 'solo' && spectatorParam === 'true';
 
   const [savedSessionCandidate, setSavedSessionCandidate] = useState<SavedHostSession | null>(null);
+  const [isSpectatorViewFlipped, setIsSpectatorViewFlipped] = useState(false);
   const checkedRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -462,10 +474,11 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
       checkedRoomRef.current = roomParam;
       const saved = loadSavedHostSession(roomParam);
       if (saved) {
+        setHostSessionPending?.(true);
         setSavedSessionCandidate(saved);
       }
     }
-  }, [isHost, roomParam]);
+  }, [isHost, roomParam, setHostSessionPending]);
 
   const handleResumeSession = useCallback(() => {
     if (!savedSessionCandidate) return;
@@ -477,8 +490,9 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
     if (roomParam) {
       clearHostSession(roomParam);
     }
+    finishHostSessionDecision?.();
     setSavedSessionCandidate(null);
-  }, [roomParam]);
+  }, [finishHostSessionDecision, roomParam]);
 
   const navigate = useNavigate();
   const [isLogCollapsed, setIsLogCollapsed] = useState(
@@ -512,10 +526,16 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
 
   // URLにゲスト用roomがある場合、自動的に部屋参加を試行
   useEffect(() => {
-    if (roomParam && !isHost && peer.status === 'disconnected' && !peer.error) {
+    if (roomParam && !isHost && !isSpectator && peer.status === 'disconnected' && !peer.error) {
       void joinRoom(roomParam).catch(() => undefined);
     }
-  }, [roomParam, isHost, peer.status, peer.error, joinRoom]);
+  }, [roomParam, isHost, isSpectator, peer.status, peer.error, joinRoom]);
+
+  useEffect(() => {
+    if (roomParam && isSpectator && peer.status === 'disconnected' && !peer.error) {
+      void spectateRoom(roomParam).catch(() => undefined);
+    }
+  }, [roomParam, isSpectator, peer.status, peer.error, spectateRoom]);
 
   // URLにホスト用roomがあるがPeer未作成の場合、作成を試行
   useEffect(() => {
@@ -637,11 +657,10 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
     }
   };
 
-  const copyInviteUrl = () => {
+  const copyRoomCode = () => {
     const roomId = peer.peerId || roomParam;
     if (!roomId) return;
-    const url = `${window.location.origin}/game?host=false&room=${encodeURIComponent(roomId)}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(roomId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -650,31 +669,59 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
     if (roomParam) {
       clearHostSession(roomParam);
     }
-    peer.disconnect();
+    peer.endSession();
     navigate('/game?mode=solo', { replace: true });
   };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
-      {/* P2Pホストで相手待機中の目立つ案内バナー */}
-      {isHost && peer.status === 'waiting' && (
-        <div className="bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border-b border-amber-600/40 px-4 py-2 flex items-center justify-between gap-3 text-xs z-20">
-          <div className="flex items-center gap-2 text-amber-300 font-semibold">
-            <Radio className="w-4 h-4 animate-pulse text-amber-400" />
-            <span>対戦相手の参加を待っています... 友達に以下の招待URLを送ってください。</span>
+      {/* P2Pホスト用の対戦・観戦招待導線 */}
+      {isHost && (peer.peerId || roomParam) && (
+        <div className="z-20 flex flex-col gap-2 border-b border-sky-700/40 bg-gradient-to-r from-emerald-950/70 via-slate-900/95 to-sky-950/70 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2 font-semibold text-slate-200">
+            <Radio className={`h-4 w-4 shrink-0 ${peer.status === 'waiting' ? 'animate-pulse text-amber-400' : 'text-emerald-400'}`} />
+            <span className="truncate">
+              {peer.status === 'waiting' ? '対戦相手を待機中' : 'P2P対戦ルーム'}
+            </span>
+            <span className="shrink-0 rounded border border-slate-600 bg-slate-950/70 px-2 py-0.5 font-mono text-[11px] tracking-widest text-white">
+              ルームID {peer.peerId || roomParam}
+            </span>
+            <button
+              type="button"
+              onClick={onOpenPeerModal}
+              className="shrink-0 rounded-full border border-sky-700/60 bg-sky-950/70 px-2 py-0.5 text-[10px] font-bold text-sky-300 hover:bg-sky-900"
+            >
+              観戦者 {peer.spectatorCount} / {peer.maxSpectatorConnections}
+            </button>
           </div>
-          <button
-            onClick={copyInviteUrl}
-            className="flex items-center gap-1.5 px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg shadow transition shrink-0"
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'コピー完了！' : '招待URLをコピー'}</span>
-          </button>
+          <div className="flex">
+            <button
+              onClick={copyRoomCode}
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 font-bold text-white shadow transition hover:bg-emerald-600"
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              <span>{copied ? 'ルームコードをコピー済み' : 'ルームコードをコピー'}</span>
+            </button>
+          </div>
         </div>
       )}
 
       {/* 試合前準備バー or 対戦中クイックアクションバー */}
-      {gameState.status === 'PREPARING' && myPlayer && opponentPlayer ? (
+      {isSpectator ? (
+        <div className="flex items-center justify-center gap-3 border-b border-sky-700/40 bg-sky-950/50 px-4 py-2 text-xs font-bold text-sky-200">
+          <span className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            観戦中 — Player 1 / Player 2 の公開盤面を表示しています
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsSpectatorViewFlipped((current) => !current)}
+            className="rounded-lg border border-sky-600/60 bg-sky-900/60 px-2 py-1 text-[11px] text-sky-100 hover:bg-sky-800/70"
+          >
+            視点を反転
+          </button>
+        </div>
+      ) : gameState.status === 'PREPARING' && myPlayer && opponentPlayer ? (
         <PreGameBar
           myPlayer={myPlayer}
           opponentPlayer={opponentPlayer}
@@ -726,6 +773,8 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
               dispatchAction={dispatchAction}
               onOpenDeckPicker={() => setIsDeckPickerOpen(true)}
               isSoloMode={isSoloMode}
+              isSpectator={isSpectator}
+              spectatorFlipped={isSpectatorViewFlipped}
               isFitMode={isFitMode}
               onUndo={undo}
               canUndo={canUndo}
@@ -759,7 +808,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
                 logs={gameState.logs}
                 myPlayerId={myPlayerId}
                 myPlayerName={myPlayer?.name || 'あなた'}
-                onSendChat={(text) => {
+                onSendChat={isSpectator ? undefined : (text) => {
                   dispatchAction({
                     type: 'CHAT_MESSAGE',
                     payload: {
@@ -781,15 +830,17 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
             <RefreshCw className="mx-auto mb-3 h-8 w-8 animate-spin text-amber-400" />
             <h2 className="text-base font-bold text-white">
               {isSynchronizing
-                ? '盤面を再同期しています'
+                ? isSpectator ? '観戦盤面を同期しています' : '盤面を再同期しています'
                 : peer.role === 'host' && peer.status === 'connecting'
                   ? '対戦部屋を作成しています'
-                  : '対戦相手との接続を復旧しています'}
+                  : isSpectator ? '観戦ルームへ再接続しています' : '対戦相手との接続を復旧しています'}
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
               {peer.role === 'host' && peer.status === 'connecting'
                 ? 'シグナリングサーバーと接続しています。しばらくお待ちください。'
-                : '同期が完了するまでゲーム操作を一時停止します。画面を閉じずにお待ちください。'}
+                : isSpectator
+                  ? '最新の公開盤面を取得しています。画面を閉じずにお待ちください。'
+                  : '同期が完了するまでゲーム操作を一時停止します。画面を閉じずにお待ちください。'}
             </p>
             {(peer.error || syncError) && (
               <p className="mt-3 rounded-lg border border-rose-800/60 bg-rose-950/50 p-2 text-xs text-rose-300">
@@ -797,7 +848,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
               </p>
             )}
             <div className="mt-4 flex justify-center gap-2">
-              {peer.role === 'guest' && (
+              {(peer.role === 'guest' || peer.role === 'spectator') && (
                 <button
                   type="button"
                   onClick={() => void retrySynchronization()}
@@ -811,7 +862,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
                 onClick={handleEndPeerSession}
                 className="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
               >
-                対戦を終了
+                {isSpectator ? '観戦を終了' : '対戦を終了'}
               </button>
             </div>
           </div>
@@ -855,6 +906,7 @@ export function App() {
     peer,
     createRoom,
     joinRoom,
+    spectateRoom,
   } = game;
 
   const [isPeerModalOpen, setIsPeerModalOpen] = useState(false);
@@ -900,8 +952,20 @@ export function App() {
 
   // ルーム参加（ゲスト）
   const handleJoinGame = useCallback((roomId: string) => {
+    if (peer.role !== null) {
+      peer.endSession();
+    }
     navigate(`/game?host=false&room=${encodeURIComponent(roomId)}`);
-  }, [navigate]);
+    void joinRoom(roomId).catch(() => undefined);
+  }, [joinRoom, navigate, peer]);
+
+  const handleSpectateGame = useCallback((roomId: string) => {
+    if (peer.role !== null) {
+      peer.endSession();
+    }
+    navigate(`/game?spectator=true&room=${encodeURIComponent(roomId)}`);
+    void spectateRoom(roomId).catch(() => undefined);
+  }, [navigate, peer, spectateRoom]);
 
   // ソロプレイ開始
   const handleSoloPlay = useCallback(() => {
@@ -910,7 +974,7 @@ export function App() {
       clearHostSession(activeRoom);
     }
     if (peer.role !== null) {
-      peer.disconnect();
+      peer.endSession();
     }
     navigate('/game?mode=solo');
   }, [peer, navigate]);
@@ -940,7 +1004,7 @@ export function App() {
   // 現在の部屋コード取得
   const [searchParams] = useSearchParams();
   const currentRoomId = peer.peerId || searchParams.get('room');
-  const isHost = searchParams.get('host') === 'true' || peer.isHost;
+  const isHost = searchParams.get('host') === 'true';
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
@@ -970,6 +1034,7 @@ export function App() {
               onStartSolo={handleSoloPlay}
               onHostGame={handleHostGame}
               onJoinGame={handleJoinGame}
+              onSpectateGame={handleSpectateGame}
               onOpenDeckBuilder={() => navigate('/deck-builder')}
               onSelectPresetDeck={handlePlayWithCustomDeck}
             />
@@ -1013,7 +1078,7 @@ export function App() {
         onCreateRoom={createRoom}
         onJoinRoom={joinRoom}
         onDisconnect={() => {
-          peer.disconnect();
+          peer.endSession();
           if (location.pathname === '/game') {
             navigate('/game?mode=solo', { replace: true });
           }

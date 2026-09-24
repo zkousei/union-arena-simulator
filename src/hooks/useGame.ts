@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameAction } from '../types/actions';
 import { GameState } from '../types/game';
-import { PeerMessage, PeerStateSnapshot } from '../types/peer';
+import { PeerMessage, PeerMessageContext, PeerStateSnapshot } from '../types/peer';
 import { createInitialGameState } from '../domain/initialState';
 import {
   createAuthoritativeTransition,
@@ -13,7 +13,7 @@ import { saveHostSession } from '../domain/hostSessionStorage';
 import { usePeer } from './usePeer';
 import { sound } from '../utils/audio';
 
-type NetworkRole = 'solo' | 'host' | 'guest';
+type NetworkRole = 'solo' | 'host' | 'guest' | 'spectator';
 
 let requestSessionCounter = 0;
 
@@ -45,6 +45,8 @@ export function useGame() {
   const requestSequenceRef = useRef(0);
   const requestSessionIdRef = useRef(createRequestSessionId());
   const processedRequestIdsRef = useRef(new Set<string>());
+  const hostSessionPendingRef = useRef(false);
+  const spectatorSyncRequestAtRef = useRef(new Map<string, number>());
 
   const peer = usePeer();
   const {
@@ -53,7 +55,10 @@ export function useGame() {
     role: peerRole,
     createRoom,
     joinRoom,
+    spectateRoom,
     reconnect,
+    broadcastMessage,
+    sendToConnection,
   } = peer;
   const sendMessageRef = useRef(sendMessage);
   const peerStatusRef = useRef(peerStatus);
@@ -95,6 +100,7 @@ export function useGame() {
   useEffect(() => {
     if (peerRole === 'host') networkRoleRef.current = 'host';
     if (peerRole === 'guest') networkRoleRef.current = 'guest';
+    if (peerRole === 'spectator') networkRoleRef.current = 'spectator';
 
     if (peerRole === null) {
       networkRoleRef.current = 'solo';
@@ -104,7 +110,7 @@ export function useGame() {
       return;
     }
 
-    if (peerRole === 'guest') {
+    if (peerRole === 'guest' || peerRole === 'spectator') {
       if (peerStatus === 'connected') requestSynchronization();
       else setSynchronizationState(true);
     }
@@ -161,15 +167,13 @@ export function useGame() {
   }, []);
 
   const broadcastSnapshot = useCallback((snapshot: PeerStateSnapshot) => {
-    if (peerStatusRef.current !== 'connected') return;
-
-    sendMessageRef.current({
+    broadcastMessage({
       type: 'STATE_COMMIT',
       senderId: myPlayerIdRef.current,
       timestamp: Date.now(),
       payload: snapshot,
     });
-  }, []);
+  }, [broadcastMessage]);
 
   // 乱数を含むリデューサーはホストで一度だけ実行し、確定済み状態を配信する。
   const applyAuthoritativeAction = useCallback((action: GameAction) => {
@@ -230,6 +234,7 @@ export function useGame() {
 
   const restoreHostSession = useCallback(
     (snapshot: PeerStateSnapshot) => {
+      hostSessionPendingRef.current = false;
       gameStateRef.current = snapshot.state;
       setGameState(snapshot.state);
       hostRevisionRef.current = snapshot.revision;
@@ -239,7 +244,7 @@ export function useGame() {
       if (roomId) {
         saveHostSession(roomId, snapshot);
       }
-      if (peerStatusRef.current === 'connected') {
+      if (networkRoleRef.current === 'host') {
         broadcastSnapshot(snapshot);
       }
     },
@@ -260,9 +265,10 @@ export function useGame() {
   }, []);
 
   // P2Pメッセージ受信ハンドラ。ホストのみがアクションを確定する。
-  const handlePeerMessage = useCallback((msg: PeerMessage) => {
+  const handlePeerMessage = useCallback((msg: PeerMessage, context?: PeerMessageContext) => {
     if (msg.type === 'ACTION_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
+      if (context?.role === 'spectator') return;
       if (hasProcessedRequest(msg)) return;
       try {
         const action = msg.payload as GameAction;
@@ -273,14 +279,32 @@ export function useGame() {
       }
     } else if (msg.type === 'UNDO_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
+      if (context?.role === 'spectator') return;
       if (hasProcessedRequest(msg)) return;
       performAuthoritativeUndo();
     } else if (msg.type === 'STATE_COMMIT') {
-      if (networkRoleRef.current !== 'guest') return;
-      applyRemoteSnapshot(msg.payload as PeerStateSnapshot, true);
+      if (networkRoleRef.current !== 'guest' && networkRoleRef.current !== 'spectator') return;
+      applyRemoteSnapshot(msg.payload as PeerStateSnapshot, networkRoleRef.current === 'guest');
     } else if (msg.type === 'SYNC_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
-      sendMessageRef.current({
+      if (context?.role === 'spectator') {
+        const now = Date.now();
+        const previous = spectatorSyncRequestAtRef.current.get(context.connectionId) ?? 0;
+        if (now - previous < 1_000) return;
+        spectatorSyncRequestAtRef.current.set(context.connectionId, now);
+      }
+      if (hostSessionPendingRef.current) {
+        const pendingResponse: PeerMessage = {
+          type: 'SYNC_PENDING',
+          senderId: myPlayerIdRef.current,
+          timestamp: Date.now(),
+          payload: { reason: 'host-session-decision' },
+        };
+        if (context?.connectionId) sendToConnection(context.connectionId, pendingResponse);
+        else sendMessageRef.current(pendingResponse);
+        return;
+      }
+      const response: PeerMessage = {
         type: 'SYNC_RESPONSE',
         senderId: myPlayerIdRef.current,
         timestamp: Date.now(),
@@ -288,9 +312,11 @@ export function useGame() {
           state: gameStateRef.current,
           revision: hostRevisionRef.current,
         },
-      });
+      };
+      if (context?.connectionId) sendToConnection(context.connectionId, response);
+      else sendMessageRef.current(response);
     } else if (msg.type === 'SYNC_RESPONSE') {
-      if (networkRoleRef.current !== 'guest') return;
+      if (networkRoleRef.current !== 'guest' && networkRoleRef.current !== 'spectator') return;
       if (!isValidPeerStateSnapshot(msg.payload)) return;
       const snapshot = msg.payload;
       const previousRevision = lastAppliedRevisionRef.current;
@@ -309,6 +335,7 @@ export function useGame() {
     clearSyncTimeout,
     hasProcessedRequest,
     performAuthoritativeUndo,
+    sendToConnection,
     setSynchronizationState,
   ]);
 
@@ -340,17 +367,41 @@ export function useGame() {
     await joinRoom(roomId, handlePeerMessage);
   }, [handlePeerMessage, joinRoom, setSynchronizationState]);
 
+  const handleSpectateRoom = useCallback(async (roomId: string) => {
+    networkRoleRef.current = 'spectator';
+    myPlayerIdRef.current = 'player-1';
+    lastAppliedRevisionRef.current = -1;
+    setSynchronizationState(true);
+    setSyncError(null);
+    setMyPlayerId('player-1');
+    await spectateRoom(roomId, handlePeerMessage);
+  }, [handlePeerMessage, setSynchronizationState, spectateRoom]);
+
+  const setHostSessionPending = useCallback((pending: boolean) => {
+    hostSessionPendingRef.current = pending;
+  }, []);
+
+  const finishHostSessionDecision = useCallback(() => {
+    hostSessionPendingRef.current = false;
+    if (networkRoleRef.current === 'host') {
+      broadcastSnapshot({ state: gameStateRef.current, revision: hostRevisionRef.current });
+    }
+  }, [broadcastSnapshot]);
+
   const canDispatchNetworkAction = useCallback(() => {
     if (networkRoleRef.current === 'solo') return true;
     if (networkRoleRef.current === 'guest') {
       return peerStatusRef.current === 'connected' && !isSynchronizingRef.current;
     }
+    if (networkRoleRef.current === 'spectator') return false;
     return peerStatusRef.current === 'connected' || peerStatusRef.current === 'waiting';
   }, []);
 
   // アクション発行関数。接続中のゲストはホストへ実行要求だけを送る。
   const dispatchAction = useCallback((action: GameAction) => {
     if (!canDispatchNetworkAction()) return;
+
+    if (networkRoleRef.current === 'spectator') return;
 
     if (networkRoleRef.current === 'guest') {
       requestSequenceRef.current += 1;
@@ -371,6 +422,8 @@ export function useGame() {
   const undo = useCallback(() => {
     if (!canDispatchNetworkAction()) return;
 
+    if (networkRoleRef.current === 'spectator') return;
+
     if (networkRoleRef.current === 'guest') {
       requestSequenceRef.current += 1;
       sendMessageRef.current({
@@ -386,7 +439,7 @@ export function useGame() {
   }, [canDispatchNetworkAction, performAuthoritativeUndo]);
 
   const retrySynchronization = useCallback(async () => {
-    if (networkRoleRef.current !== 'guest') return;
+    if (networkRoleRef.current !== 'guest' && networkRoleRef.current !== 'spectator') return;
     if (peerStatusRef.current === 'connected') {
       requestSynchronization();
       return;
@@ -395,7 +448,7 @@ export function useGame() {
   }, [reconnect, requestSynchronization]);
 
   const isInteractionLocked =
-    peerRole === 'guest'
+    peerRole === 'guest' || peerRole === 'spectator'
       ? peerStatus !== 'connected' || isSynchronizing
       : peerRole === 'host'
         ? peerStatus === 'connecting' || peerStatus === 'reconnecting' || peerStatus === 'error'
@@ -407,7 +460,7 @@ export function useGame() {
     setMyPlayerId,
     dispatchAction,
     undo,
-    canUndo: history.length > 0,
+    canUndo: peerRole !== 'spectator' && history.length > 0,
     isSynchronizing,
     isInteractionLocked,
     syncError,
@@ -415,6 +468,9 @@ export function useGame() {
     peer,
     createRoom: handleCreateRoom,
     joinRoom: handleJoinRoom,
+    spectateRoom: handleSpectateRoom,
+    setHostSessionPending,
+    finishHostSessionDecision,
     restoreHostSession,
   };
 }

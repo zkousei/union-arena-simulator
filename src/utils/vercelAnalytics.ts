@@ -14,6 +14,7 @@ export const shouldEnableVercelAnalytics = (env: VercelAnalyticsEnv) => {
 const getSafeGameAnalyticsPath = (url: URL) => {
   if (url.searchParams.get('mode') === 'solo') return '/game/solo';
   if (url.searchParams.get('host') === 'true') return '/game/p2p-host';
+  if (url.searchParams.get('spectator') === 'true') return '/game/p2p-spectator';
   if (url.searchParams.get('host') === 'false') return '/game/p2p-guest';
 
   return '/game';
