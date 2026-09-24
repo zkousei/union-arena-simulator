@@ -1212,18 +1212,18 @@ export const Board: React.FC<BoardProps> = ({
             cards={topPlayer.hand}
             playerId={topPlayerId}
             isOpponent={!isSoloMode || isSpectator}
-            isOpenHand={isSoloMode ? true : undefined}
+            isOpenHand={isSoloMode || isSpectator ? true : undefined}
             canToggleHide={isSoloMode}
             isCompact={isFitMode}
-            title={isSoloMode ? `${topPlayer.name} の手札` : undefined}
+            title={isSpectator ? `${topDisplayName} の手札` : isSoloMode ? `${topPlayer.name} の手札` : undefined}
             selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
-            onSelectCard={(card) => handleSelectHandCard(topPlayerId, card)}
-            onMoveTo={(cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
+            onSelectCard={isSpectator ? undefined : (card) => handleSelectHandCard(topPlayerId, card)}
+            onMoveTo={isSpectator ? undefined : (cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onDropToHand={handleDropToHand}
-            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
-            onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
-            onDiscardHandIndex={(index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
+            onDropToHand={isSpectator ? undefined : handleDropToHand}
+            onDiscardAll={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
+            onDiscardRandom={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
+            onDiscardHandIndex={isSpectator ? undefined : (index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
           />
           <FieldZone
             title={`${topDisplayName}: エナジーライン`}
@@ -1400,15 +1400,15 @@ export const Board: React.FC<BoardProps> = ({
             cards={bottomPlayer.hand}
             playerId={bottomPlayerId}
             isOpponent={isSpectator}
-            isOpenHand={!isSpectator}
+            isOpenHand
             isCompact={isFitMode}
-            title={isSoloMode ? `${bottomPlayer.name} の手札` : undefined}
+            title={isSpectator ? `${bottomDisplayName} の手札` : isSoloMode ? `${bottomPlayer.name} の手札` : undefined}
             selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
-            onSelectCard={(card) => handleSelectHandCard(bottomPlayerId, card)}
-            onMoveTo={(cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
+            onSelectCard={isSpectator ? undefined : (card) => handleSelectHandCard(bottomPlayerId, card)}
+            onMoveTo={isSpectator ? undefined : (cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onDropToHand={handleDropToHand}
-            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
+            onDropToHand={isSpectator ? undefined : handleDropToHand}
+            onDiscardAll={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
           />
         </div>
 

@@ -60,8 +60,8 @@ test('connects two browsers, synchronizes a guest action, and hides the guest ha
     await expect(hostPage.getByRole('button', { name: /手札カード:/ })).toHaveCount(0);
     await expect(hostPage.getByText('相手手札 (7枚)')).toBeVisible();
     await expect(hostPage.getByRole('button', { name: '手札を見る' })).toHaveCount(0);
-    await expect(spectatorPage.getByRole('button', { name: /手札カード:/ })).toHaveCount(0);
-    await expect(spectatorPage.getByText('相手手札 (7枚)')).toBeVisible();
+    await expect(spectatorPage.getByRole('button', { name: /手札カード:/ })).toHaveCount(7);
+    await expect(spectatorPage.getByText('Player 2 の手札 (7枚)')).toBeVisible();
   } finally {
     await hostContext.close();
     await guestContext.close();

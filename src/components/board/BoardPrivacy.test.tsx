@@ -166,7 +166,7 @@ describe('Board hidden information', () => {
     expect(screen.getByText('ソロ用相手山札')).toBeDefined();
   });
 
-  it('keeps both hands private and disables keyboard actions for spectators', () => {
+  it('shows both hands read-only and disables actions for spectators', () => {
     const state = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
     state.players['player-1'].hand = [createCard('p1-secret', 'P1の秘密')];
     state.players['player-2'].hand = [createCard('p2-secret', 'P2の秘密')];
@@ -182,8 +182,10 @@ describe('Board hidden information', () => {
       />
     );
 
-    expect(screen.queryByText('P1の秘密')).toBeNull();
-    expect(screen.queryByText('P2の秘密')).toBeNull();
+    expect(screen.getByText('P1の秘密')).toBeDefined();
+    expect(screen.getByText('P2の秘密')).toBeDefined();
+    expect(screen.getAllByRole('button', { name: /手札カード:/ })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: /手札カード: P1の秘密/ }));
     fireEvent.keyDown(window, { code: 'Space' });
     fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
     expect(dispatchAction).not.toHaveBeenCalled();
@@ -193,6 +195,7 @@ describe('Board hidden information', () => {
     expect(screen.queryByRole('button', { name: 'チェック' })).toBeNull();
     expect(screen.queryByRole('button', { name: '-1ダメ' })).toBeNull();
     expect(screen.queryByRole('button', { name: '引く' })).toBeNull();
+    expect(dispatchAction).not.toHaveBeenCalled();
   });
 
   it('uses neutral player labels and supports a local spectator view flip', () => {
