@@ -165,4 +165,60 @@ describe('Board hidden information', () => {
     expect(screen.getByText('ソロ用相手手札')).toBeDefined();
     expect(screen.getByText('ソロ用相手山札')).toBeDefined();
   });
+
+  it('shows both hands read-only and disables actions for spectators', () => {
+    const state = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
+    state.players['player-1'].hand = [createCard('p1-secret', 'P1の秘密')];
+    state.players['player-2'].hand = [createCard('p2-secret', 'P2の秘密')];
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={state}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode={false}
+        isSpectator
+      />
+    );
+
+    expect(screen.getByText('P1の秘密')).toBeDefined();
+    expect(screen.getByText('P2の秘密')).toBeDefined();
+    expect(screen.getAllByRole('button', { name: /手札カード:/ })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: /手札カード: P1の秘密/ }));
+    fireEvent.keyDown(window, { code: 'Space' });
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(dispatchAction).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'デッキをセット' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /スタート/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: '選択' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'チェック' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '-1ダメ' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '引く' })).toBeNull();
+    expect(dispatchAction).not.toHaveBeenCalled();
+  });
+
+  it('uses neutral player labels and supports a local spectator view flip', () => {
+    const state = createInitialGameState('player-1', 'あなた', 'player-2', '対戦相手', 'player-1');
+    const { rerender } = render(
+      <Board
+        gameState={state}
+        myPlayerId="player-1"
+        dispatchAction={vi.fn()}
+        isSpectator
+      />
+    );
+
+    expect(screen.getByText('Player 1: フロントライン')).toBeDefined();
+    rerender(
+      <Board
+        gameState={state}
+        myPlayerId="player-1"
+        dispatchAction={vi.fn()}
+        isSpectator
+        spectatorFlipped
+      />
+    );
+    expect(screen.getByText('Player 2: フロントライン')).toBeDefined();
+  });
 });

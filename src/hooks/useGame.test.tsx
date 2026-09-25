@@ -10,14 +10,17 @@ const peerMock = vi.hoisted(() => ({
   peerId: null as string | null,
   remotePeerId: null as string | null,
   status: 'disconnected' as ConnectionStatus,
-  role: null as null | 'host' | 'guest',
+  role: null as null | 'host' | 'guest' | 'spectator',
   lastRoomId: null as string | null,
   isHost: false,
   error: null as string | null,
   createRoom: vi.fn(),
   joinRoom: vi.fn(),
+  spectateRoom: vi.fn(),
   reconnect: vi.fn(),
   sendMessage: vi.fn(() => true),
+  broadcastMessage: vi.fn(() => 1),
+  sendToConnection: vi.fn(() => true),
   disconnect: vi.fn(),
 }));
 
@@ -46,8 +49,11 @@ describe('useGame P2P resynchronization', () => {
     peerMock.error = null;
     peerMock.createRoom.mockReset();
     peerMock.joinRoom.mockReset();
+    peerMock.spectateRoom.mockReset();
     peerMock.reconnect.mockReset();
     peerMock.sendMessage.mockReset().mockReturnValue(true);
+    peerMock.broadcastMessage.mockReset().mockReturnValue(1);
+    peerMock.sendToConnection.mockReset().mockReturnValue(true);
     peerMock.disconnect.mockReset();
   });
 
@@ -280,6 +286,7 @@ describe('useGame P2P resynchronization', () => {
     peerMock.status = 'connected';
     rerender();
     peerMock.sendMessage.mockClear();
+    peerMock.broadcastMessage.mockClear();
 
     const request: PeerMessage = {
       type: 'ACTION_REQUEST',
@@ -297,8 +304,8 @@ describe('useGame P2P resynchronization', () => {
     });
 
     expect(result.current.gameState.logs.filter((log) => log.message === 'one committed action')).toHaveLength(1);
-    expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
-    expect(peerMock.sendMessage).toHaveBeenCalledWith(
+    expect(peerMock.broadcastMessage).toHaveBeenCalledTimes(1);
+    expect(peerMock.broadcastMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'STATE_COMMIT',
         payload: expect.objectContaining({ revision: 1 }),
@@ -326,6 +333,7 @@ describe('useGame P2P resynchronization', () => {
     });
     expect(result.current.gameState.phase).toBe('END');
     peerMock.sendMessage.mockClear();
+    peerMock.broadcastMessage.mockClear();
 
     const request: PeerMessage = {
       type: 'UNDO_REQUEST',
@@ -339,8 +347,8 @@ describe('useGame P2P resynchronization', () => {
     });
 
     expect(result.current.gameState.phase).toBe('MAIN');
-    expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
-    expect(peerMock.sendMessage).toHaveBeenCalledWith(
+    expect(peerMock.broadcastMessage).toHaveBeenCalledTimes(1);
+    expect(peerMock.broadcastMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'STATE_COMMIT',
         payload: expect.objectContaining({ revision: 3 }),
@@ -466,6 +474,66 @@ describe('useGame P2P resynchronization', () => {
       vi.runOnlyPendingTimers();
       vi.useRealTimers();
     }
+  });
+
+  it('automatically retries synchronization when the request cannot be sent', async () => {
+    vi.useFakeTimers();
+    peerMock.sendMessage.mockReturnValueOnce(false).mockReturnValue(true);
+    try {
+      const { result, rerender } = renderHook(() => useGame());
+      await act(async () => { await result.current.joinRoom('host-room'); });
+      peerMock.role = 'guest';
+      peerMock.status = 'connected';
+      rerender();
+      expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(peerMock.sendMessage).toHaveBeenCalledTimes(2);
+      expect(result.current.isSynchronizing).toBe(true);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('retries synchronization while the restored host session is still pending', async () => {
+    vi.useFakeTimers();
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => { onMessage = handler; });
+    try {
+      const { result, rerender } = renderHook(() => useGame());
+      await act(async () => { await result.current.joinRoom('host-room'); });
+      peerMock.role = 'guest';
+      peerMock.status = 'connected';
+      rerender();
+      peerMock.sendMessage.mockClear();
+
+      act(() => onMessage?.({ type: 'SYNC_PENDING', senderId: 'player-1', timestamp: Date.now() }));
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'SYNC_REQUEST' }));
+      expect(result.current.isSynchronizing).toBe(true);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('finishes synchronization when a valid state commit arrives during recovery', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => { onMessage = handler; });
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => { await result.current.joinRoom('host-room'); });
+    peerMock.role = 'guest';
+    peerMock.status = 'connected';
+    rerender();
+
+    const snapshot = createInitialGameState('player-1', 'Host', 'player-2', 'Guest', 'player-1');
+    act(() => onMessage?.({
+      type: 'STATE_COMMIT', senderId: 'player-1', timestamp: Date.now(),
+      payload: { state: snapshot, revision: 0 },
+    }));
+    expect(result.current.isSynchronizing).toBe(false);
+    expect(result.current.syncError).toBeNull();
   });
 
   it('uses a new request ID namespace after joining a room again', async () => {
@@ -597,5 +665,72 @@ describe('useGame P2P resynchronization', () => {
       expect(parsed.snapshot.state.phase).toBe('MAIN');
       expect(parsed.snapshot.revision).toBe(1);
     });
+  });
+
+  it('synchronizes spectators while keeping all game actions read-only', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.spectateRoom.mockImplementation(async (_roomId, handler) => {
+      onMessage = handler;
+    });
+    const { result, rerender } = renderHook(() => useGame());
+
+    await act(async () => { await result.current.spectateRoom('host-room'); });
+    peerMock.role = 'spectator';
+    peerMock.status = 'connected';
+    rerender();
+
+    await waitFor(() => expect(peerMock.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SYNC_REQUEST' })
+    ));
+    const snapshot = createInitialGameState('player-1', 'Host', 'player-2', 'Guest', 'player-1');
+    snapshot.phase = 'MAIN';
+    act(() => onMessage?.({
+      type: 'SYNC_RESPONSE',
+      senderId: 'player-1',
+      timestamp: Date.now(),
+      payload: { state: snapshot, revision: 3 },
+    }));
+
+    expect(result.current.gameState.phase).toBe('MAIN');
+    peerMock.sendMessage.mockClear();
+    act(() => {
+      result.current.dispatchAction({ type: 'SET_PHASE', payload: { phase: 'END' } });
+      result.current.undo();
+    });
+    expect(result.current.gameState.phase).toBe('MAIN');
+    expect(peerMock.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('ignores mutation requests from spectator connections and replies only to their sync request', async () => {
+    let onMessage: ((message: PeerMessage, context?: { connectionId: string; role: 'guest' | 'spectator' | 'host' }) => void) | null = null;
+    peerMock.createRoom.mockImplementation(async (handler) => {
+      onMessage = handler;
+      return 'host-room';
+    });
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => { await result.current.createRoom(); });
+    peerMock.role = 'host';
+    peerMock.status = 'connected';
+    rerender();
+    const before = result.current.gameState;
+
+    act(() => onMessage?.({
+      type: 'ACTION_REQUEST',
+      senderId: 'player-2',
+      requestId: 'spectator-forgery',
+      timestamp: Date.now(),
+      payload: { type: 'SET_PHASE', payload: { phase: 'MAIN' } },
+    }, { connectionId: 'spectator-1', role: 'spectator' }));
+    expect(result.current.gameState).toBe(before);
+
+    act(() => onMessage?.({
+      type: 'SYNC_REQUEST',
+      senderId: 'spectator',
+      timestamp: Date.now(),
+    }, { connectionId: 'spectator-1', role: 'spectator' }));
+    expect(peerMock.sendToConnection).toHaveBeenCalledWith(
+      'spectator-1',
+      expect.objectContaining({ type: 'SYNC_RESPONSE' })
+    );
   });
 });

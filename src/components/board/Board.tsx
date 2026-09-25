@@ -24,6 +24,8 @@ interface BoardProps {
   dispatchAction: (action: GameAction) => void;
   onOpenDeckPicker?: (targetPlayerId?: string) => void;
   isSoloMode?: boolean;
+  isSpectator?: boolean;
+  spectatorFlipped?: boolean;
   isFitMode?: boolean;
   onUndo?: () => void;
   canUndo?: boolean;
@@ -35,6 +37,8 @@ export const Board: React.FC<BoardProps> = ({
   dispatchAction,
   onOpenDeckPicker,
   isSoloMode = false,
+  isSpectator = false,
+  spectatorFlipped = false,
   isFitMode = true,
   onUndo,
   canUndo = false,
@@ -43,8 +47,12 @@ export const Board: React.FC<BoardProps> = ({
   const playerIds = Object.keys(gameState.players);
   const opponentId = playerIds.find((id) => id !== myPlayerId) || 'player-2';
 
-  const bottomPlayerId = isSoloMode ? 'player-1' : myPlayerId;
-  const topPlayerId = isSoloMode ? 'player-2' : opponentId;
+  const bottomPlayerId = isSpectator
+    ? spectatorFlipped ? 'player-2' : 'player-1'
+    : isSoloMode ? 'player-1' : myPlayerId;
+  const topPlayerId = isSpectator
+    ? spectatorFlipped ? 'player-1' : 'player-2'
+    : isSoloMode ? 'player-2' : opponentId;
 
   const defaultPlayer = (id: string, name: string) => ({
     id,
@@ -63,6 +71,14 @@ export const Board: React.FC<BoardProps> = ({
 
   const bottomPlayer = gameState.players[bottomPlayerId] || defaultPlayer(bottomPlayerId, 'Player 1');
   const topPlayer = gameState.players[topPlayerId] || defaultPlayer(topPlayerId, 'Player 2');
+  const bottomDisplayName = isSpectator
+    ? bottomPlayerId === 'player-1' ? 'Player 1' : 'Player 2'
+    : bottomPlayer.name;
+  const topDisplayName = isSpectator
+    ? topPlayerId === 'player-1' ? 'Player 1' : 'Player 2'
+    : topPlayer.name;
+  const bottomViewPlayer = isSpectator ? { ...bottomPlayer, name: bottomDisplayName } : bottomPlayer;
+  const topViewPlayer = isSpectator ? { ...topPlayer, name: topDisplayName } : topPlayer;
 
   // 手札からフィールドへ配置するための選択状態 (選択カードと所持プレイヤーID)
   const [selectedHandCard, setSelectedHandCard] = useState<{
@@ -153,6 +169,7 @@ export const Board: React.FC<BoardProps> = ({
 
   // キーボードショートカット管理 (Space: 次フェイズ/ターン終了, Escape: 選択・アタックキャンセル, Ctrl+Z/Cmd+Z: Undo)
   useEffect(() => {
+    if (isSpectator) return undefined;
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
@@ -187,7 +204,7 @@ export const Board: React.FC<BoardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleAdvancePhase, attackingState, pendingCombat, myPlayerId, isSoloMode, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
+  }, [handleAdvancePhase, attackingState, pendingCombat, myPlayerId, isSoloMode, isSpectator, handleCancelPendingBlock, selectedHandCard, onUndo, canUndo]);
 
   const COLOR_BADGE_STYLE: Record<CardColor, { label: string; bg: string; text: string; dot: string }> = {
     PURPLE: { label: '紫', bg: 'bg-purple-950/80 border-purple-500/50', text: 'text-purple-300', dot: 'bg-purple-500' },
@@ -1101,7 +1118,7 @@ export const Board: React.FC<BoardProps> = ({
 
   const isTopActive = gameState.activePlayerId === topPlayerId;
   const isBottomActive = gameState.activePlayerId === bottomPlayerId;
-  const canActAs = (playerId: string) => isSoloMode || myPlayerId === playerId;
+  const canActAs = (playerId: string) => !isSpectator && (isSoloMode || myPlayerId === playerId);
   const canSelectLifeForDamage = (targetPlayerId: string) =>
     pendingCombat?.stage === 'LIFE_SELECTION' &&
     pendingCombat.defenderPlayerId === targetPlayerId &&
@@ -1135,18 +1152,18 @@ export const Board: React.FC<BoardProps> = ({
       >
         <SideZonesArea
           position="top"
-          player={topPlayer}
-          isOpponent={!isSoloMode}
+          player={topViewPlayer}
+          isOpponent={!isSoloMode || isSpectator}
           isSoloMode={isSoloMode}
           isCompact={isFitMode}
           onDraw={isSoloMode ? () => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: topPlayerId } }) : undefined}
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: topPlayerId } })}
-          onCheckLife={
+          onCheckLife={isSpectator ? undefined :
             canSelectLifeForDamage(topPlayerId)
               ? selectLifeForDamage
               : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })
           }
-          onTakeLife={(dest, index) => {
+          onTakeLife={isSpectator ? undefined : (dest, index) => {
             if (isSoloMode) {
               dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: topPlayerId, destination: dest, lifeIndex: index } });
             } else {
@@ -1159,7 +1176,7 @@ export const Board: React.FC<BoardProps> = ({
             setLifeReorderPlayerId(topPlayerId);
             setIsLifeReorderOpen(true);
           }}
-          onOpenLifeSelectModal={() => setLifeSelectPlayerId(topPlayerId)}
+          onOpenLifeSelectModal={isSpectator ? undefined : () => setLifeSelectPlayerId(topPlayerId)}
           onUseAp={() => dispatchAction({ type: 'USE_AP', payload: { playerId: topPlayerId } })}
           onRecoverAp={() => dispatchAction({ type: 'RECOVER_AP', payload: { playerId: topPlayerId, amount: 1 } })}
           onLookAtTopDeck={(count) => dispatchAction({ type: 'LOOK_AT_TOP_DECK', payload: { playerId: topPlayerId, count } })}
@@ -1186,7 +1203,7 @@ export const Board: React.FC<BoardProps> = ({
           onDropToRemoved={handleDropToRemoved}
           onMoveFromGraveyard={(cardId, dest) => handleMoveFromGraveyard(topPlayerId, cardId, dest)}
           onMoveFromRemoved={(cardId, dest) => handleMoveFromRemoved(topPlayerId, cardId, dest)}
-          onOpenDeckPicker={() => onOpenDeckPicker?.(topPlayerId)}
+          onOpenDeckPicker={isSpectator ? undefined : () => onOpenDeckPicker?.(topPlayerId)}
           onDropToLife={handleDropToLife}
           onDropToDeck={handleDropToDeck}
         />
@@ -1194,27 +1211,27 @@ export const Board: React.FC<BoardProps> = ({
           <HandArea
             cards={topPlayer.hand}
             playerId={topPlayerId}
-            isOpponent={!isSoloMode}
-            isOpenHand={isSoloMode ? true : undefined}
+            isOpponent={!isSoloMode || isSpectator}
+            isOpenHand={isSoloMode || isSpectator ? true : undefined}
             canToggleHide={isSoloMode}
             isCompact={isFitMode}
-            title={isSoloMode ? `${topPlayer.name} の手札` : undefined}
+            title={isSpectator ? `${topDisplayName} の手札` : isSoloMode ? `${topPlayer.name} の手札` : undefined}
             selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
-            onSelectCard={(card) => handleSelectHandCard(topPlayerId, card)}
-            onMoveTo={(cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
+            onSelectCard={isSpectator ? undefined : (card) => handleSelectHandCard(topPlayerId, card)}
+            onMoveTo={isSpectator ? undefined : (cardIndex, dest) => handleHandMoveTo(topPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onDropToHand={handleDropToHand}
-            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
-            onDiscardRandom={() => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
-            onDiscardHandIndex={(index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
+            onDropToHand={isSpectator ? undefined : handleDropToHand}
+            onDiscardAll={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: topPlayerId } })}
+            onDiscardRandom={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId } })}
+            onDiscardHandIndex={isSpectator ? undefined : (index) => dispatchAction({ type: 'DISCARD_HAND_CARD', payload: { playerId: topPlayerId, index } })}
           />
           <FieldZone
-            title={`${topPlayer.name}: エナジーライン`}
+            title={`${topDisplayName}: エナジーライン`}
             zone="energyLine"
             slots={topPlayer.energyLine}
             playerId={topPlayerId}
-            isOpponent={!isSoloMode}
-            isControllable={isSoloMode}
+            isOpponent={!isSoloMode || isSpectator}
+            isControllable={isSoloMode && !isSpectator}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
             extraHeaderBadge={renderEnergyBadge(topPlayer.energyLine, topPlayer.frontLine)}
@@ -1231,12 +1248,12 @@ export const Board: React.FC<BoardProps> = ({
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <FieldZone
-            title={`${topPlayer.name}: フロントライン`}
+            title={`${topDisplayName}: フロントライン`}
             zone="frontLine"
             slots={topPlayer.frontLine}
             playerId={topPlayerId}
-            isOpponent={!isSoloMode}
-            isControllable={isSoloMode}
+            isOpponent={!isSoloMode || isSpectator}
+            isControllable={isSoloMode && !isSpectator}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === topPlayerId ? selectedHandCard.card.id : null}
             onSlotClick={(slotIdx) => {
@@ -1272,11 +1289,22 @@ export const Board: React.FC<BoardProps> = ({
       </div>
 
       {/* 中央: フェイズ進行バー */}
-      <PhaseBar
+      {isSpectator ? (
+        <div className={`flex w-full shrink-0 items-center justify-center gap-3 border-y border-slate-800 bg-slate-900/90 font-bold text-slate-200 ${
+          isFitMode ? 'px-3 py-1 text-xs' : 'px-4 py-2 text-sm'
+        }`}>
+          <span className="rounded-lg border border-indigo-500/50 bg-indigo-950 px-2 py-0.5 text-indigo-300">
+            TURN {gameState.turn}
+          </span>
+          <span>
+            {gameState.activePlayerId === 'player-1' ? 'Player 1' : 'Player 2'} の手番・{gameState.phase}
+          </span>
+        </div>
+      ) : <PhaseBar
         currentPhase={gameState.phase}
         turn={gameState.turn}
         isCompact={isFitMode}
-        isActivePlayer={isSoloMode ? true : gameState.activePlayerId === myPlayerId}
+        isActivePlayer={!isSpectator && (isSoloMode ? true : gameState.activePlayerId === myPlayerId)}
         activePlayerName={gameState.players[gameState.activePlayerId]?.name || (gameState.activePlayerId === 'player-1' ? 'Player 1' : 'Player 2')}
         isSoloMode={isSoloMode}
         activePlayerId={gameState.activePlayerId}
@@ -1290,7 +1318,7 @@ export const Board: React.FC<BoardProps> = ({
         onPassTurn={() => dispatchAction({ type: 'PASS_TURN', payload: { playerId: gameState.activePlayerId } })}
         onAdvancePhase={handleAdvancePhase}
         onExtraDraw={() => dispatchAction({ type: 'EXTRA_DRAW', payload: { playerId: gameState.activePlayerId } })}
-      />
+      />}
 
       {/* 自分 / 手前プレイヤーエリア (ソロプレイ時はP1で固定) */}
       <div
@@ -1309,12 +1337,12 @@ export const Board: React.FC<BoardProps> = ({
       >
         <div className={`flex-1 min-w-0 flex flex-col ${isFitMode ? 'gap-1' : 'gap-2'}`}>
           <FieldZone
-            title={`${bottomPlayer.name}: フロントライン`}
+            title={`${bottomDisplayName}: フロントライン`}
             zone="frontLine"
             slots={bottomPlayer.frontLine}
             playerId={bottomPlayerId}
-            isOpponent={false}
-            isControllable={true}
+            isOpponent={isSpectator}
+            isControllable={!isSpectator}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
             onSlotClick={(slotIdx) => {
@@ -1347,12 +1375,12 @@ export const Board: React.FC<BoardProps> = ({
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
           />
           <FieldZone
-            title={`${bottomPlayer.name}: エナジーライン`}
+            title={`${bottomDisplayName}: エナジーライン`}
             zone="energyLine"
             slots={bottomPlayer.energyLine}
             playerId={bottomPlayerId}
-            isOpponent={false}
-            isControllable={true}
+            isOpponent={isSpectator}
+            isControllable={!isSpectator}
             isCompact={isFitMode}
             selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
             extraHeaderBadge={renderEnergyBadge(bottomPlayer.energyLine, bottomPlayer.frontLine)}
@@ -1371,28 +1399,28 @@ export const Board: React.FC<BoardProps> = ({
           <HandArea
             cards={bottomPlayer.hand}
             playerId={bottomPlayerId}
-            isOpponent={false}
-            isOpenHand={true}
+            isOpponent={isSpectator}
+            isOpenHand
             isCompact={isFitMode}
-            title={isSoloMode ? `${bottomPlayer.name} の手札` : undefined}
+            title={isSpectator ? `${bottomDisplayName} の手札` : isSoloMode ? `${bottomPlayer.name} の手札` : undefined}
             selectedCardId={selectedHandCard?.playerId === bottomPlayerId ? selectedHandCard.card.id : null}
-            onSelectCard={(card) => handleSelectHandCard(bottomPlayerId, card)}
-            onMoveTo={(cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
+            onSelectCard={isSpectator ? undefined : (card) => handleSelectHandCard(bottomPlayerId, card)}
+            onMoveTo={isSpectator ? undefined : (cardIndex, dest) => handleHandMoveTo(bottomPlayerId, cardIndex, dest)}
             onInspect={setInspectCard}
-            onDropToHand={handleDropToHand}
-            onDiscardAll={() => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
+            onDropToHand={isSpectator ? undefined : handleDropToHand}
+            onDiscardAll={isSpectator ? undefined : () => dispatchAction({ type: 'DISCARD_ALL_HAND', payload: { playerId: bottomPlayerId } })}
           />
         </div>
 
         <SideZonesArea
           position="bottom"
-          player={bottomPlayer}
-          isOpponent={false}
+          player={bottomViewPlayer}
+          isOpponent={isSpectator}
           isSoloMode={isSoloMode}
           isCompact={isFitMode}
-          onDraw={() => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: bottomPlayerId } })}
+          onDraw={isSpectator ? undefined : () => dispatchAction({ type: 'DRAW_CARD', payload: { playerId: bottomPlayerId } })}
           onShuffle={() => dispatchAction({ type: 'SHUFFLE_DECK', payload: { playerId: bottomPlayerId } })}
-          onCheckLife={
+          onCheckLife={isSpectator ? undefined :
             canSelectLifeForDamage(bottomPlayerId)
               ? selectLifeForDamage
               : pendingCombat?.stage === 'LIFE_SELECTION' && pendingCombat.defenderPlayerId === bottomPlayerId
@@ -1400,13 +1428,13 @@ export const Board: React.FC<BoardProps> = ({
                 : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: bottomPlayerId, lifeIndex: index } })
           }
           onRecoverLife={(isFaceDown = true) => dispatchAction({ type: 'RECOVER_LIFE', payload: { playerId: bottomPlayerId, isFaceDown } })}
-          onTakeLife={(dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: bottomPlayerId, destination: dest, lifeIndex: index } })}
+          onTakeLife={isSpectator ? undefined : (dest, index) => dispatchAction({ type: 'TAKE_LIFE', payload: { playerId: bottomPlayerId, destination: dest, lifeIndex: index } })}
           onFlipLife={(index) => dispatchAction({ type: 'FLIP_LIFE', payload: { playerId: bottomPlayerId, lifeIndex: index } })}
           onOpenLifeReorder={() => {
             setLifeReorderPlayerId(bottomPlayerId);
             setIsLifeReorderOpen(true);
           }}
-          onOpenLifeSelectModal={
+          onOpenLifeSelectModal={isSpectator ? undefined :
             pendingCombat?.stage === 'LIFE_SELECTION' && pendingCombat.defenderPlayerId === bottomPlayerId && !canSelectLifeForDamage(bottomPlayerId)
               ? undefined
               : () => setLifeSelectPlayerId(bottomPlayerId)
@@ -1425,7 +1453,7 @@ export const Board: React.FC<BoardProps> = ({
           onDropToRemoved={handleDropToRemoved}
           onMoveFromGraveyard={(cardId, dest) => handleMoveFromGraveyard(bottomPlayerId, cardId, dest)}
           onMoveFromRemoved={(cardId, dest) => handleMoveFromRemoved(bottomPlayerId, cardId, dest)}
-          onOpenDeckPicker={() => onOpenDeckPicker?.(bottomPlayerId)}
+          onOpenDeckPicker={isSpectator ? undefined : () => onOpenDeckPicker?.(bottomPlayerId)}
           onDropToLife={handleDropToLife}
           onDropToDeck={handleDropToDeck}
         />

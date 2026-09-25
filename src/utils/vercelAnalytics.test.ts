@@ -25,6 +25,7 @@ describe('vercelAnalytics', () => {
   it.each([
     ['solo mode', 'https://example.com/game?mode=solo&room=ROOM123', 'https://example.com/game/solo'],
     ['P2P host', 'https://example.com/game?host=true&room=ROOM123', 'https://example.com/game/p2p-host'],
+    ['P2P spectator', 'https://example.com/game?spectator=true&room=ROOM123', 'https://example.com/game/p2p-spectator'],
     ['P2P guest', 'https://example.com/game?host=false&room=ROOM123', 'https://example.com/game/p2p-guest'],
     ['unknown game mode', 'https://example.com/game?room=ROOM123', 'https://example.com/game'],
   ])('redacts game query parameters while preserving the safe %s bucket', (_, inputUrl, expectedUrl) => {

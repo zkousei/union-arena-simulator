@@ -15,14 +15,17 @@ import {
   ArrowRight,
   Flame,
   LogIn,
+  Eye,
 } from 'lucide-react';
 import type { PresetDeckInfo } from '../data/sampleDeck';
 import type { UserDeck } from '../domain/deckValidation';
+import { normalizeRoomId } from '../domain/roomId';
 
 interface HomeProps {
   onStartSolo: () => void;
   onHostGame: () => void;
   onJoinGame: (roomId: string) => void;
+  onSpectateGame: (roomId: string) => void;
   onOpenDeckBuilder: () => void;
   onSelectPresetDeck: (deck: UserDeck, mode: 'solo' | 'p2p') => void;
 }
@@ -31,12 +34,16 @@ export const HomePage: React.FC<HomeProps> = ({
   onStartSolo,
   onHostGame,
   onJoinGame,
+  onSpectateGame,
   onOpenDeckBuilder,
   onSelectPresetDeck,
 }) => {
   const [activeRuleTab, setActiveRuleTab] = useState<'basics' | 'phases' | 'raid' | 'battle'>('basics');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [joinRoomInput, setJoinRoomInput] = useState('');
+  const [joinRoomError, setJoinRoomError] = useState<string | null>(null);
+  const [spectatorRoomInput, setSpectatorRoomInput] = useState('');
+  const [spectatorRoomError, setSpectatorRoomError] = useState<string | null>(null);
   const [presetDecks, setPresetDecks] = useState<PresetDeckInfo[] | null>(null);
 
   useEffect(() => {
@@ -58,17 +65,27 @@ export const HomePage: React.FC<HomeProps> = ({
     const trimmed = joinRoomInput.trim();
     if (!trimmed) return;
 
-    let roomId = trimmed;
-    if (trimmed.includes('room=')) {
-      try {
-        const url = new URL(trimmed.startsWith('http') ? trimmed : `http://dummy.com/${trimmed}`);
-        roomId = url.searchParams.get('room') || trimmed;
-      } catch {
-        const match = trimmed.match(/room=([^&]+)/);
-        if (match) roomId = decodeURIComponent(match[1]);
-      }
+    const roomId = normalizeRoomId(trimmed);
+    if (!roomId) {
+      setJoinRoomError('6文字のルームコードを入力してください。');
+      return;
     }
+    setJoinRoomError(null);
     onJoinGame(roomId);
+  };
+
+  const handleSpectateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = spectatorRoomInput.trim();
+    if (!trimmed) return;
+
+    const roomId = normalizeRoomId(trimmed);
+    if (!roomId) {
+      setSpectatorRoomError('6文字のルームコードを入力してください。');
+      return;
+    }
+    setSpectatorRoomError(null);
+    onSpectateGame(roomId);
   };
 
   return (
@@ -109,7 +126,7 @@ export const HomePage: React.FC<HomeProps> = ({
             <button
               onClick={onHostGame}
               className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-700/30 transition transform hover:-translate-y-0.5"
-              title="部屋URLを友達に送ってブラウザ同士でリアルタイム対戦"
+              title="ルームコードを友達に送ってブラウザ同士でリアルタイム対戦"
             >
               <Users className="w-4 h-4 text-emerald-200" />
               🌐 P2P部屋を作成（Host）
@@ -121,6 +138,14 @@ export const HomePage: React.FC<HomeProps> = ({
             >
               <Layers className="w-4 h-4 text-sky-400" />
               デッキを構築する
+            </button>
+
+            <button
+              onClick={() => document.getElementById('spectate-room')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              className="flex items-center gap-2 px-5 py-3.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-700/70 text-sky-200 font-semibold text-sm sm:text-base shadow transition transform hover:-translate-y-0.5"
+            >
+              <Eye className="w-4 h-4" />
+              観戦する
             </button>
           </div>
         </div>
@@ -181,12 +206,12 @@ export const HomePage: React.FC<HomeProps> = ({
                 P2P部屋を作成（Host）
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                PeerJSによるサーバーレス通信。部屋を作成して発行された招待URLを友達に送るだけで、ブラウザ同士で即座に対戦できます。
+                PeerJSによるサーバーレス通信。部屋を作成して発行された6文字のルームコードを共有すると、ブラウザ同士で対戦できます。
               </p>
               <ul className="text-xs text-slate-300 space-y-1 pt-2">
                 <li className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>ログイン不要・招待URLで即合流</span>
+                  <span>ログイン不要・ルームコードで合流</span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -253,24 +278,32 @@ export const HomePage: React.FC<HomeProps> = ({
       </section>
 
       {/* 部屋に参加する (Join Room) 直接入力カード (shadowverse-evolve-app スタイル) */}
-      <section className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
-        <div className="max-w-2xl mx-auto text-center space-y-4">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-slate-900/90 border border-slate-800 hover:border-emerald-700/60 rounded-2xl p-6 sm:p-8 shadow-xl text-center space-y-4">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400">
             <LogIn className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-white">友達の部屋に参加する (Join Room)</h2>
             <p className="text-xs text-slate-400 mt-1">
-              ホストから共有された「ルームID」または「招待URL」を入力して、直接対戦に参加できます。
+              ホストから共有された6文字のルームコードで参加できます。
             </p>
           </div>
 
           <form onSubmit={handleJoinSubmit} className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <label htmlFor="join-room-id" className="sr-only">対戦ルームコード</label>
             <input
+              id="join-room-id"
               type="text"
               value={joinRoomInput}
-              onChange={(e) => setJoinRoomInput(e.target.value)}
-              placeholder="ルームID または 招待URLを入力 (例: c7f965d1...)"
+              onChange={(e) => {
+                setJoinRoomInput(e.target.value);
+                setJoinRoomError(null);
+              }}
+              placeholder="ルームID（例: ABC123）"
+              maxLength={6}
+              aria-invalid={joinRoomError ? 'true' : undefined}
+              aria-describedby={joinRoomError ? 'join-room-error' : undefined}
               className="flex-1 px-4 py-3 bg-slate-950/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
             />
             <button
@@ -281,6 +314,56 @@ export const HomePage: React.FC<HomeProps> = ({
               <LogIn className="w-4 h-4" />
               <span>対戦に参加</span>
             </button>
+          </form>
+          {joinRoomError && (
+            <p id="join-room-error" role="alert" className="text-left text-xs text-rose-300">
+              {joinRoomError}
+            </p>
+          )}
+        </div>
+
+        <div id="spectate-room" className="bg-sky-950/30 border border-sky-800/70 hover:border-sky-600 rounded-2xl p-6 sm:p-8 shadow-xl text-center space-y-4 scroll-mt-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-sky-600/20 border border-sky-500/30 text-sky-300">
+            <Eye className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">対戦を観戦する</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              対戦参加と同じ6文字のルームコードで観戦できます。
+            </p>
+          </div>
+
+          <form onSubmit={handleSpectateSubmit} className="space-y-2.5 pt-2">
+            <label htmlFor="spectator-room-code" className="sr-only">観戦ルームコード</label>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                id="spectator-room-code"
+                type="text"
+                value={spectatorRoomInput}
+                onChange={(e) => {
+                  setSpectatorRoomInput(e.target.value);
+                  setSpectatorRoomError(null);
+                }}
+                placeholder="ルームID（例: ABC123）"
+                maxLength={6}
+                aria-invalid={spectatorRoomError ? 'true' : undefined}
+                aria-describedby={spectatorRoomError ? 'spectator-room-error' : undefined}
+                className="flex-1 px-4 py-3 bg-slate-950/80 border border-sky-900 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition"
+              />
+              <button
+                type="submit"
+                disabled={!spectatorRoomInput.trim()}
+                className="px-6 py-3 rounded-xl bg-sky-700 hover:bg-sky-600 disabled:opacity-40 disabled:hover:bg-sky-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-sky-700/20 shrink-0"
+              >
+                <Eye className="w-4 h-4" />
+                <span>観戦を開始</span>
+              </button>
+            </div>
+            {spectatorRoomError && (
+              <p id="spectator-room-error" role="alert" className="text-left text-xs text-rose-300">
+                {spectatorRoomError}
+              </p>
+            )}
           </form>
         </div>
       </section>
@@ -612,7 +695,7 @@ export const HomePage: React.FC<HomeProps> = ({
             },
             {
               q: 'P2P通信対戦で友達と対戦するには？',
-              a: '「P2Pオンライン対戦」ボタンから「部屋を作成する（Host）」を押し、発行された共有URLを対戦相手に送るだけです。相手がそのURLを開けば自動的に盤面がリアルタイム同期されます。',
+              a: '「P2Pオンライン対戦」ボタンから「部屋を作成する（Host）」を押し、発行された6文字のルームコードを対戦相手に共有します。相手がホーム画面でコードを入力すると盤面がリアルタイム同期されます。',
             },
             {
               q: '山札から好きなカードを探したり、トップを確認するには？',
