@@ -9,6 +9,8 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const HEALTH_CHECK_INTERVAL_MS = 5_000;
 const HEALTH_CHECK_TIMEOUT_MS = 3_000;
 const HOST_RECOVERY_TIMEOUT_MS = 3_000;
+const HOST_ROOM_RELEASE_RETRY_MS = 1_000;
+const MAX_HOST_RECOVERY_ATTEMPTS = 5;
 export const MAX_SPECTATOR_CONNECTIONS = 8;
 
 const RETRYABLE_GUEST_PEER_ERRORS = new Set([
@@ -17,6 +19,15 @@ const RETRYABLE_GUEST_PEER_ERRORS = new Set([
   'server-error',
   'socket-closed',
   'socket-error',
+  'webrtc',
+]);
+
+const RETRYABLE_HOST_PEER_ERRORS = new Set([
+  'network',
+  'server-error',
+  'socket-closed',
+  'socket-error',
+  'unavailable-id',
   'webrtc',
 ]);
 
@@ -108,12 +119,13 @@ export function usePeer(): UsePeerReturn {
   const healthCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const healthCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hostRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hostRecoveryAttemptsRef = useRef(0);
   const startGuestConnectionRef = useRef<
     ((roomId: string, isReconnect: boolean, connectionRole?: 'guest' | 'spectator') => Promise<void>) | null
   >(null);
   const pendingOperationRejectRef = useRef<((reason: Error) => void) | null>(null);
   const createRoomRef = useRef<
-    ((onMessage: MessageHandler, preferredRoomId?: string) => Promise<string>) | null
+    ((onMessage: MessageHandler, preferredRoomId?: string, isRecovery?: boolean) => Promise<string>) | null
   >(null);
 
   const clearHealthCheck = useCallback(() => {
@@ -127,6 +139,27 @@ export function usePeer(): UsePeerReturn {
     if (hostRecoveryTimerRef.current) clearTimeout(hostRecoveryTimerRef.current);
     hostRecoveryTimerRef.current = null;
   }, []);
+
+  const scheduleHostRecovery = useCallback(
+    (onMessage: MessageHandler, roomId: string, delayMs: number) => {
+      if (manualDisconnectRef.current || hostRecoveryTimerRef.current) return;
+      if (hostRecoveryAttemptsRef.current >= MAX_HOST_RECOVERY_ATTEMPTS) {
+        setStatus('error');
+        setError('ルームを自動復旧できませんでした。再試行してください。');
+        return;
+      }
+
+      setStatus('reconnecting');
+      setError('シグナリングサーバーから切断されました。再接続しています。');
+      hostRecoveryTimerRef.current = setTimeout(() => {
+        hostRecoveryTimerRef.current = null;
+        if (manualDisconnectRef.current || roleRef.current !== 'host') return;
+        hostRecoveryAttemptsRef.current += 1;
+        void createRoomRef.current?.(onMessage, roomId, true).catch(() => undefined);
+      }, delayMs);
+    },
+    []
+  );
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -487,18 +520,19 @@ export function usePeer(): UsePeerReturn {
   }, []);
 
   const createRoom = useCallback(
-    async (onMessage: MessageHandler, preferredRoomId?: string): Promise<string> => {
+    async (onMessage: MessageHandler, preferredRoomId?: string, isRecovery = false): Promise<string> => {
       clearReconnectTimer();
       disposeTransport();
       manualDisconnectRef.current = false;
       reconnectAttemptsRef.current = 0;
+      if (!isRecovery) hostRecoveryAttemptsRef.current = 0;
       roleRef.current = 'host';
       roomIdRef.current = null;
       onMessageRef.current = onMessage;
       setRole('host');
       setLastRoomId(null);
-      setStatus('connecting');
-      setError(null);
+      setStatus(isRecovery ? 'reconnecting' : 'connecting');
+      if (!isRecovery) setError(null);
 
       return new Promise((resolve, reject) => {
         let settled = false;
@@ -524,14 +558,14 @@ export function usePeer(): UsePeerReturn {
         const peerOpenTimeout = setTimeout(() => {
           if (peerRef.current !== peer || settled) return;
           const timeoutError = new Error('ルーム作成がタイムアウトしました。');
-          setError(timeoutError.message);
-          setStatus('error');
           rejectOnce(timeoutError);
+          scheduleHostRecovery(onMessage, requestedRoomId, HOST_RECOVERY_TIMEOUT_MS);
         }, CONNECTION_TIMEOUT_MS);
 
         peer.on('open', (id) => {
           if (peerRef.current !== peer) return;
           clearHostRecoveryTimer();
+          hostRecoveryAttemptsRef.current = 0;
           setPeerId(id);
           roomIdRef.current = id;
           setLastRoomId(id);
@@ -576,30 +610,36 @@ export function usePeer(): UsePeerReturn {
 
         peer.on('disconnected', () => {
           if (peerRef.current !== peer || manualDisconnectRef.current || roleRef.current !== 'host') return;
-          setStatus('reconnecting');
-          setError('シグナリングサーバーから切断されました。再接続しています。');
-          if (!peer.destroyed) peer.reconnect();
-          clearHostRecoveryTimer();
           const roomId = roomIdRef.current;
           const handler = onMessageRef.current;
           if (!roomId || !handler) return;
-          hostRecoveryTimerRef.current = setTimeout(() => {
-            hostRecoveryTimerRef.current = null;
-            if (peerRef.current !== peer || manualDisconnectRef.current) return;
-            void createRoomRef.current?.(handler, roomId).catch(() => undefined);
-            setStatus('reconnecting');
-          }, HOST_RECOVERY_TIMEOUT_MS);
+          scheduleHostRecovery(handler, roomId, HOST_RECOVERY_TIMEOUT_MS);
+          if (!peer.destroyed && peer.disconnected) {
+            try {
+              peer.reconnect();
+            } catch {
+              // The scheduled recreation remains the authoritative fallback.
+            }
+          }
         });
 
         peer.on('error', (peerError) => {
           if (peerRef.current !== peer || roleRef.current !== 'host') return;
+          rejectOnce(peerError);
+          if (RETRYABLE_HOST_PEER_ERRORS.has(peerError.type)) {
+            const roomId = roomIdRef.current || requestedRoomId;
+            const delay = peerError.type === 'unavailable-id'
+              ? HOST_ROOM_RELEASE_RETRY_MS
+              : HOST_RECOVERY_TIMEOUT_MS;
+            scheduleHostRecovery(onMessage, roomId, delay);
+            return;
+          }
           setError(`Peerエラー: ${peerError.type} - ${peerError.message}`);
           setStatus('error');
-          rejectOnce(peerError);
         });
       });
     },
-    [bindConnection, bindSpectatorConnection, clearHostRecoveryTimer, clearReconnectTimer, disposeTransport, rejectIncomingConnection]
+    [bindConnection, bindSpectatorConnection, clearHostRecoveryTimer, clearReconnectTimer, disposeTransport, rejectIncomingConnection, scheduleHostRecovery]
   );
 
   useEffect(() => {
@@ -627,6 +667,7 @@ export function usePeer(): UsePeerReturn {
   const reconnect = useCallback(async (): Promise<void> => {
     if ((roleRef.current !== 'guest' && roleRef.current !== 'spectator') || !roomIdRef.current) return;
     reconnectAttemptsRef.current = 0;
+    hostRecoveryAttemptsRef.current = 0;
     setError(null);
     return startGuestConnection(roomIdRef.current, true, roleRef.current);
   }, [startGuestConnection]);
@@ -692,6 +733,7 @@ export function usePeer(): UsePeerReturn {
     roomIdRef.current = null;
     onMessageRef.current = null;
     reconnectAttemptsRef.current = 0;
+    hostRecoveryAttemptsRef.current = 0;
     disposeTransport();
     setPeerId(null);
     setRemotePeerId(null);

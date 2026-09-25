@@ -411,6 +411,62 @@ describe('usePeer connection lifecycle', () => {
     expect(result.current.status).toBe('reconnecting');
   });
 
+  it('does not postpone host recovery when disconnected repeats', async () => {
+    const { result } = renderHook(() => usePeer());
+    let roomPromise!: Promise<string>;
+    act(() => { roomPromise = result.current.createRoom(vi.fn(), 'ABC123'); });
+    const firstPeer = FakePeer.instances[0];
+    act(() => firstPeer.emit('open', 'ABC123'));
+    await roomPromise;
+
+    act(() => {
+      firstPeer.disconnected = true;
+      firstPeer.emit('disconnected');
+      vi.advanceTimersByTime(2_000);
+      firstPeer.disconnected = true;
+      firstPeer.emit('disconnected');
+      vi.advanceTimersByTime(1_000);
+    });
+
+    expect(FakePeer.instances).toHaveLength(2);
+    expect(FakePeer.instances[1].id).toBe('ABC123');
+    expect(result.current.status).toBe('reconnecting');
+  });
+
+  it('retries the same host room id when it is temporarily unavailable after reload', async () => {
+    const { result } = renderHook(() => usePeer());
+    let roomPromise!: Promise<string>;
+    act(() => { roomPromise = result.current.createRoom(vi.fn(), 'ABC123'); });
+    const firstPeer = FakePeer.instances[0];
+    const unavailableError = Object.assign(new Error('ID ABC123 is taken'), { type: 'unavailable-id' });
+    act(() => firstPeer.emit('error', unavailableError));
+
+    await expect(roomPromise).rejects.toThrow('ID ABC123 is taken');
+    expect(result.current.status).toBe('reconnecting');
+    act(() => vi.advanceTimersByTime(1_000));
+
+    expect(FakePeer.instances).toHaveLength(2);
+    expect(FakePeer.instances[1].id).toBe('ABC123');
+    act(() => FakePeer.instances[1].emit('open', 'ABC123'));
+    expect(result.current.status).toBe('waiting');
+    expect(result.current.error).toBeNull();
+  });
+
+  it('retries host room creation when the signaling server never opens it', async () => {
+    const { result } = renderHook(() => usePeer());
+    let roomPromise!: Promise<string>;
+    act(() => { roomPromise = result.current.createRoom(vi.fn(), 'ABC123'); });
+    const rejection = expect(roomPromise).rejects.toThrow('ルーム作成がタイムアウトしました。');
+
+    act(() => vi.advanceTimersByTime(10_000));
+    await rejection;
+    expect(result.current.status).toBe('reconnecting');
+
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(FakePeer.instances).toHaveLength(2);
+    expect(FakePeer.instances[1].id).toBe('ABC123');
+  });
+
   it('returns false instead of throwing when a data connection send fails', async () => {
     const { result } = renderHook(() => usePeer());
     let joinPromise!: Promise<void>;
