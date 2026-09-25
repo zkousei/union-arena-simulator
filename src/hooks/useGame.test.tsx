@@ -476,6 +476,66 @@ describe('useGame P2P resynchronization', () => {
     }
   });
 
+  it('automatically retries synchronization when the request cannot be sent', async () => {
+    vi.useFakeTimers();
+    peerMock.sendMessage.mockReturnValueOnce(false).mockReturnValue(true);
+    try {
+      const { result, rerender } = renderHook(() => useGame());
+      await act(async () => { await result.current.joinRoom('host-room'); });
+      peerMock.role = 'guest';
+      peerMock.status = 'connected';
+      rerender();
+      expect(peerMock.sendMessage).toHaveBeenCalledTimes(1);
+
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(peerMock.sendMessage).toHaveBeenCalledTimes(2);
+      expect(result.current.isSynchronizing).toBe(true);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('retries synchronization while the restored host session is still pending', async () => {
+    vi.useFakeTimers();
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => { onMessage = handler; });
+    try {
+      const { result, rerender } = renderHook(() => useGame());
+      await act(async () => { await result.current.joinRoom('host-room'); });
+      peerMock.role = 'guest';
+      peerMock.status = 'connected';
+      rerender();
+      peerMock.sendMessage.mockClear();
+
+      act(() => onMessage?.({ type: 'SYNC_PENDING', senderId: 'player-1', timestamp: Date.now() }));
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(peerMock.sendMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'SYNC_REQUEST' }));
+      expect(result.current.isSynchronizing).toBe(true);
+    } finally {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('finishes synchronization when a valid state commit arrives during recovery', async () => {
+    let onMessage: ((message: PeerMessage) => void) | null = null;
+    peerMock.joinRoom.mockImplementation(async (_roomId, handler) => { onMessage = handler; });
+    const { result, rerender } = renderHook(() => useGame());
+    await act(async () => { await result.current.joinRoom('host-room'); });
+    peerMock.role = 'guest';
+    peerMock.status = 'connected';
+    rerender();
+
+    const snapshot = createInitialGameState('player-1', 'Host', 'player-2', 'Guest', 'player-1');
+    act(() => onMessage?.({
+      type: 'STATE_COMMIT', senderId: 'player-1', timestamp: Date.now(),
+      payload: { state: snapshot, revision: 0 },
+    }));
+    expect(result.current.isSynchronizing).toBe(false);
+    expect(result.current.syncError).toBeNull();
+  });
+
   it('uses a new request ID namespace after joining a room again', async () => {
     let onMessage: ((message: PeerMessage) => void) | null = null;
     peerMock.joinRoom.mockImplementation(async (_roomId, handler) => {

@@ -42,6 +42,7 @@ export function useGame() {
   const lastAppliedRevisionRef = useRef(-1);
   const isSynchronizingRef = useRef(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSequenceRef = useRef(0);
   const requestSessionIdRef = useRef(createRequestSessionId());
   const processedRequestIdsRef = useRef(new Set<string>());
@@ -62,6 +63,7 @@ export function useGame() {
   } = peer;
   const sendMessageRef = useRef(sendMessage);
   const peerStatusRef = useRef(peerStatus);
+  const requestSynchronizationRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     sendMessageRef.current = sendMessage;
@@ -75,6 +77,11 @@ export function useGame() {
     }
   }, []);
 
+  const clearSyncRetry = useCallback(() => {
+    if (syncRetryRef.current) clearTimeout(syncRetryRef.current);
+    syncRetryRef.current = null;
+  }, []);
+
   const setSynchronizationState = useCallback((synchronizing: boolean) => {
     isSynchronizingRef.current = synchronizing;
     setIsSynchronizing(synchronizing);
@@ -82,6 +89,7 @@ export function useGame() {
 
   const requestSynchronization = useCallback(() => {
     clearSyncTimeout();
+    clearSyncRetry();
     setSynchronizationState(true);
     setSyncError(null);
 
@@ -90,12 +98,25 @@ export function useGame() {
       senderId: myPlayerIdRef.current,
       timestamp: Date.now(),
     });
-    if (!sent) return;
+    if (!sent) {
+      syncRetryRef.current = setTimeout(() => {
+        syncRetryRef.current = null;
+        if (
+          peerStatusRef.current === 'connected' &&
+          (networkRoleRef.current === 'guest' || networkRoleRef.current === 'spectator')
+        ) requestSynchronizationRef.current?.();
+      }, 1_000);
+      return;
+    }
 
     syncTimeoutRef.current = setTimeout(() => {
       setSyncError('盤面の再同期がタイムアウトしました。再試行してください。');
     }, 7_000);
-  }, [clearSyncTimeout, setSynchronizationState]);
+  }, [clearSyncRetry, clearSyncTimeout, setSynchronizationState]);
+
+  useEffect(() => {
+    requestSynchronizationRef.current = requestSynchronization;
+  }, [requestSynchronization]);
 
   useEffect(() => {
     if (peerRole === 'host') networkRoleRef.current = 'host';
@@ -105,6 +126,7 @@ export function useGame() {
     if (peerRole === null) {
       networkRoleRef.current = 'solo';
       clearSyncTimeout();
+      clearSyncRetry();
       setSynchronizationState(false);
       setSyncError(null);
       return;
@@ -114,9 +136,12 @@ export function useGame() {
       if (peerStatus === 'connected') requestSynchronization();
       else setSynchronizationState(true);
     }
-  }, [clearSyncTimeout, peerRole, peerStatus, requestSynchronization, setSynchronizationState]);
+  }, [clearSyncRetry, clearSyncTimeout, peerRole, peerStatus, requestSynchronization, setSynchronizationState]);
 
-  useEffect(() => clearSyncTimeout, [clearSyncTimeout]);
+  useEffect(() => () => {
+    clearSyncTimeout();
+    clearSyncRetry();
+  }, [clearSyncRetry, clearSyncTimeout]);
 
   // サウンド効果の再生
   const triggerActionSound = useCallback((action: GameAction) => {
@@ -284,7 +309,16 @@ export function useGame() {
       performAuthoritativeUndo();
     } else if (msg.type === 'STATE_COMMIT') {
       if (networkRoleRef.current !== 'guest' && networkRoleRef.current !== 'spectator') return;
-      applyRemoteSnapshot(msg.payload as PeerStateSnapshot, networkRoleRef.current === 'guest');
+      if (!isValidPeerStateSnapshot(msg.payload)) return;
+      const snapshot = msg.payload;
+      const previousRevision = lastAppliedRevisionRef.current;
+      applyRemoteSnapshot(snapshot, networkRoleRef.current === 'guest');
+      if (snapshot.revision >= previousRevision && isSynchronizingRef.current) {
+        clearSyncTimeout();
+        clearSyncRetry();
+        setSynchronizationState(false);
+        setSyncError(null);
+      }
     } else if (msg.type === 'SYNC_REQUEST') {
       if (networkRoleRef.current !== 'host') return;
       if (context?.role === 'spectator') {
@@ -325,16 +359,28 @@ export function useGame() {
         snapshot.revision >= previousRevision
       ) {
         clearSyncTimeout();
+        clearSyncRetry();
         setSynchronizationState(false);
         setSyncError(null);
       }
+    } else if (msg.type === 'SYNC_PENDING') {
+      if (networkRoleRef.current !== 'guest' && networkRoleRef.current !== 'spectator') return;
+      clearSyncTimeout();
+      clearSyncRetry();
+      setSynchronizationState(true);
+      syncRetryRef.current = setTimeout(() => {
+        syncRetryRef.current = null;
+        if (peerStatusRef.current === 'connected') requestSynchronization();
+      }, 1_000);
     }
   }, [
     applyAuthoritativeAction,
     applyRemoteSnapshot,
+    clearSyncRetry,
     clearSyncTimeout,
     hasProcessedRequest,
     performAuthoritativeUndo,
+    requestSynchronization,
     sendToConnection,
     setSynchronizationState,
   ]);

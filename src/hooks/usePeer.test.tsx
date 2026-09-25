@@ -178,6 +178,46 @@ describe('usePeer connection lifecycle', () => {
     expect(onMessage).toHaveBeenCalledWith(snapshot, expect.objectContaining({ role: 'host' }));
   });
 
+  it('reconnects when an open guest connection stops answering health probes', async () => {
+    const { result } = renderHook(() => usePeer());
+    let joinPromise!: Promise<void>;
+    act(() => { joinPromise = result.current.joinRoom('host-room', vi.fn()); });
+    const peer = FakePeer.instances[0];
+    act(() => peer.emit('open', 'guest-one'));
+    const connection = peer.connections[0];
+    act(() => {
+      connection.open = true;
+      connection.emit('open');
+    });
+    await joinPromise;
+
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(result.current.status).toBe('reconnecting');
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(FakePeer.instances).toHaveLength(2);
+  });
+
+  it('keeps a guest connected when the host answers health probes', async () => {
+    const { result } = renderHook(() => usePeer());
+    let joinPromise!: Promise<void>;
+    act(() => { joinPromise = result.current.joinRoom('host-room', vi.fn()); });
+    const peer = FakePeer.instances[0];
+    act(() => peer.emit('open', 'guest-one'));
+    const connection = peer.connections[0];
+    act(() => {
+      connection.open = true;
+      connection.emit('open');
+    });
+    await joinPromise;
+
+    act(() => vi.advanceTimersByTime(5_000));
+    expect(connection.sent).toContainEqual(expect.objectContaining({ type: 'PING' }));
+    act(() => connection.emit('data', { type: 'PONG', senderId: 'player-1', timestamp: Date.now() }));
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(result.current.status).toBe('connected');
+    expect(FakePeer.instances).toHaveLength(1);
+  });
+
   it('cancels automatic reconnection after an explicit disconnect', async () => {
     const { result } = renderHook(() => usePeer());
 
@@ -219,8 +259,11 @@ describe('usePeer connection lifecycle', () => {
     act(() => vi.advanceTimersByTime(10_000));
 
     await rejection;
-    expect(result.current.status).toBe('error');
+    expect(result.current.status).toBe('reconnecting');
     expect(result.current.error).toBe('Peerサーバーへの接続がタイムアウトしました。');
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(FakePeer.instances).toHaveLength(2);
   });
 
   it('automatically retries an initial guest network failure and clears the error after connecting', async () => {
@@ -349,6 +392,42 @@ describe('usePeer connection lifecycle', () => {
     expect(result.current.lastRoomId).toBe('ABC123');
   });
 
+  it('recreates a disconnected host peer with the same room id when signaling does not recover', async () => {
+    const { result } = renderHook(() => usePeer());
+    let roomPromise!: Promise<string>;
+    act(() => { roomPromise = result.current.createRoom(vi.fn(), 'ABC123'); });
+    const firstPeer = FakePeer.instances[0];
+    act(() => firstPeer.emit('open', 'ABC123'));
+    await roomPromise;
+
+    act(() => {
+      firstPeer.disconnected = true;
+      firstPeer.emit('disconnected');
+      vi.advanceTimersByTime(3_000);
+    });
+
+    expect(FakePeer.instances).toHaveLength(2);
+    expect(FakePeer.instances[1].id).toBe('ABC123');
+    expect(result.current.status).toBe('reconnecting');
+  });
+
+  it('returns false instead of throwing when a data connection send fails', async () => {
+    const { result } = renderHook(() => usePeer());
+    let joinPromise!: Promise<void>;
+    act(() => { joinPromise = result.current.joinRoom('host-room', vi.fn()); });
+    const peer = FakePeer.instances[0];
+    act(() => peer.emit('open', 'guest'));
+    const connection = peer.connections[0];
+    act(() => {
+      connection.open = true;
+      connection.emit('open');
+    });
+    await joinPromise;
+    vi.spyOn(connection, 'send').mockImplementation(() => { throw new Error('closed'); });
+
+    expect(result.current.sendMessage({ type: 'PING', senderId: 'guest', timestamp: 1 })).toBe(false);
+  });
+
   it('keeps the guest connected while broadcasting to multiple spectators', async () => {
     const onMessage = vi.fn();
     const { result } = renderHook(() => usePeer());
@@ -409,6 +488,29 @@ describe('usePeer connection lifecycle', () => {
     const secondPeer = FakePeer.instances[1];
     act(() => secondPeer.emit('open', 'spectator-peer-2'));
     expect(secondPeer.connections[0].metadata?.connectionRole).toBe('spectator');
+  });
+
+  it('answers spectator health probes without forwarding them to the game handler', async () => {
+    const onMessage = vi.fn();
+    const { result } = renderHook(() => usePeer());
+    let roomPromise!: Promise<string>;
+    act(() => { roomPromise = result.current.createRoom(onMessage); });
+    const peer = FakePeer.instances[0];
+    act(() => peer.emit('open', 'host-room'));
+    await roomPromise;
+
+    const spectator = new FakeConnection('spectator-peer', {
+      connectionRole: 'spectator', protocolVersion: 1, clientSessionId: 'spectator-session',
+    });
+    act(() => {
+      peer.emit('connection', spectator);
+      spectator.open = true;
+      spectator.emit('open');
+      spectator.emit('data', { type: 'PING', senderId: 'spectator', timestamp: 1 });
+    });
+
+    expect(spectator.sent).toContainEqual(expect.objectContaining({ type: 'PONG' }));
+    expect(onMessage).not.toHaveBeenCalled();
   });
 
   it('rejects spectators over the configured connection limit', async () => {

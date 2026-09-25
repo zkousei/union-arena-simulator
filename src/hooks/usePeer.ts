@@ -6,6 +6,9 @@ import { generateRoomId } from '../domain/roomId';
 const RECONNECT_DELAY_MS = 1_000;
 const CONNECTION_TIMEOUT_MS = 10_000;
 const MAX_RECONNECT_ATTEMPTS = 5;
+const HEALTH_CHECK_INTERVAL_MS = 5_000;
+const HEALTH_CHECK_TIMEOUT_MS = 3_000;
+const HOST_RECOVERY_TIMEOUT_MS = 3_000;
 export const MAX_SPECTATOR_CONNECTIONS = 8;
 
 const RETRYABLE_GUEST_PEER_ERRORS = new Set([
@@ -102,10 +105,28 @@ export function usePeer(): UsePeerReturn {
   const manualDisconnectRef = useRef(false);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const healthCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const healthCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hostRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startGuestConnectionRef = useRef<
     ((roomId: string, isReconnect: boolean, connectionRole?: 'guest' | 'spectator') => Promise<void>) | null
   >(null);
   const pendingOperationRejectRef = useRef<((reason: Error) => void) | null>(null);
+  const createRoomRef = useRef<
+    ((onMessage: MessageHandler, preferredRoomId?: string) => Promise<string>) | null
+  >(null);
+
+  const clearHealthCheck = useCallback(() => {
+    if (healthCheckIntervalRef.current) clearInterval(healthCheckIntervalRef.current);
+    if (healthCheckTimeoutRef.current) clearTimeout(healthCheckTimeoutRef.current);
+    healthCheckIntervalRef.current = null;
+    healthCheckTimeoutRef.current = null;
+  }, []);
+
+  const clearHostRecoveryTimer = useCallback(() => {
+    if (hostRecoveryTimerRef.current) clearTimeout(hostRecoveryTimerRef.current);
+    hostRecoveryTimerRef.current = null;
+  }, []);
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -134,6 +155,8 @@ export function usePeer(): UsePeerReturn {
   }, []);
 
   const disposeTransport = useCallback(() => {
+    clearHealthCheck();
+    clearHostRecoveryTimer();
     const rejectPending = pendingOperationRejectRef.current;
     pendingOperationRejectRef.current = null;
     rejectPending?.(new Error('接続処理が中断されました。'));
@@ -146,7 +169,7 @@ export function usePeer(): UsePeerReturn {
     peerRef.current = null;
     activePeer?.destroy();
     closeSpectatorConnections();
-  }, [closeSpectatorConnections]);
+  }, [clearHealthCheck, clearHostRecoveryTimer, closeSpectatorConnections]);
 
   const scheduleGuestReconnect = useCallback(() => {
     if (
@@ -211,12 +234,47 @@ export function usePeer(): UsePeerReturn {
         reconnectAttemptsRef.current = 0;
         setStatus('connected');
         setError(null);
+        if (connectionRole === 'guest' || connectionRole === 'spectator') {
+          clearHealthCheck();
+          healthCheckIntervalRef.current = setInterval(() => {
+            if (connRef.current !== connection || !connection.open) return;
+            try {
+              connection.send({
+                type: 'PING',
+                senderId: connectionRole,
+                timestamp: Date.now(),
+              } satisfies PeerMessage);
+            } catch {
+              connection.close();
+              return;
+            }
+            if (healthCheckTimeoutRef.current) clearTimeout(healthCheckTimeoutRef.current);
+            healthCheckTimeoutRef.current = setTimeout(() => {
+              if (connRef.current !== connection) return;
+              setError('接続の応答がありません。再接続しています。');
+              connection.close();
+            }, HEALTH_CHECK_TIMEOUT_MS);
+          }, HEALTH_CHECK_INTERVAL_MS);
+        }
         onOpen?.();
       });
 
       connection.on('data', (data) => {
         if (connRef.current !== connection) return;
         const message = data as PeerMessage;
+        if (message.type === 'PING') {
+          try {
+            connection.send({ type: 'PONG', senderId: connectionRole, timestamp: Date.now() } satisfies PeerMessage);
+          } catch {
+            connection.close();
+          }
+          return;
+        }
+        if (message.type === 'PONG') {
+          if (healthCheckTimeoutRef.current) clearTimeout(healthCheckTimeoutRef.current);
+          healthCheckTimeoutRef.current = null;
+          return;
+        }
         if (message.type === 'CONNECTION_REJECTED') {
           manualDisconnectRef.current = true;
           setStatus('error');
@@ -238,6 +296,7 @@ export function usePeer(): UsePeerReturn {
       connection.on('close', () => {
         clearTimeout(timeoutId);
         if (connRef.current !== connection) return;
+        clearHealthCheck();
         connRef.current = null;
         setRemotePeerId(null);
         if (connectionRole === 'host') guestClientSessionIdRef.current = null;
@@ -264,7 +323,7 @@ export function usePeer(): UsePeerReturn {
         else setStatus('reconnecting');
       });
     },
-    [scheduleGuestReconnect]
+    [clearHealthCheck, scheduleGuestReconnect]
   );
 
   const startGuestConnection = useCallback(
@@ -305,8 +364,7 @@ export function usePeer(): UsePeerReturn {
           const timeoutError = new Error('Peerサーバーへの接続がタイムアウトしました。');
           setError(timeoutError.message);
           rejectOnce(timeoutError);
-          if (isReconnect) scheduleGuestReconnect();
-          else setStatus('error');
+          scheduleGuestReconnect();
         }, CONNECTION_TIMEOUT_MS);
 
         peer.on('open', (id) => {
@@ -386,6 +444,15 @@ export function usePeer(): UsePeerReturn {
     connection.on('data', (data) => {
       if (spectatorConnectionsRef.current.get(connectionId) !== connection) return;
       const message = data as PeerMessage;
+      if (message.type === 'PING') {
+        try {
+          connection.send({ type: 'PONG', senderId: 'player-1', timestamp: Date.now() } satisfies PeerMessage);
+        } catch {
+          connection.close();
+        }
+        return;
+      }
+      if (message.type === 'PONG') return;
       if (message.type === 'SPECTATOR_LEAVE') {
         spectatorConnectionsRef.current.delete(connectionId);
         setSpectatorCount(spectatorConnectionsRef.current.size);
@@ -464,6 +531,7 @@ export function usePeer(): UsePeerReturn {
 
         peer.on('open', (id) => {
           if (peerRef.current !== peer) return;
+          clearHostRecoveryTimer();
           setPeerId(id);
           roomIdRef.current = id;
           setLastRoomId(id);
@@ -511,6 +579,16 @@ export function usePeer(): UsePeerReturn {
           setStatus('reconnecting');
           setError('シグナリングサーバーから切断されました。再接続しています。');
           if (!peer.destroyed) peer.reconnect();
+          clearHostRecoveryTimer();
+          const roomId = roomIdRef.current;
+          const handler = onMessageRef.current;
+          if (!roomId || !handler) return;
+          hostRecoveryTimerRef.current = setTimeout(() => {
+            hostRecoveryTimerRef.current = null;
+            if (peerRef.current !== peer || manualDisconnectRef.current) return;
+            void createRoomRef.current?.(handler, roomId).catch(() => undefined);
+            setStatus('reconnecting');
+          }, HOST_RECOVERY_TIMEOUT_MS);
         });
 
         peer.on('error', (peerError) => {
@@ -521,8 +599,12 @@ export function usePeer(): UsePeerReturn {
         });
       });
     },
-    [bindConnection, bindSpectatorConnection, clearReconnectTimer, disposeTransport, rejectIncomingConnection]
+    [bindConnection, bindSpectatorConnection, clearHostRecoveryTimer, clearReconnectTimer, disposeTransport, rejectIncomingConnection]
   );
+
+  useEffect(() => {
+    createRoomRef.current = createRoom;
+  }, [createRoom]);
 
   const joinRoom = useCallback(
     async (roomId: string, onMessage: MessageHandler): Promise<void> => {
@@ -551,8 +633,12 @@ export function usePeer(): UsePeerReturn {
 
   const sendMessage = useCallback((msg: PeerMessage): boolean => {
     if (connRef.current?.open) {
-      connRef.current.send(msg);
-      return true;
+      try {
+        connRef.current.send(msg);
+        return true;
+      } catch {
+        connRef.current.close();
+      }
     }
     return false;
   }, []);
@@ -562,15 +648,24 @@ export function usePeer(): UsePeerReturn {
       ? spectatorConnectionsRef.current.get(connectionId)
       : connRef.current;
     if (!connection?.open) return false;
-    connection.send(msg);
-    return true;
+    try {
+      connection.send(msg);
+      return true;
+    } catch {
+      connection.close();
+      return false;
+    }
   }, []);
 
   const broadcastMessage = useCallback((msg: PeerMessage): number => {
     let sent = 0;
     if (connRef.current?.open) {
-      connRef.current.send(msg);
-      sent += 1;
+      try {
+        connRef.current.send(msg);
+        sent += 1;
+      } catch {
+        connRef.current.close();
+      }
     }
     spectatorConnectionsRef.current.forEach((connection) => {
       if (!connection.open) return;
