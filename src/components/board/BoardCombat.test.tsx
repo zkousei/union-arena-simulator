@@ -408,7 +408,7 @@ describe('Board Combat Flow and Block Interaction', () => {
     fireEvent.click(checkButtons[0]);
     expect(dispatchAction).toHaveBeenCalledWith({
       type: 'CHECK_LIFE_TRIGGER',
-      payload: { playerId: 'player-2', lifeIndex: 0 },
+      payload: { playerId: 'player-2', lifeIndex: 0, actorPlayerId: 'player-1' },
     });
 
     // Clicking opponent's second life card directly
@@ -416,7 +416,7 @@ describe('Board Combat Flow and Block Interaction', () => {
     fireEvent.click(opponentLife2);
     expect(dispatchAction).toHaveBeenCalledWith({
       type: 'CHECK_LIFE_TRIGGER',
-      payload: { playerId: 'player-2', lifeIndex: 1 },
+      payload: { playerId: 'player-2', lifeIndex: 1, actorPlayerId: 'player-1' },
     });
   });
 
@@ -451,7 +451,12 @@ describe('Board Combat Flow and Block Interaction', () => {
 
     expect(dispatchAction).toHaveBeenCalledWith({
       type: 'TAKE_LIFE',
-      payload: { playerId: 'player-2', destination: 'graveyard', lifeIndex: 0 },
+      payload: {
+        playerId: 'player-2',
+        destination: 'graveyard',
+        lifeIndex: 0,
+        actorPlayerId: 'player-1',
+      },
     });
   });
 });

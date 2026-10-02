@@ -35,7 +35,6 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'ADD_MARKER':
     case 'TOGGLE_FREEZE':
     case 'RECOVER_LIFE':
-    case 'TAKE_LIFE':
     case 'REORDER_LIFE':
     case 'DRAW_CARD':
     case 'FLIP_LIFE':
@@ -44,7 +43,6 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'REVEAL_TOP_DECK_CARD':
     case 'BOTTOM_DECK_ACTION':
     case 'EXTRA_DRAW':
-    case 'CHECK_LIFE_TRIGGER':
     case 'USE_AP':
     case 'RECOVER_AP':
     case 'SHUFFLE_DECK':
@@ -56,6 +54,14 @@ export function isActionRequestAllowed(senderId: string, action: GameAction): bo
     case 'ROLL_DICE':
     case 'ADD_LOG':
       return action.payload.playerId === senderId;
+
+    // 相手ライフに対する盤面操作は、送信者を実行者として明示した場合だけ許可する。
+    case 'CHECK_LIFE_TRIGGER':
+      return action.payload.playerId === senderId || action.payload.actorPlayerId === senderId;
+    case 'TAKE_LIFE':
+      return action.payload.playerId === senderId || (
+        action.payload.actorPlayerId === senderId && action.payload.destination === 'graveyard'
+      );
 
     case 'CHAT_MESSAGE':
       return action.payload.senderId === senderId;

@@ -74,6 +74,25 @@ for (const viewport of [
   });
 }
 
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop', width: 1440, height: 900 },
+]) {
+  test(`opens an individual life-card menu on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/game?mode=solo');
+    await startSoloGame(page);
+
+    await page.getByTitle('ライフ #1 - クリックで操作メニュー').last().click();
+    const lifeCardMenu = page.getByRole('dialog', { name: 'ライフ #1 操作メニュー' });
+
+    await expect(lifeCardMenu).toBeVisible();
+    await expectDialogWithinViewport(page, lifeCardMenu);
+    await expect(lifeCardMenu.getByRole('button', { name: '手札に回収' })).toBeVisible();
+    await expect(lifeCardMenu.getByRole('button', { name: '場外へ送る' })).toBeVisible();
+  });
+}
+
 test('keeps the existing desktop log layout', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/game?mode=solo');

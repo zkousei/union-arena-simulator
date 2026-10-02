@@ -172,6 +172,7 @@ export type GameAction =
         playerId: string;
         destination: 'hand' | 'graveyard' | 'deckTop' | 'deckBottom';
         lifeIndex?: number;
+        actorPlayerId?: string;
       };
     }
   | {
@@ -233,6 +234,7 @@ export type GameAction =
       payload: {
         playerId: string;
         lifeIndex?: number;
+        actorPlayerId?: string;
       };
     }
   | {

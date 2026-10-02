@@ -1161,7 +1161,14 @@ export const Board: React.FC<BoardProps> = ({
           onCheckLife={isSpectator ? undefined :
             canSelectLifeForDamage(topPlayerId)
               ? selectLifeForDamage
-              : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })
+              : (index) => dispatchAction({
+                  type: 'CHECK_LIFE_TRIGGER',
+                  payload: {
+                    playerId: topPlayerId,
+                    lifeIndex: index,
+                    ...(!isSoloMode ? { actorPlayerId: myPlayerId } : {}),
+                  },
+                })
           }
           onTakeLife={isSpectator ? undefined : (dest, index) => {
             if (isSoloMode) {
@@ -1630,7 +1637,13 @@ export const Board: React.FC<BoardProps> = ({
             } else {
               dispatchAction({
                 type: 'CHECK_LIFE_TRIGGER',
-                payload: { playerId: lifeSelectPlayerId, lifeIndex },
+                payload: {
+                  playerId: lifeSelectPlayerId,
+                  lifeIndex,
+                  ...(lifeSelectPlayerId !== bottomPlayerId && !isSoloMode
+                    ? { actorPlayerId: myPlayerId }
+                    : {}),
+                },
               });
             }
           }
@@ -1733,6 +1746,7 @@ export const Board: React.FC<BoardProps> = ({
                 playerId: pendingTakeLife.playerId,
                 destination: pendingTakeLife.destination,
                 lifeIndex: pendingTakeLife.lifeIndex,
+                actorPlayerId: myPlayerId,
               },
             });
           }
