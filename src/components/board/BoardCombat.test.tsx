@@ -266,6 +266,36 @@ describe('Board Combat Flow and Block Interaction', () => {
     });
   });
 
+  it('allows P2 to attack P1 directly from an active energy-line character in P2P mode', () => {
+    const gameState = setupTestGameState(4000, 3000);
+    gameState.activePlayerId = 'player-2';
+    gameState.players['player-2'].energyLine[0] = createDummyCard('energy-attacker', 'エナジーライン攻撃キャラ', 3500);
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={gameState}
+        myPlayerId="player-2"
+        dispatchAction={dispatchAction}
+        isSoloMode={false}
+        isFitMode={false}
+      />
+    );
+
+    const attackerCard = screen.getByText('エナジーライン攻撃キャラ').closest('div[draggable="true"]') as HTMLElement;
+    fireEvent.click(within(attackerCard).getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）'));
+
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DECLARE_PLAYER_ATTACK',
+      payload: {
+        actorPlayerId: 'player-2',
+        attackerZone: 'energyLine',
+        attackerSlotIndex: 0,
+        defenderPlayerId: 'player-1',
+      },
+    });
+  });
+
   it('triggers DECLARE_PLAYER_ATTACK from quick attack button even during MAIN phase', () => {
     const gameState = setupTestGameState(4000, 3000);
     gameState.phase = 'MAIN';

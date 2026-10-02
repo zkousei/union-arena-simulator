@@ -269,7 +269,7 @@ export const CardView: React.FC<CardViewProps> = ({
         >
           {/* クイック操作ボタン (レスト切替 / 攻撃 / 拡大確認) */}
           <div className="absolute top-1 right-1 z-30 flex items-center gap-0.5">
-            {!isOpponent && !card.isRested && onDirectAttack && (
+            {!isOpponent && !card.isRested && onDirectAttack && card.cardType === 'CHARACTER' && (
               <button
                 type="button"
                 onClick={(e) => {

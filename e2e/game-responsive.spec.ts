@@ -158,6 +158,14 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
 
   const placedSlot = page.locator('#slot-player-1-energyLine-0');
   await expect(placedSlot.getByAltText(cardName!)).toBeVisible();
+  const restToggle = placedSlot.getByTitle(/(レスト|アクティブ)にする/);
+  if ((await restToggle.getAttribute('title'))?.startsWith('アクティブ')) {
+    await restToggle.click();
+  }
+  await placedSlot.getByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）').click();
+  const firstTurnAttackAlert = page.getByRole('dialog', { name: '公式ルール制限' });
+  await expect(firstTurnAttackAlert).toBeVisible();
+  await firstTurnAttackAlert.getByRole('button', { name: 'OK' }).click();
   await placedSlot.locator('[draggable="true"]').click({ button: 'right' });
   await expect(page.getByText('発生エナジー修正:')).toBeVisible();
   await page.getByRole('button', { name: 'エナジーを +1' }).click();
@@ -166,14 +174,8 @@ test('plays a card and completes the first turn on mobile', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'エナジー修正リセット' })).toBeHidden();
   const energyHeader = page.getByText('あなた: エナジーライン').locator('..');
   const energyBeforeRest = await energyHeader.textContent();
-  const restToggle = placedSlot.getByTitle(/(レスト|アクティブ)にする/);
-  const toggleTitle = await restToggle.getAttribute('title');
   await restToggle.click();
-  if (toggleTitle?.startsWith('アクティブ')) {
-    await expect(placedSlot.getByText('REST')).toBeHidden();
-  } else {
-    await expect(placedSlot.getByText('REST')).toBeVisible();
-  }
+  await expect(placedSlot.getByTitle(/アクティブにする/)).toBeVisible();
   await expect(energyHeader).toHaveText(energyBeforeRest!);
 
   await page.getByRole('button', { name: /エンドへ/ }).click();

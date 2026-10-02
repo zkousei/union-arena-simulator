@@ -1252,6 +1252,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'energyLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(topPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <FieldZone
@@ -1401,6 +1402,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'energyLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(bottomPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <HandArea

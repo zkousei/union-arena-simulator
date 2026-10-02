@@ -219,6 +219,20 @@ describe('CardView', () => {
     expect(handleDirectAttack).toHaveBeenCalledTimes(1);
   });
 
+  it('does not show attack controls for a field card in the energy line', () => {
+    render(
+      <CardView
+        card={{ ...dummyCard, cardType: 'FIELD', bp: null }}
+        location={{ playerId: 'player-1', zone: 'energyLine', slotIndex: 0 }}
+        isOpponent={false}
+        onDeclareAttack={vi.fn()}
+        onDirectAttack={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTitle('アタック（1クリックで相手プレイヤーへ攻撃宣言）')).toBeNull();
+  });
+
   it('exposes a custom accessible name and supports keyboard selection', () => {
     const handleClick = vi.fn();
     render(
