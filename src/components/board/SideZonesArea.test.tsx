@@ -257,6 +257,9 @@ describe('SideZonesArea Top Deck Viewing Options', () => {
 
     const cardMenu = screen.getByRole('dialog', { name: 'ライフ #4 操作メニュー' });
     expect(cardMenu).toBeTruthy();
+    const lifeCardScroller = lifeCards[3].closest('.overflow-x-auto');
+    expect(lifeCardScroller).toBeTruthy();
+    expect(lifeCardScroller?.contains(cardMenu)).toBe(false);
     // For idx >= 2, must use right-0 to avoid overflowing to the right of SideZonesArea
     expect(cardMenu.className).toContain('right-0');
     expect(cardMenu.className).toContain('top-full');
@@ -268,4 +271,3 @@ describe('SideZonesArea Top Deck Viewing Options', () => {
     expect(screen.queryByRole('dialog', { name: 'ライフ #4 操作メニュー' })).toBeNull();
   });
 });
-

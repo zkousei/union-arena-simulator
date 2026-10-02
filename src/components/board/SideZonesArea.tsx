@@ -107,6 +107,7 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
 
   const hasEmptyFrontSlot = player.frontLine.some((c) => c === null);
   const hasEmptyEnergySlot = player.energyLine.some((c) => c === null);
+  const selectedMyLifeCard = selectedMyLifeIndex === null ? null : player.life[selectedMyLifeIndex];
 
   return (
     <div className={`flex flex-col rounded-xl border border-slate-800/80 bg-slate-900/40 ${
@@ -341,109 +342,110 @@ export const SideZonesArea: React.FC<SideZonesAreaProps> = ({
                         破棄
                       </button>
                     )}
-
-                    {/* 自分ライフの個別操作ポップアップ */}
-                    {!isOpponent && selectedMyLifeIndex === idx && (
-                      <>
-                        <div
-                          data-testid="dropdown-backdrop"
-                          className="fixed inset-0 z-20"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedMyLifeIndex(null);
-                          }}
-                        />
-                        <div
-                          role="dialog"
-                          aria-label={`ライフ #${idx + 1} 操作メニュー`}
-                          className={`absolute ${idx >= 2 ? 'right-0' : 'left-0'} ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 max-w-[calc(100vw-24px)] max-h-[min(300px,80vh)] overflow-y-auto scrollbar-thin text-[10px] animate-in fade-in zoom-in-95 duration-100`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="text-[9px] text-slate-400 font-bold px-1 border-b border-slate-800 pb-0.5 truncate">
-                            ライフ #${idx + 1} {!isFaceDown ? `(${card.name})` : ''}
-                          </div>
-                          {onInspectCard && !isFaceDown && (
-                            <button
-                              onClick={() => {
-                                onInspectCard(card);
-                                setSelectedMyLifeIndex(null);
-                              }}
-                              className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 font-bold flex items-center gap-1"
-                            >
-                              <Eye className="w-2.5 h-2.5" />
-                              カード詳細を見る
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              onCheckLife?.(idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
-                          >
-                            <Eye className="w-2.5 h-2.5" />
-                            チェック
-                          </button>
-                          <button
-                            onClick={() => {
-                              onTakeLife?.('hand', idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1"
-                          >
-                            <Hand className="w-2.5 h-2.5" />
-                            手札に回収
-                          </button>
-                          <button
-                            onClick={() => {
-                              onTakeLife?.('graveyard', idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
-                          >
-                            <Skull className="w-2.5 h-2.5" />
-                            場外へ送る
-                          </button>
-                          <button
-                            onClick={() => {
-                              onTakeLife?.('deckTop', idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
-                          >
-                            <ArrowUp className="w-2.5 h-2.5" />
-                            山札の上へ
-                          </button>
-                          <button
-                            onClick={() => {
-                              onTakeLife?.('deckBottom', idx);
-                              setSelectedMyLifeIndex(null);
-                            }}
-                            className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
-                          >
-                            <ArrowDown className="w-2.5 h-2.5" />
-                            山札の下へ
-                          </button>
-                          {onFlipLife && (
-                            <button
-                              onClick={() => {
-                                onFlipLife(idx);
-                                setSelectedMyLifeIndex(null);
-                              }}
-                              className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1 border-t border-slate-800 mt-0.5"
-                            >
-                              <Eye className="w-2.5 h-2.5" />
-                              表/裏切替
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+        )}
+
+        {/* 横スクロール領域の外に置き、個別操作メニューの縦方向のクリップを防ぐ */}
+        {!isOpponent && selectedMyLifeIndex !== null && selectedMyLifeCard && (
+          <>
+            <div
+              data-testid="dropdown-backdrop"
+              className="fixed inset-0 z-20"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedMyLifeIndex(null);
+              }}
+            />
+            <div
+              role="dialog"
+              aria-label={`ライフ #${selectedMyLifeIndex + 1} 操作メニュー`}
+              className={`absolute ${selectedMyLifeIndex >= 2 ? 'right-0' : 'left-0'} ${verticalPopupClass} z-30 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 w-36 max-w-[calc(100vw-24px)] max-h-[min(300px,80vh)] overflow-y-auto scrollbar-thin text-[10px] animate-in fade-in zoom-in-95 duration-100`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-[9px] text-slate-400 font-bold px-1 border-b border-slate-800 pb-0.5 truncate">
+                ライフ #{selectedMyLifeIndex + 1}{' '}
+                {selectedMyLifeCard.isFaceDown === false ? `(${selectedMyLifeCard.name})` : ''}
+              </div>
+              {onInspectCard && selectedMyLifeCard.isFaceDown === false && (
+                <button
+                  onClick={() => {
+                    onInspectCard(selectedMyLifeCard);
+                    setSelectedMyLifeIndex(null);
+                  }}
+                  className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 font-bold flex items-center gap-1"
+                >
+                  <Eye className="w-2.5 h-2.5" />
+                  カード詳細を見る
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  onCheckLife?.(selectedMyLifeIndex);
+                  setSelectedMyLifeIndex(null);
+                }}
+                className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
+              >
+                <Eye className="w-2.5 h-2.5" />
+                チェック
+              </button>
+              <button
+                onClick={() => {
+                  onTakeLife?.('hand', selectedMyLifeIndex);
+                  setSelectedMyLifeIndex(null);
+                }}
+                className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-sky-300 flex items-center gap-1"
+              >
+                <Hand className="w-2.5 h-2.5" />
+                手札に回収
+              </button>
+              <button
+                onClick={() => {
+                  onTakeLife?.('graveyard', selectedMyLifeIndex);
+                  setSelectedMyLifeIndex(null);
+                }}
+                className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-rose-300 flex items-center gap-1"
+              >
+                <Skull className="w-2.5 h-2.5" />
+                場外へ送る
+              </button>
+              <button
+                onClick={() => {
+                  onTakeLife?.('deckTop', selectedMyLifeIndex);
+                  setSelectedMyLifeIndex(null);
+                }}
+                className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
+              >
+                <ArrowUp className="w-2.5 h-2.5" />
+                山札の上へ
+              </button>
+              <button
+                onClick={() => {
+                  onTakeLife?.('deckBottom', selectedMyLifeIndex);
+                  setSelectedMyLifeIndex(null);
+                }}
+                className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-slate-300 flex items-center gap-1"
+              >
+                <ArrowDown className="w-2.5 h-2.5" />
+                山札の下へ
+              </button>
+              {onFlipLife && (
+                <button
+                  onClick={() => {
+                    onFlipLife(selectedMyLifeIndex);
+                    setSelectedMyLifeIndex(null);
+                  }}
+                  className="px-1.5 py-1 hover:bg-slate-800 rounded text-left text-amber-300 flex items-center gap-1 border-t border-slate-800 mt-0.5"
+                >
+                  <Eye className="w-2.5 h-2.5" />
+                  表/裏切替
+                </button>
+              )}
+            </div>
+          </>
         )}
 
         {/* 表向きライフのインジケータ（存在する場合） */}

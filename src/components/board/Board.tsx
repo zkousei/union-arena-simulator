@@ -1161,7 +1161,14 @@ export const Board: React.FC<BoardProps> = ({
           onCheckLife={isSpectator ? undefined :
             canSelectLifeForDamage(topPlayerId)
               ? selectLifeForDamage
-              : (index) => dispatchAction({ type: 'CHECK_LIFE_TRIGGER', payload: { playerId: topPlayerId, lifeIndex: index } })
+              : (index) => dispatchAction({
+                  type: 'CHECK_LIFE_TRIGGER',
+                  payload: {
+                    playerId: topPlayerId,
+                    lifeIndex: index,
+                    ...(!isSoloMode ? { actorPlayerId: myPlayerId } : {}),
+                  },
+                })
           }
           onTakeLife={isSpectator ? undefined : (dest, index) => {
             if (isSoloMode) {
@@ -1245,6 +1252,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'energyLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(topPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <FieldZone
@@ -1394,6 +1402,7 @@ export const Board: React.FC<BoardProps> = ({
             onInspect={setInspectCard}
             onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'energyLine', slotIdx)}
+            onDirectAttack={(slotIdx) => handleDirectAttack(bottomPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
           />
           <HandArea
@@ -1630,7 +1639,13 @@ export const Board: React.FC<BoardProps> = ({
             } else {
               dispatchAction({
                 type: 'CHECK_LIFE_TRIGGER',
-                payload: { playerId: lifeSelectPlayerId, lifeIndex },
+                payload: {
+                  playerId: lifeSelectPlayerId,
+                  lifeIndex,
+                  ...(lifeSelectPlayerId !== bottomPlayerId && !isSoloMode
+                    ? { actorPlayerId: myPlayerId }
+                    : {}),
+                },
               });
             }
           }
@@ -1680,7 +1695,12 @@ export const Board: React.FC<BoardProps> = ({
         onDismissRevealed={(destination) =>
           dispatchAction({
             type: 'DISMISS_REVEALED_CARD',
-            payload: { destination, actorPlayerId: myPlayerId },
+            payload: {
+              destination,
+              actorPlayerId: isSoloMode
+                ? gameState.revealedCard?.fromPlayerId ?? myPlayerId
+                : myPlayerId,
+            },
           })
         }
         onCloseInspect={() => setInspectCard(null)}
@@ -1728,6 +1748,7 @@ export const Board: React.FC<BoardProps> = ({
                 playerId: pendingTakeLife.playerId,
                 destination: pendingTakeLife.destination,
                 lifeIndex: pendingTakeLife.lifeIndex,
+                actorPlayerId: myPlayerId,
               },
             });
           }

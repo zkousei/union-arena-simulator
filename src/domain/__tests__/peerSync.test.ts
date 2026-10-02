@@ -52,6 +52,30 @@ describe('authoritative P2P synchronization', () => {
     expect(transition.snapshot.state.players.p2.frontLine[0]?.frontLineGeneratedEnergy).toBe(1);
   });
 
+  it('allows a guest to check or damage opponent life without allowing other opponent-life moves', () => {
+    expect(isActionRequestAllowed('p2', {
+      type: 'CHECK_LIFE_TRIGGER',
+      payload: { playerId: 'p1', lifeIndex: 0, actorPlayerId: 'p2' },
+    })).toBe(true);
+    expect(isActionRequestAllowed('p2', {
+      type: 'CHECK_LIFE_TRIGGER',
+      payload: { playerId: 'p1', lifeIndex: 0, actorPlayerId: 'p1' },
+    })).toBe(false);
+
+    expect(isActionRequestAllowed('p2', {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'graveyard', lifeIndex: 0, actorPlayerId: 'p2' },
+    })).toBe(true);
+    expect(isActionRequestAllowed('p2', {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'hand', lifeIndex: 0, actorPlayerId: 'p2' },
+    })).toBe(false);
+    expect(isActionRequestAllowed('p2', {
+      type: 'TAKE_LIFE',
+      payload: { playerId: 'p1', destination: 'graveyard', lifeIndex: 0 },
+    })).toBe(false);
+  });
+
   it('shares the host-resolved shuffle instead of recomputing randomness on the guest', () => {
     const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
     state.players.p1.deck = Array.from({ length: 12 }, (_, index) => createCard(index));

@@ -166,6 +166,36 @@ describe('Board hidden information', () => {
     expect(screen.getByText('ソロ用相手山札')).toBeDefined();
   });
 
+  it.each([
+    ['場外へ送る (基本)', 'graveyard'],
+    ['手札に加える', 'hand'],
+  ] as const)('ソロモードで相手のトリガーカードを%sとき、カード所有者として解決する', (buttonName, destination) => {
+    const state = createInitialGameState('player-1', '自分', 'player-2', '相手', 'player-1');
+    state.revealedCard = {
+      card: createCard('opponent-trigger', '相手のトリガーカード'),
+      source: 'ライフ1枚目（トリガーチェック）',
+      fromPlayerId: 'player-2',
+      isTrigger: true,
+    };
+    const dispatchAction = vi.fn();
+
+    render(
+      <Board
+        gameState={state}
+        myPlayerId="player-1"
+        dispatchAction={dispatchAction}
+        isSoloMode
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: buttonName }));
+
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'DISMISS_REVEALED_CARD',
+      payload: { destination, actorPlayerId: 'player-2' },
+    });
+  });
+
   it('shows both hands read-only and disables actions for spectators', () => {
     const state = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
     state.players['player-1'].hand = [createCard('p1-secret', 'P1の秘密')];
