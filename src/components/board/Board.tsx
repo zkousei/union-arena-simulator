@@ -1680,7 +1680,12 @@ export const Board: React.FC<BoardProps> = ({
         onDismissRevealed={(destination) =>
           dispatchAction({
             type: 'DISMISS_REVEALED_CARD',
-            payload: { destination, actorPlayerId: myPlayerId },
+            payload: {
+              destination,
+              actorPlayerId: isSoloMode
+                ? gameState.revealedCard?.fromPlayerId ?? myPlayerId
+                : myPlayerId,
+            },
           })
         }
         onCloseInspect={() => setInspectCard(null)}
