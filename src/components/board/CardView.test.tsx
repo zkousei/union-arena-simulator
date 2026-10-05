@@ -122,6 +122,27 @@ describe('CardView', () => {
     expect(handleToggleRest).toHaveBeenCalledTimes(1);
   });
 
+  it('can start dragging a located card while its context menu is open', () => {
+    const { container } = render(
+      <CardView
+        card={dummyCard}
+        location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+        onInspect={vi.fn()}
+      />
+    );
+    const cardEl = container.querySelector('[draggable="true"]') as HTMLElement;
+    fireEvent.contextMenu(cardEl);
+    expect(screen.getByText('カード詳細・効果を見る')).toBeTruthy();
+
+    const setData = vi.fn();
+    fireEvent.dragStart(cardEl, {
+      dataTransfer: { setData, effectAllowed: 'none' },
+    });
+
+    expect(setData).toHaveBeenCalled();
+    expect(screen.queryByText('カード詳細・効果を見る')).toBeNull();
+  });
+
   it('calls onToggleRest when double-clicked if onToggleRest is provided', () => {
     const handleToggleRest = vi.fn();
     const handleInspect = vi.fn();

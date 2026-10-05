@@ -33,7 +33,12 @@ interface FieldZoneProps {
   ) => void;
   onInspect?: (card: Card) => void;
   onHoverCard?: (card: Card | null) => void;
-  onDropCard?: (from: CardLocation, targetZone: 'frontLine' | 'energyLine', slotIndex: FieldSlotIndex) => void;
+  onDropCard?: (
+    from: CardLocation,
+    targetZone: 'frontLine' | 'energyLine',
+    slotIndex: FieldSlotIndex,
+    cardId: string
+  ) => void;
   onDeclareAttack?: (slotIndex: FieldSlotIndex) => void;
   onDirectAttack?: (slotIndex: FieldSlotIndex) => void;
   onOpenUnderCards?: (slotIndex: FieldSlotIndex, card: Card) => void;
@@ -93,7 +98,7 @@ export const FieldZone: React.FC<FieldZoneProps> = ({
       if (!raw) return;
       const payload = JSON.parse(raw) as DragCardPayload;
       if (onDropCard) {
-        onDropCard(payload.from, zone, slotIdx);
+        onDropCard(payload.from, zone, slotIdx, payload.cardId);
       }
     } catch (err) {
       console.error('Failed to parse dropped card data:', err);

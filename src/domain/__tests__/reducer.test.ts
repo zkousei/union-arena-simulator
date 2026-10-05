@@ -296,6 +296,44 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(placedCard?.isRested).toBe(true);
   });
 
+  it('moves the requested hand card by id when its recorded index became stale', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const shiftedCard = createDummyCard('shifted', 'Shifted Card');
+    const draggedCard = createDummyCard('dragged', 'Dragged Card');
+    state.players.p1.hand = [shiftedCard, draggedCard];
+
+    state = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: draggedCard.id,
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+      },
+    });
+
+    expect(state.players.p1.energyLine[0]?.id).toBe(draggedCard.id);
+    expect(state.players.p1.hand.map((card) => card.id)).toEqual([shiftedCard.id]);
+  });
+
+  it('does not search outside the declared source zone for a stale card id', () => {
+    const state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const handCard = createDummyCard('hand-only', 'Hand Card');
+    const graveyardCard = createDummyCard('graveyard-only', 'Graveyard Card');
+    state.players.p1.hand = [handCard];
+    state.players.p1.graveyard = [graveyardCard];
+
+    const nextState = gameReducer(state, {
+      type: 'MOVE_CARD',
+      payload: {
+        cardId: graveyardCard.id,
+        from: { playerId: 'p1', zone: 'hand', index: 0 },
+        to: { playerId: 'p1', zone: 'energyLine', slotIndex: 0 },
+      },
+    });
+
+    expect(nextState).toBe(state);
+  });
+
   it('should set raid card to ACTIVE state even if base card was rested (Ver 1.1 official rule)', () => {
     let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
     const baseCard = { ...createDummyCard('base-1', 'Suzaku Kururugi'), isRested: true };
@@ -322,6 +360,29 @@ describe('gameReducer Official Rules Unit Tests', () => {
     expect(activeSlotCard?.underCards.length).toBe(1);
     expect(activeSlotCard?.underCards[0].name).toBe('Suzaku Kururugi');
     expect(activeSlotCard?.underCards[0].isMarker).toBe(false);
+  });
+
+  it('raids with the requested hand card by id when its recorded index became stale', () => {
+    let state = createInitialGameState('p1', 'Alice', 'p2', 'Bob', 'p1');
+    const baseCard = createDummyCard('base-stale', 'Raid Base');
+    const shiftedCard = createDummyCard('shifted-raid', 'Shifted Card');
+    const raidCard = createDummyCard('raid-stale', 'Raid Card', 4500);
+    state.players.p1.frontLine[0] = baseCard;
+    state.players.p1.hand = [shiftedCard, raidCard];
+
+    state = gameReducer(state, {
+      type: 'RAID_CARD',
+      payload: {
+        playerId: 'p1',
+        targetZone: 'frontLine',
+        targetSlotIndex: 0,
+        raidCard,
+        fromLocation: { playerId: 'p1', zone: 'hand', index: 0 },
+      },
+    });
+
+    expect(state.players.p1.frontLine[0]?.id).toBe(raidCard.id);
+    expect(state.players.p1.hand.map((card) => card.id)).toEqual([shiftedCard.id]);
   });
 
   it('should send triggered card to graveyard by default on dismiss (Ver 1.1 official rule)', () => {

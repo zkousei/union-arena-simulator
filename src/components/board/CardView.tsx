@@ -159,11 +159,12 @@ export const CardView: React.FC<CardViewProps> = ({
   const secondUnderCard = underCount >= 2 ? card.underCards?.[underCount - 2] : null;
   const firstUnderCard = underCount >= 1 ? card.underCards?.[underCount - 1] : null;
   const colorClass = COLOR_BORDER_MAP[card.color] || COLOR_BORDER_MAP.COLORLESS;
-  const canDrag = !isOpponent && !showMenu;
+  const canDrag = !isOpponent && !!location;
   const hasValidImage = !!card.imageUrl && !imgError;
 
   const handleDragStart = (e: React.DragEvent) => {
     if (!canDrag || !location) return;
+    setShowMenu(false);
     setIsDragging(true);
     const payload: DragCardPayload = {
       cardId: card.id,

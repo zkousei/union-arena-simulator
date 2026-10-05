@@ -29,6 +29,46 @@ function createDummyCard(id: string, name: string, cardType: Card['cardType'] = 
 }
 
 describe('Board Event and Field Card Marker Operations', () => {
+  it('resolves a dragged raid card by id when its hand index became stale', () => {
+    const state: GameState = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
+    state.status = 'PLAYING';
+    state.phase = 'MAIN';
+    state.activePlayerId = 'player-1';
+    state.players['player-1'].frontLine[0] = createDummyCard('base', 'レイド元', 'CHARACTER');
+    const shiftedCard = createDummyCard('shifted', '別カード', 'CHARACTER');
+    const raidCard = {
+      ...createDummyCard('raid', 'レイドカード', 'CHARACTER'),
+      triggers: ['RAID' as const],
+    };
+    state.players['player-1'].hand = [shiftedCard, raidCard];
+    const dispatchAction = vi.fn();
+
+    render(<Board gameState={state} myPlayerId="player-1" dispatchAction={dispatchAction} />);
+
+    const slotEl = document.getElementById('slot-player-1-frontLine-0')!;
+    const payload = JSON.stringify({
+      cardId: 'raid',
+      from: { playerId: 'player-1', zone: 'hand', index: 0 },
+    });
+    fireEvent.drop(slotEl, {
+      dataTransfer: { getData: (mime: string) => (mime === DND_MIME_TYPE ? payload : '') },
+    });
+
+    expect(screen.getByText('レイド登場またはマーカー配置')).toBeTruthy();
+    fireEvent.click(screen.getByText('【レイド登場】フロントラインに重ねて登場'));
+    expect(dispatchAction).toHaveBeenCalledWith({
+      type: 'RAID_CARD',
+      payload: {
+        playerId: 'player-1',
+        targetZone: 'frontLine',
+        targetSlotIndex: 0,
+        raidCard,
+        fromLocation: { playerId: 'player-1', zone: 'hand', index: 1 },
+        moveToFront: false,
+      },
+    });
+  });
+
   it('opens marker modal when dragging an event card onto an existing character', () => {
     const state: GameState = createInitialGameState('player-1', 'Player 1', 'player-2', 'Player 2', 'player-1');
     state.status = 'PLAYING';
