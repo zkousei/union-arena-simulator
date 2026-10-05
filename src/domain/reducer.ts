@@ -36,7 +36,8 @@ function getCardAtLocation(player: PlayerState, loc: CardLocation, cardId?: stri
   if (!cards) return null;
   if (loc.index !== undefined) {
     const card = cards[loc.index];
-    return card && (!cardId || card.id === cardId) ? card : null;
+    if (card && (!cardId || card.id === cardId)) return card;
+    return cardId ? cards.find((candidate) => candidate.id === cardId) ?? null : null;
   }
   if (cardId) return cards.find((card) => card.id === cardId) ?? null;
   return loc.zone === 'deck' || loc.zone === 'life' ? cards[0] ?? null : null;
@@ -85,7 +86,8 @@ function removeCardFromLocation(player: PlayerState, loc: CardLocation, cardId?:
   const resolveIndex = (cards: Card[], fallbackToTop = false): number => {
     if (loc.index !== undefined) {
       const indexedCard = cards[loc.index];
-      return indexedCard && (!cardId || indexedCard.id === cardId) ? loc.index : -1;
+      if (indexedCard && (!cardId || indexedCard.id === cardId)) return loc.index;
+      return cardId ? cards.findIndex((card) => card.id === cardId) : -1;
     }
     if (cardId) return cards.findIndex((card) => card.id === cardId);
     return fallbackToTop && cards.length > 0 ? 0 : -1;

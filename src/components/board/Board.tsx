@@ -607,16 +607,19 @@ export const Board: React.FC<BoardProps> = ({
     targetPlayerId: string,
     from: CardLocation,
     targetZone: 'frontLine' | 'energyLine',
-    slotIndex: FieldSlotIndex
+    slotIndex: FieldSlotIndex,
+    draggedCardId: string
   ) => {
     const targetPlayer = gameState.players[targetPlayerId];
-    if (!targetPlayer) return;
+    const sourcePlayer = gameState.players[from.playerId];
+    if (!targetPlayer || !sourcePlayer || from.playerId !== targetPlayerId) return;
     const existingCard = targetZone === 'frontLine' ? targetPlayer.frontLine[slotIndex] : targetPlayer.energyLine[slotIndex];
 
     if (from.zone === 'hand') {
-      const handIndex = from.index !== undefined ? from.index : 0;
-      const card = targetPlayer.hand[handIndex];
-      if (!card) return;
+      const handIndex = sourcePlayer.hand.findIndex((card) => card.id === draggedCardId);
+      if (handIndex === -1) return;
+      const card = sourcePlayer.hand[handIndex];
+      const resolvedFrom: CardLocation = { ...from, index: handIndex };
 
       if (existingCard) {
         setPendingRaidOrMarker({
@@ -625,7 +628,7 @@ export const Board: React.FC<BoardProps> = ({
           existingCard,
           targetZone,
           targetSlotIndex: slotIndex,
-          fromLocation: from,
+          fromLocation: resolvedFrom,
         });
         return;
       }
@@ -636,7 +639,7 @@ export const Board: React.FC<BoardProps> = ({
           type: 'MOVE_CARD',
           payload: {
             cardId: card.id,
-            from,
+            from: resolvedFrom,
             to: { playerId: targetPlayerId, zone: 'graveyard' },
           },
         });
@@ -655,7 +658,7 @@ export const Board: React.FC<BoardProps> = ({
           type: 'MOVE_CARD',
           payload: {
             cardId: card.id,
-            from,
+            from: resolvedFrom,
             to: { playerId: targetPlayerId, zone: targetZone, slotIndex },
           },
         });
@@ -664,8 +667,8 @@ export const Board: React.FC<BoardProps> = ({
       const fromSlot = (from.slotIndex ?? 0) as FieldSlotIndex;
       if (from.zone === targetZone && fromSlot === slotIndex) return;
 
-      const card = from.zone === 'frontLine' ? targetPlayer.frontLine[fromSlot] : targetPlayer.energyLine[fromSlot];
-      if (!card) return;
+      const card = from.zone === 'frontLine' ? sourcePlayer.frontLine[fromSlot] : sourcePlayer.energyLine[fromSlot];
+      if (!card || card.id !== draggedCardId) return;
 
       if (card.cardType === 'FIELD' && targetZone === 'frontLine') {
         setAlertNotice({
@@ -1250,7 +1253,7 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
+            onDropCard={(from, z, slotIdx, cardId) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx, cardId)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'energyLine', slotIdx)}
             onDirectAttack={(slotIdx) => handleDirectAttack(topPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
@@ -1288,7 +1291,7 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(topPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(topPlayerId, 'frontLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx)}
+            onDropCard={(from, z, slotIdx, cardId) => handleDropCardOnSlot(topPlayerId, from, z, slotIdx, cardId)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(topPlayerId, 'frontLine', slotIdx)}
             onDirectAttack={(slotIdx) => handleDirectAttack(topPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: topPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
@@ -1377,7 +1380,7 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'frontLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'frontLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
+            onDropCard={(from, z, slotIdx, cardId) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx, cardId)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'frontLine', slotIdx)}
             onDirectAttack={(slotIdx) => handleDirectAttack(bottomPlayerId, 'frontLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'frontLine', slotIndex: slotIdx })}
@@ -1400,7 +1403,7 @@ export const Board: React.FC<BoardProps> = ({
             onAddMarker={(slotIdx, from) => handleAddMarker(bottomPlayerId, 'energyLine', slotIdx, from)}
             onMoveTo={(slotIdx, dest) => handleFieldMoveTo(bottomPlayerId, 'energyLine', slotIdx, dest)}
             onInspect={setInspectCard}
-            onDropCard={(from, z, slotIdx) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx)}
+            onDropCard={(from, z, slotIdx, cardId) => handleDropCardOnSlot(bottomPlayerId, from, z, slotIdx, cardId)}
             onDeclareAttack={(slotIdx) => handleDeclareAttack(bottomPlayerId, 'energyLine', slotIdx)}
             onDirectAttack={(slotIdx) => handleDirectAttack(bottomPlayerId, 'energyLine', slotIdx)}
             onOpenUnderCards={(slotIdx) => setUnderCardsTarget({ playerId: bottomPlayerId, zone: 'energyLine', slotIndex: slotIdx })}
