@@ -1,5 +1,6 @@
 import { Card, getBaseCardCode } from '../types/card';
-import officialCardsRaw from './officialCards.json';
+import officialCardsUrl from './officialCards.json?url';
+import { createCardAssetLoader } from './officialCardAsset';
 import { OFFICIAL_TITLES } from './officialSeriesData';
 
 // ユニオンアリーナ カードマスタデータベース
@@ -7,9 +8,6 @@ export interface CardMaster extends Omit<Card, 'id' | 'isRested' | 'bpModifier' 
   title: string;        // 作品名 (例: "コードギアス 反逆のルルーシュ", "HUNTER×HUNTER", "呪術廻戦")
   titleCode: string;    // 作品コード3文字 (例: "CGH", "HTR", "JJK")
 }
-
-// 同梱の公式カードデータ (530枚+)
-const officialCards = (officialCardsRaw as unknown) as CardMaster[];
 
 // 手動定義のシミュレータ用プリセット・基本カード群
 const BASE_CARD_DATABASE: CardMaster[] = [
@@ -636,38 +634,43 @@ const BASE_CARD_DATABASE: CardMaster[] = [
   },
 ];
 
-// 公式カードとベースカードをマージ（重複コードは優先順位をつけて統合）
-const mergedCardMap = new Map<string, CardMaster>();
+// App modules are imported only after this database is ready (see CardDataBootstrap).
+export const CARD_DATABASE: CardMaster[] = [];
 
-// まず公式カードを登録（baseCode, isParallel, isUnrevealed を正規化）
-for (const rawCard of officialCards) {
-  const card: CardMaster = {
-    ...rawCard,
-    baseCode: rawCard.baseCode || getBaseCardCode(rawCard.code),
-    isParallel: rawCard.isParallel ?? /_p\d+$/i.test(rawCard.code),
-    isUnrevealed:
-      rawCard.isUnrevealed ??
-      (/comingsoon/i.test(rawCard.code) ||
-        /comingsoon/i.test(rawCard.name) ||
-        Boolean(rawCard.imageUrl && /comingsoon/i.test(rawCard.imageUrl))),
-  };
-  mergedCardMap.set(card.code, card);
-}
+export const loadCardDatabase = createCardAssetLoader(officialCardsUrl, (officialCards) => {
+  // 公式カードとベースカードをマージ（重複コードは優先順位をつけて統合）
+  const mergedCardMap = new Map<string, CardMaster>();
 
-// ベースカードの追加（公式カードに存在しないコードのみフォールバック登録）
-for (const baseCard of BASE_CARD_DATABASE) {
-  if (!mergedCardMap.has(baseCard.code)) {
-    const normalized: CardMaster = {
-      ...baseCard,
-      baseCode: baseCard.baseCode || getBaseCardCode(baseCard.code),
-      isParallel: baseCard.isParallel ?? /_p\d+$/i.test(baseCard.code),
-      isUnrevealed: baseCard.isUnrevealed ?? false,
+  // まず公式カードを登録（baseCode, isParallel, isUnrevealed を正規化）
+  for (const rawCard of officialCards) {
+    const card: CardMaster = {
+      ...rawCard,
+      baseCode: rawCard.baseCode || getBaseCardCode(rawCard.code),
+      isParallel: rawCard.isParallel ?? /_p\d+$/i.test(rawCard.code),
+      isUnrevealed:
+        rawCard.isUnrevealed ??
+        (/comingsoon/i.test(rawCard.code) ||
+          /comingsoon/i.test(rawCard.name) ||
+          Boolean(rawCard.imageUrl && /comingsoon/i.test(rawCard.imageUrl))),
     };
-    mergedCardMap.set(baseCard.code, normalized);
+    mergedCardMap.set(card.code, card);
   }
-}
 
-export const CARD_DATABASE: CardMaster[] = Array.from(mergedCardMap.values());
+  // ベースカードの追加（公式カードに存在しないコードのみフォールバック登録）
+  for (const baseCard of BASE_CARD_DATABASE) {
+    if (!mergedCardMap.has(baseCard.code)) {
+      const normalized: CardMaster = {
+        ...baseCard,
+        baseCode: baseCard.baseCode || getBaseCardCode(baseCard.code),
+        isParallel: baseCard.isParallel ?? /_p\d+$/i.test(baseCard.code),
+        isUnrevealed: baseCard.isUnrevealed ?? false,
+      };
+      mergedCardMap.set(baseCard.code, normalized);
+    }
+  }
+
+  CARD_DATABASE.splice(0, CARD_DATABASE.length, ...mergedCardMap.values());
+});
 
 // 全作品一覧 (全57作品完全網羅)
 export const AVAILABLE_TITLES = [
