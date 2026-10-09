@@ -40,7 +40,9 @@ export const GameLog: React.FC<GameLogProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    const isComposing = e.nativeEvent.isComposing || e.keyCode === 229;
+
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSend();
     }
