@@ -11,6 +11,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    setupFiles: ['./vitest.setup.ts'],
     environment: 'node',
     testTimeout: 15000,
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
@@ -20,6 +21,8 @@ export default defineConfig({
       reportsDirectory: 'coverage',
       include: [
         'src/domain/**/*.ts',
+        'src/data/officialCardAsset.ts',
+        'src/components/CardDataBootstrap.tsx',
         'src/hooks/useGame.ts',
         'src/services/officialCardService.ts',
         'src/utils/deckStorage.ts',
