@@ -1,7 +1,8 @@
+import { useCardOperation } from '../../hooks/useCardOperation';
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserDeck } from '../../domain/deckValidation';
-import { loadSavedDecks } from '../../utils/deckStorage';
-import { PRESET_DECKS, PresetDeckInfo } from '../../data/sampleDeck';
+import { loadSavedDeckSummaries, loadSavedDeckById, type SavedDeckSummary } from '../../utils/deckStorage';
+import { PRESET_DECKS, PresetDeckInfo, loadPresetDeck } from '../../data/sampleDeck';
 import {
   Layers,
   X,
@@ -35,12 +36,20 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'saved' | 'presets'>('saved');
   const [searchQuery, setSearchQuery] = useState('');
-  const [savedDecks, setSavedDecks] = useState<UserDeck[]>([]);
+  const [savedDecks, setSavedDecks] = useState<SavedDeckSummary[]>([]);
 
+  const operation = useCardOperation(isOpen ? activeTab : 'closed');
+  const selectDeck = (id: string, target: string, preset = false) => {
+    void operation.run(async () => {
+      const deck = preset ? await loadPresetDeck(id) : await loadSavedDeckById(id);
+      if (!deck) throw new Error('デッキが見つかりませんでした。');
+      return deck;
+    }, (deck) => { onSelectDeck(deck, target); onClose(); });
+  };
   // モーダルが開かれた時にローカルストレージから最新のデッキ一覧を再取得
   useEffect(() => {
     if (isOpen) {
-      const decks = loadSavedDecks();
+      const decks = loadSavedDeckSummaries().decks;
       setSavedDecks(decks);
       // 保存済みデッキが0件なら初期タブをプリセットに誘導
       if (decks.length === 0) {
@@ -153,13 +162,15 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
           </div>
         </div>
 
+        {operation.busy && <p role="status" className="p-3">カードデータを読み込み中…</p>}
+        {operation.error && <p role="alert" className="p-3 text-amber-200">{operation.error} デッキを選び直して再試行してください。</p>}
         {/* コンテンツ領域 */}
         <div className="flex-1 overflow-y-auto py-3 space-y-2.5 pr-1 scrollbar-thin">
           {activeTab === 'saved' ? (
             /* 保存済みマイデッキ一覧 */
             filteredSavedDecks.length > 0 ? (
               filteredSavedDecks.map((deck) => {
-                const totalCards = deck.items.reduce((sum, item) => sum + item.count, 0);
+                const totalCards = deck.totalCards;
                 const isComplete = totalCards === 50;
 
                 return (
@@ -195,9 +206,9 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                       {isSoloMode ? (
                         <>
                           <button
+                            disabled={operation.busy}
                             onClick={() => {
-                              onSelectDeck(deck, 'player-1');
-                              onClose();
+                              selectDeck(deck.id, 'player-1');
                             }}
                             className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1 shadow"
                             title={`${player1Name}のデッキとしてセット`}
@@ -206,9 +217,9 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                             <span>{player1Name}にセット</span>
                           </button>
                           <button
+                            disabled={operation.busy}
                             onClick={() => {
-                              onSelectDeck(deck, 'player-2');
-                              onClose();
+                              selectDeck(deck.id, 'player-2');
                             }}
                             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1 shadow"
                             title={`${player2Name}のデッキとしてセット`}
@@ -219,9 +230,9 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                         </>
                       ) : (
                         <button
+                          disabled={operation.busy}
                           onClick={() => {
-                            onSelectDeck(deck, myPlayerId);
-                            onClose();
+                            selectDeck(deck.id, myPlayerId);
                           }}
                           className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow"
                         >
@@ -298,9 +309,9 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                   {isSoloMode ? (
                     <>
                       <button
+                        disabled={operation.busy}
                         onClick={() => {
-                          onSelectDeck(preset.deck, 'player-1');
-                          onClose();
+                          selectDeck(preset.id, 'player-1', true);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1 shadow"
                         title={`${player1Name}のデッキとしてセット`}
@@ -309,9 +320,9 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                         <span>{player1Name}にセット</span>
                       </button>
                       <button
+                        disabled={operation.busy}
                         onClick={() => {
-                          onSelectDeck(preset.deck, 'player-2');
-                          onClose();
+                          selectDeck(preset.id, 'player-2', true);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1 shadow"
                         title={`${player2Name}のデッキとしてセット`}
@@ -322,11 +333,11 @@ export const SavedDeckPickerModal: React.FC<SavedDeckPickerModalProps> = ({
                     </>
                   ) : (
                     <button
+                      disabled={operation.busy}
                       onClick={() => {
-                        onSelectDeck(preset.deck, myPlayerId);
-                        onClose();
+                        selectDeck(preset.id, myPlayerId, true);
                       }}
-                      className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow"
+                      className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold text-xs transition flex items-center gap-1.5 shadow"
                     >
                       <Play className="w-3.5 h-3.5 fill-white" />
                       <span>自分のデッキにセット</span>

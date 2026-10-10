@@ -1,6 +1,7 @@
+import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState } from 'react';
 import { Card } from '../../types/card';
-import { CARD_DATABASE } from '../../data/cardDatabase';
+import { getCardMaster } from '../../data/cardDatabase';
 import { ShieldAlert } from 'lucide-react';
 
 interface HoverCardPreviewProps {
@@ -12,17 +13,18 @@ export const HoverCardPreview: React.FC<HoverCardPreviewProps> = ({
   card,
   enabled = true,
 }) => {
+  useCardCatalog();
   const [imgError, setImgError] = useState(false);
 
   if (!card || !enabled) return null;
 
   const masterCard =
     card.bp === null || card.bp === undefined
-      ? CARD_DATABASE.find((c) => c.code === card.code)
+      ? getCardMaster(card.code)
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
-  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? getCardMaster(card.code)?.hasGenEnergyPlus ?? false;
   const hasValidImage = !!card.imageUrl && !imgError;
 
   return (

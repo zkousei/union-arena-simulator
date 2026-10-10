@@ -4,7 +4,7 @@ const cardTypes = new Set(['CHARACTER', 'EVENT', 'FIELD', 'ACTION_POINT']);
 const colors = new Set(['YELLOW', 'GREEN', 'RED', 'BLUE', 'PURPLE', 'COLORLESS']);
 const triggers = new Set(['DRAW', 'ACTIVE', 'RAID', 'GET', 'BOUNCE', 'COLOR', 'SPECIAL', 'FINAL']);
 
-function isCardMaster(value: unknown): value is CardMaster {
+export function isCardMaster(value: unknown): value is CardMaster {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const card = value as Record<string, unknown>;
   const strings = ['code', 'name', 'title', 'titleCode', 'effectText'];

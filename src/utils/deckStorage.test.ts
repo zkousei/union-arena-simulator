@@ -61,6 +61,8 @@ describe('deckStorage', () => {
     ['missing name', JSON.stringify({ titleCode: 'CGH', items: [] })],
     ['missing title code', JSON.stringify({ name: 'deck', items: [] })],
     ['invalid item count', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: CARD_DATABASE[0], count: 0 }] })],
+    ['unknown color', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], color: 'UNKNOWN' }, count: 1 }] })],
+    ['unknown trigger', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], triggers: ['UNKNOWN'] }, count: 1 }] })],
     ['missing card data', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ count: 1 }] })],
     ['invalid generated energy plus flag', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], hasGenEnergyPlus: 'yes' }, count: 1 }] })],
   ])('rejects structurally invalid imported JSON: %s', (_label, json) => {

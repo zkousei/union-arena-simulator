@@ -1,6 +1,7 @@
+import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../types/card';
-import { CARD_DATABASE } from '../../data/cardDatabase';
+import { getCardMaster } from '../../data/cardDatabase';
 import { Sparkles, Hand, Trash2, ArrowLeft, X, ShieldAlert } from 'lucide-react';
 
 interface RevealedCardModalProps {
@@ -69,6 +70,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   onDismissRevealed,
   onCloseInspect,
 }) => {
+  useCardCatalog();
   const [imgError, setImgError] = useState(false);
   const [isEnlargedImage, setIsEnlargedImage] = useState(false);
   const card = revealed ? revealed.card : inspectCard;
@@ -107,11 +109,11 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
 
   const masterCard =
     card.bp === null || card.bp === undefined
-      ? CARD_DATABASE.find((c) => c.code === card.code)
+      ? getCardMaster(card.code)
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
-  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? getCardMaster(card.code)?.hasGenEnergyPlus ?? false;
 
   const hasValidImage = !!card.imageUrl && !imgError;
 

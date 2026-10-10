@@ -1,6 +1,7 @@
+import { useCardOperation } from '../../hooks/useCardOperation';
 import React, { useState } from 'react';
 import { UserDeck } from '../../domain/deckValidation';
-import { importDeckFromJson } from '../../utils/deckStorage';
+import { importDeckFromJsonAsync } from '../../utils/deckStorage';
 import { Upload, X, AlertCircle } from 'lucide-react';
 
 interface DeckBuilderImportModalProps {
@@ -15,25 +16,18 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
   onClose,
 }) => {
   const [jsonText, setJsonText] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const operation = useCardOperation(isOpen);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
     setJsonText('');
-    setError(null);
+
     onClose();
   };
 
   const handleImport = () => {
-    try {
-      setError(null);
-      const deck = importDeckFromJson(jsonText);
-      onImportSuccess(deck);
-      handleClose();
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'JSONの解析に失敗しました。');
-    }
+    void operation.run(() => importDeckFromJsonAsync(jsonText), (deck) => { onImportSuccess(deck); handleClose(); });
   };
 
   return (
@@ -59,6 +53,7 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
         </p>
 
         <textarea
+          disabled={operation.busy}
           value={jsonText}
           onChange={(e) => setJsonText(e.target.value)}
           placeholder='{"name": "...", "items": [...]}'
@@ -66,10 +61,10 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
           className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500"
         />
 
-        {error && (
+        {operation.error && (
           <div role="alert" className="flex items-center gap-1.5 text-rose-400 bg-rose-950/40 p-2 rounded-lg text-[11px] border border-rose-800/40">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{operation.error}</span>
           </div>
         )}
 
@@ -82,7 +77,7 @@ export const DeckBuilderImportModal: React.FC<DeckBuilderImportModalProps> = ({
           </button>
           <button
             onClick={handleImport}
-            disabled={!jsonText.trim()}
+            disabled={!jsonText.trim() || operation.busy}
             className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg font-bold shadow"
           >
             インポート

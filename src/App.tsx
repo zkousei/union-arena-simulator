@@ -1,3 +1,5 @@
+import { GameCardDataStatus } from './components/board/GameCardDataStatus';
+import { flattenDeckToCards } from './domain/deckValidation';
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Routes, Route, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -556,8 +558,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
   const myPlayer = gameState.players[myPlayerId];
   const opponentPlayer = gameState.players[opponentPlayerId];
 
-  const handleSelectDeck = async (deck: UserDeck, targetPlayerId: string) => {
-    const { flattenDeckToCards } = await import('./domain/deckValidation');
+  const handleSelectDeck = (deck: UserDeck, targetPlayerId: string) => {
     const cards = flattenDeckToCards(deck, targetPlayerId);
     dispatchAction({
       type: 'SETUP_GAME',
@@ -675,6 +676,7 @@ function GameView({ game, soundEnabled, onToggleSound, onOpenPeerModal, isHostin
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
+      <GameCardDataStatus state={gameState} />
       {/* P2Pホスト用の対戦・観戦招待導線 */}
       {isHost && (peer.peerId || roomParam) && (
         <div className="z-20 flex flex-col gap-2 border-b border-sky-700/40 bg-gradient-to-r from-emerald-950/70 via-slate-900/95 to-sky-950/70 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
@@ -981,8 +983,7 @@ export function App() {
 
   // デッキ選択してゲーム開始
   const handlePlayWithCustomDeck = useCallback(
-    async (deck: UserDeck, targetMode: 'solo' | 'p2p' = 'solo') => {
-      const { flattenDeckToCards } = await import('./domain/deckValidation');
+    (deck: UserDeck, targetMode: 'solo' | 'p2p' = 'solo') => {
       const customCards = flattenDeckToCards(deck, myPlayerId);
       dispatchAction({
         type: 'SETUP_GAME',

@@ -12,7 +12,14 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:watch": "vitest",
-    "sync-cards": "node scripts/sync-official-cards.js"
+    "sync-cards": "node scripts/sync-official-cards.js",
+    "generate-card-assets": "node scripts/generate-card-assets.js",
+    "predev": "npm run generate-card-assets",
+    "prebuild": "npm run generate-card-assets",
+    "pretest": "npm run generate-card-assets",
+    "pretest:coverage": "npm run generate-card-assets",
+    "pretest:watch": "npm run generate-card-assets",
+    "pretest:e2e": "npm run generate-card-assets"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

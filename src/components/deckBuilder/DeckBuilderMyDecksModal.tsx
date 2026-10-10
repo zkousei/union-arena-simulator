@@ -1,12 +1,12 @@
 import React from 'react';
-import { UserDeck } from '../../domain/deckValidation';
+import type { SavedDeckSummary } from '../../utils/deckStorage';
 import { FolderOpen, Plus, Trash2, Check, Upload, X } from 'lucide-react';
 
 interface DeckBuilderMyDecksModalProps {
   isOpen: boolean;
-  decks: UserDeck[];
+  decks: SavedDeckSummary[];
   activeDeckId: string;
-  onSelectDeck: (deck: UserDeck) => void;
+  onSelectDeck: (deck: SavedDeckSummary) => void;
   onCreateNewDeck: () => void;
   onDeleteDeck: (deckId: string) => void;
   onOpenImport: () => void;
@@ -76,7 +76,7 @@ export const DeckBuilderMyDecksModal: React.FC<DeckBuilderMyDecksModalProps> = (
         {/* デッキリスト */}
         <div className="flex-1 overflow-y-auto py-2 space-y-2 scrollbar-thin">
           {decks.map((deck) => {
-            const total = deck.items.reduce((sum, item) => sum + item.count, 0);
+            const total = deck.totalCards;
             const isCurrent = deck.id === activeDeckId;
 
             return (

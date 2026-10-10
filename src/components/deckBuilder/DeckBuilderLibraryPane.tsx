@@ -1,5 +1,6 @@
+import { useCardOperation } from '../../hooks/useCardOperation';
 import React, { useState } from 'react';
-import { CARD_DATABASE, AVAILABLE_TITLES, CardMaster } from '../../data/cardDatabase';
+import { CARD_DATABASE, AVAILABLE_TITLES, CardMaster, loadTitleCards, loadCardDatabase, cardCatalog } from '../../data/cardDatabase';
 import { CardView } from '../board/CardView';
 import { Search, Plus, Globe, Sparkles } from 'lucide-react';
 import { getBaseCardCode } from '../../types/card';
@@ -19,7 +20,14 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
   onInspectCard,
   onOpenOfficialImport,
 }) => {
-  const [selectedTitle, setSelectedTitle] = useState<string>('ALL');
+  const [selectedTitle, setSelectedTitle] = useState<string>('');
+  const operation = useCardOperation(selectedTitle);
+  const { run } = operation;
+  const [attempt, setAttempt] = useState(0);
+  React.useEffect(() => {
+    if (!selectedTitle) return;
+    void run(() => selectedTitle === 'ALL' ? loadCardDatabase() : cardCatalog.getTitles().includes(selectedTitle) ? loadTitleCards(selectedTitle) : Promise.resolve(), () => {});
+  }, [selectedTitle, attempt, run]);
   const [selectedColor, setSelectedColor] = useState<string>('ALL');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -36,6 +44,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
   }, [selectedTitle, selectedColor, selectedType, searchQuery, showParallel, showUnrevealed]);
 
   const filteredCards = cards.filter((c) => {
+    if (!selectedTitle || operation.busy || operation.error) return false;
     // 作品絞り込み: 作品名 (c.title) または 作品コード (c.titleCode)
     if (selectedTitle !== 'ALL' && c.title !== selectedTitle && c.titleCode !== selectedTitle) {
       return false;
@@ -66,6 +75,8 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800 text-xs">
+      {operation.busy && <p role="status" className="p-3">選択した作品のカードデータを読み込み中…</p>}
+      {operation.error && <div role="alert" className="p-3 text-amber-200">カードデータを取得できませんでした。<button type="button" className="ml-2 underline" onClick={() => setAttempt((n) => n + 1)}>作品データを再試行</button><button type="button" className="ml-2 underline" onClick={() => window.location.reload()}>ページを再読み込み</button></div>}
       {/* フィルターヘッダー */}
       <div className="p-3 bg-slate-950/80 border-b border-slate-800 space-y-2.5">
         <div className="flex items-center gap-2">
@@ -94,13 +105,15 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
         {/* 作品 & 色 & 種類 ドロップダウン */}
         <div className="grid grid-cols-3 gap-1.5">
           <select
+            aria-label="作品を選択"
             value={selectedTitle}
             onChange={(e) => setSelectedTitle(e.target.value)}
             className="w-full min-w-0 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none text-[11px]"
           >
-            {AVAILABLE_TITLES.map((t) => (
+            <option value="">作品を選択してください</option>
+            {[...AVAILABLE_TITLES, ...[...new Set([...cardCatalog.getTitles(), ...cards.map((card) => card.title)])].filter((title) => !AVAILABLE_TITLES.some((t) => t.name === title)).map((title) => ({ code: title, name: title }))].map((t) => (
               <option key={t.code} value={t.code}>
-                {t.name}
+                {t.code === 'ALL' ? '全作品を読み込む' : t.name}
               </option>
             ))}
           </select>

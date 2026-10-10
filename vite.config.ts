@@ -5,6 +5,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: { assetsInlineLimit: (filename) => filename.endsWith('.json') ? false : undefined },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

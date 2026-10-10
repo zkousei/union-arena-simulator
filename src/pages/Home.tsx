@@ -18,6 +18,7 @@ import {
   Eye,
 } from 'lucide-react';
 import type { PresetDeckInfo } from '../data/sampleDeck';
+import { useCardOperation } from '../hooks/useCardOperation';
 import type { UserDeck } from '../domain/deckValidation';
 import { normalizeRoomId } from '../domain/roomId';
 
@@ -44,6 +45,13 @@ export const HomePage: React.FC<HomeProps> = ({
   const [joinRoomError, setJoinRoomError] = useState<string | null>(null);
   const [spectatorRoomInput, setSpectatorRoomInput] = useState('');
   const [spectatorRoomError, setSpectatorRoomError] = useState<string | null>(null);
+  const presetOperation = useCardOperation();
+  const selectPreset = (id: string, mode: 'solo' | 'p2p') => {
+    void presetOperation.run(async () => {
+      const { loadPresetDeck } = await import('../data/sampleDeck');
+      return loadPresetDeck(id);
+    }, (deck) => onSelectPresetDeck(deck, mode));
+  };
   const [presetDecks, setPresetDecks] = useState<PresetDeckInfo[] | null>(null);
 
   useEffect(() => {
@@ -90,6 +98,8 @@ export const HomePage: React.FC<HomeProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-4 sm:p-6 md:p-10 space-y-12">
+      {presetOperation.busy && <p role="status">選択したデッキのカードデータを読み込み中…</p>}
+      {presetOperation.error && <p role="alert">{presetOperation.error} デッキを選び直して再試行してください。</p>}
       {/* ヒーローセクション */}
       <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-indigo-950/40 via-slate-900/90 to-purple-950/40 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none" />
@@ -427,9 +437,10 @@ export const HomePage: React.FC<HomeProps> = ({
                 <div className="flex items-center gap-1.5 w-full sm:w-auto">
                   <button
                     onClick={() => {
-                      onSelectPresetDeck(preset.deck, 'solo');
+                      selectPreset(preset.id, 'solo');
                     }}
                     className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center justify-center gap-1 shadow"
+                    disabled={presetOperation.busy}
                     title="このデッキを選んでソロプレイ（一人回し）を開始"
                   >
                     <Play className="w-3 h-3 fill-white" />
@@ -437,9 +448,10 @@ export const HomePage: React.FC<HomeProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      onSelectPresetDeck(preset.deck, 'p2p');
+                      selectPreset(preset.id, 'p2p');
                     }}
                     className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition flex items-center justify-center gap-1 shadow"
+                    disabled={presetOperation.busy}
                     title="このデッキを選んでP2P通信対戦の部屋を作成"
                   >
                     <Users className="w-3 h-3" />

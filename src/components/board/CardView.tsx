@@ -1,6 +1,7 @@
+import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
-import { CARD_DATABASE } from '../../data/cardDatabase';
+import { getCardMaster } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
 import { getEffectiveGeneratedEnergy } from '../../domain/energy';
@@ -78,6 +79,7 @@ export const CardView: React.FC<CardViewProps> = ({
   isCompact = false,
   accessibleLabel,
 }) => {
+  useCardCatalog();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -136,11 +138,11 @@ export const CardView: React.FC<CardViewProps> = ({
 
   const masterCard =
     card.bp === null || card.bp === undefined
-      ? CARD_DATABASE.find((c) => c.code === card.code)
+      ? getCardMaster(card.code)
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
-  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? getCardMaster(card.code)?.hasGenEnergyPlus ?? false;
   const currentEnergy = getEffectiveGeneratedEnergy(card);
   const energyModifier = card.genEnergyModifier || 0;
   const frontLineEnergy = card.frontLineGeneratedEnergy || 0;
