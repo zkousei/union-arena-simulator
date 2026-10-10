@@ -74,7 +74,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800 text-xs">
+    <div className="flex flex-col w-full min-w-0 h-full bg-slate-900 border-r border-slate-800 text-xs">
       {operation.busy && <p role="status" className="p-3">選択した作品のカードデータを読み込み中…</p>}
       {operation.error && <div role="alert" className="p-3 text-amber-200">カードデータを取得できませんでした。<button type="button" className="ml-2 underline" onClick={() => setAttempt((n) => n + 1)}>作品データを再試行</button><button type="button" className="ml-2 underline" onClick={() => window.location.reload()}>ページを再読み込み</button></div>}
       {/* フィルターヘッダー */}
