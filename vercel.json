@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/tcg-plus/api/user/deck/url_code",
+      "destination": "https://api.bandai-tcg-plus.com/api/user/deck/url_code"
+    },
+    {
+      "source": "/api/tcg-plus/api/user/deck/recipe",
+      "destination": "https://api.bandai-tcg-plus.com/api/user/deck/recipe"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

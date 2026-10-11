@@ -201,6 +201,53 @@ describe('bandaiTcgPlusService', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
+    it('uses only same-origin endpoints and preserves the recipe query parameters', async () => {
+      const mockFetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ success: { game_title_id: 9, url_code: 'JUZ.JU/!!!' } }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ success: { main_deck: madokaRecipe } }) });
+      global.fetch = mockFetch;
+      const recipe = await fetchBandaiDeckRecipe('ejRrm86RAhAD5G6Z');
+      expect(recipe.mainDeck).toEqual(madokaRecipe);
+      expect(mockFetch.mock.calls[0][0]).toBe('/api/tcg-plus/api/user/deck/url_code?deck_code=ejRrm86RAhAD5G6Z');
+      expect(mockFetch.mock.calls[1][0]).toBe('/api/tcg-plus/api/user/deck/recipe?url_code=JUZ.JU%2F&game_title_id=9&encode=0&app_version=9.9.9');
+    });
+
+    it('reports a failed production route without sending the deck code to third-party proxies', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+      global.fetch = mockFetch;
+      await expect(fetchBandaiDeckRecipe('ejRrm86RAhAD5G6Z')).rejects.toThrow(/通信.*404/);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['network', 'invalid-json'])('cleans up a %s failure without using another proxy', async kind => {
+      vi.useFakeTimers();
+      try {
+        const mockFetch = vi.fn();
+        if (kind === 'network') mockFetch.mockRejectedValue(new Error('offline'));
+        else mockFetch.mockResolvedValue({ ok: true, json: async () => { throw new SyntaxError('HTML instead of JSON'); } });
+        global.fetch = mockFetch;
+        await expect(fetchBandaiDeckRecipe('ejRrm86RAhAD5G6Z')).rejects.toThrow(/再試行/);
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally { vi.useRealTimers(); }
+    });
+
+    it('keeps the timeout active while reading the response body and clears it on failure', async () => {
+      vi.useFakeTimers();
+      try {
+        const mockFetch = vi.fn().mockImplementation(async (_url, { signal }) => ({
+          ok: true,
+          json: () => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })),
+        }));
+        global.fetch = mockFetch;
+        const checked = expect(fetchBandaiDeckRecipe('ejRrm86RAhAD5G6Z')).rejects.toThrow(/通信/);
+        await vi.advanceTimersByTimeAsync(8000);
+        await checked;
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally { vi.useRealTimers(); }
+    });
+
     it('throws error when deck_code is not found or invalid', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
