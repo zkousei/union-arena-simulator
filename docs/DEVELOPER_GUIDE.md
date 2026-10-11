@@ -230,7 +230,7 @@ BANDAI TCG+ のデッキコード／レシピURLから直接50枚デッキを構
 - **2段階解決**:
   1. `GET https://api.bandai-tcg-plus.com/api/user/deck/url_code?deck_code={code}` -> `url_code`, `game_title_id: 9`
   2. `GET https://api.bandai-tcg-plus.com/api/user/deck/recipe?url_code={url_code}&game_title_id=9&encode=0&app_version=9.9.9` -> `main_deck`（カード番号・枚数・属性）
-- **プロキシ**: 開発環境は `vite.config.ts` の `/api/tcg-plus` リバースプロキシを経由し、静的ホスティング時は外部プロキシ（`allorigins`）にフォールバック。
+- **プロキシ**: ブラウザは同一オリジンの `/api/tcg-plus` を利用します。開発環境は `vite.config.ts`、Vercel本番は `vercel.json` の外部rewriteで公式APIへ転送します。本番の転送対象は `url_code` と `recipe` の2経路のみです。外部CORSプロキシへのフォールバックはありません。本文のJSON読み込みまで8秒のタイムアウトを維持し、通信失敗時は再試行を案内します。ViteのモックE2EだけではVercelの転送自体を検証できないため、デプロイ後に公式コードの実取得を確認してください。
 - **カード照合**: プール内のカード番号末尾一致で既存カードに紐付け。未登録新弾カードはAPIレスポンスのメタデータから自動フォールバック生成。
 
 ---

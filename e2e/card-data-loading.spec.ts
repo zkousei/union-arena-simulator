@@ -306,6 +306,34 @@ for (const width of [1280, 390]) {
     await expect(dialog).toHaveCount(0);
   });
 
+  test(`retries a failed TCG+ request without changing the deck at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    let fail = true;
+    let thirdPartyRequests = 0;
+    await page.route('**/api.allorigins.win/**', route => { thirdPartyRequests++; return route.abort(); });
+    await page.route('**/api/tcg-plus/**', route => {
+      if (fail) return route.fulfill({ status: 503, body: 'Service unavailable' });
+      return route.fulfill({ json: route.request().url().includes('/url_code?') ?
+        { success: { code: 200, game_title_id: 9, url_code: 'fixture!!!' } } :
+        { success: { code: 200, main_deck: madokaRecipe } } });
+    });
+    await page.goto('/deck-builder');
+    const original = await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'));
+    await page.getByRole('button', { name: '公式から取得' }).click();
+    await page.getByPlaceholder('https://www.bandai-tcg-plus.com/deck_code_recipe/lFv8V8TK9AD3EvVn').fill('ejRrm86RAhAD5G6Z');
+    await page.getByRole('button', { name: 'レシピを取得' }).click();
+    await expect(page.getByRole('alert')).toContainText('HTTP 503');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath('tcg-network-error.png') });
+    await expect(page.getByRole('button', { name: 'レシピを取得' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'このデッキを作成' })).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'))).toBe(original);
+    fail = false;
+    await page.getByRole('button', { name: 'レシピを取得' }).click();
+    await expect(page.getByText('合計 50 枚 (15 種)')).toBeVisible();
+    expect(thirdPartyRequests).toBe(0);
+  });
+
   test(`blocks unknown TCG+ cards and retries without changing a deck at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(() => localStorage.setItem('UA_CUSTOM_CARDS', JSON.stringify([{

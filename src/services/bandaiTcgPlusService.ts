@@ -47,60 +47,28 @@ export function extractDeckCode(input: string): string | null {
   return null;
 }
 
-/**
- * BANDAI TCG+ API からデータを取得（Viteローカルプロキシ優先、外部プロキシへのフェイルオーバー）
- */
+/** Fetch through the same-origin route provided by Vite and Vercel. */
 async function fetchBandaiApi<T>(path: string, timeoutMs: number = 8000): Promise<T> {
-  const isBrowser = typeof window !== 'undefined';
-  const fullTargetUrl = `https://api.bandai-tcg-plus.com${path}`;
-
-  // 1. ローカル開発環境 (Viteプロキシ: /api/tcg-plus)
-  if (isBrowser) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`/api/tcg-plus${path}`, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`BANDAI TCG+ との通信に失敗しました (HTTP ${res.status})。時間をおいて再試行してください。`);
+    }
+    // Keep the timeout active until the JSON body has finished loading.
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      const res = await fetch(`/api/tcg-plus${path}`, { signal: controller.signal });
-      clearTimeout(timer);
-      if (res.ok) {
-        return (await res.json()) as T;
-      }
-    } catch {
-      // 外部プロキシへフォールバック
-    }
-  }
-
-  // 2. allorigins raw プロキシ
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(fullTargetUrl)}`;
-    const res = await fetch(proxyUrl, { signal: controller.signal });
-    clearTimeout(timer);
-    if (res.ok) {
       return (await res.json()) as T;
+    } catch {
+      if (controller.signal.aborted) throw new Error('BANDAI TCG+ との通信がタイムアウトしました。時間をおいて再試行してください。');
+      throw new Error('BANDAI TCG+ の応答を読み取れませんでした。時間をおいて再試行してください。');
     }
-  } catch {
-    // 失敗時は次へ
-  }
-
-  // 3. allorigins get (JSON) プロキシ
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const jsonProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(fullTargetUrl)}`;
-    const res = await fetch(jsonProxyUrl, { signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('BANDAI TCG+')) throw error;
+    throw Object.assign(new Error('BANDAI TCG+ との通信に失敗しました。時間をおいて再試行してください。'), { cause: error });
+  } finally {
     clearTimeout(timer);
-    if (res.ok) {
-      const json = await res.json();
-      if (json?.contents) {
-        return JSON.parse(json.contents) as T;
-      }
-    }
-  } catch {
-    // 失敗時はエラー
   }
-
-  throw new Error('BANDAI TCG+ との通信に失敗しました。デッキコードが正しいかご確認ください。');
 }
 
 /**
