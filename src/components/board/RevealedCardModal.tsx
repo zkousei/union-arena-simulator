@@ -1,3 +1,4 @@
+import { formatRequiredEnergyColors } from '../../data/cardEnergyRules.js';
 import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../types/card';
@@ -205,7 +206,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span>種別: <strong className="text-slate-200">{card.cardType}</strong></span>
                   <span>•</span>
-                  <span>色: <strong className="text-purple-300">{card.color}</strong></span>
+                  <span>{card.reqEnergyColors ? '必要色:' : '色:'} <strong className="text-purple-300">{card.reqEnergyColors ? formatRequiredEnergyColors(card) : card.color}</strong></span>
                 </div>
               </div>
 

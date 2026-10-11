@@ -1,3 +1,4 @@
+import { isRequiredEnergyColors } from './cardEnergyRules.js';
 import type { CardMaster } from './cardDatabase';
 
 const cardTypes = new Set(['CHARACTER', 'EVENT', 'FIELD', 'ACTION_POINT']);
@@ -12,7 +13,7 @@ export function isCardMaster(value: unknown): value is CardMaster {
   const optionalBooleans = ['hasBpPlus', 'hasGenEnergyPlus', 'isParallel', 'isUnrevealed'];
   return strings.every((key) => typeof card[key] === 'string') &&
     ['code', 'name', 'titleCode'].every((key) => (card[key] as string).length > 0) &&
-    cardTypes.has(card.cardType as string) && colors.has(card.color as string) &&
+    isRequiredEnergyColors(card.reqEnergyColors) && cardTypes.has(card.cardType as string) && colors.has(card.color as string) &&
     (card.bp === null || (typeof card.bp === 'number' && Number.isFinite(card.bp))) &&
     ['apCost', 'reqEnergy', 'genEnergy'].every((key) => typeof card[key] === 'number' && Number.isFinite(card[key])) &&
     Array.isArray(card.traits) && card.traits.every((trait) => typeof trait === 'string') &&

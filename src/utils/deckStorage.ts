@@ -96,7 +96,7 @@ function readStoredDecks(): { entries: unknown[] | null; raw: string | null } {
 function repairStoredCard(value: unknown): CardMaster | null {
   if (!isRecord(value) || typeof value.code !== 'string') return null;
   const master = requireCardMaster(value.code);
-  const card = master ? { ...value, ...master } : value;
+  const card = master ? { ...value, ...master, reqEnergyColors: master.reqEnergyColors, hasBpPlus: master.hasBpPlus ?? false, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false } : value;
   return isValidImportedCard(card) ? card as unknown as CardMaster : null;
 }
 
@@ -239,7 +239,16 @@ export function importDeckFromJson(jsonStr: string): UserDeck {
     titleCode: parsed.titleCode,
     items: (parsed.items as UserDeck['items']).map((item) => {
       const master = requireCardMaster(item.card.code);
-      return master ? { ...item, card: { ...item.card, genEnergy: master.genEnergy, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false } } : item;
+      return master ? {
+        ...item,
+        card: {
+          ...item.card,
+          ...master,
+          reqEnergyColors: master.reqEnergyColors,
+          hasBpPlus: master.hasBpPlus ?? false,
+          hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
+        },
+      } : item;
     }),
     ...(parsed.apCards !== undefined ? { apCards: parsed.apCards as UserDeck['apCards'] } : {}),
     updatedAt: Date.now(),

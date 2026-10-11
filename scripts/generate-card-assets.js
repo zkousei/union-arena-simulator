@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { validateOfficialCardDataset } from '../src/data/officialCardValidation.js';
 
 export function splitCardAssets(cards) {
+  validateOfficialCardDataset(cards);
   if (!Array.isArray(cards) || cards.length === 0) throw new Error('Empty card source');
   const groups = new Map();
   const codes = new Set();

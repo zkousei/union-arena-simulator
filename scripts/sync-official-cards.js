@@ -1,7 +1,12 @@
+import { parseRequiredEnergyColors } from '../src/data/cardEnergyRules.js';
+import { decodeCardText } from '../src/data/officialCardText.js';
+import { validateOfficialCardDetail, validateOfficialCardDataset } from '../src/data/officialCardValidation.js';
+import { publishCardData } from './card-data-quality.js';
 // Official Card Synchronizer for Union Arena Simulator
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { inferCardType, isActionPointCardNumber, parseCardCategory, hasReviewedOfficialBpDash } from '../src/data/cardTypeRules.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,28 +40,23 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
   const nameMatch = detailHtml.match(/<h2 class="cardNameCol">\s*([\s\S]*?)\s*(?:<span class="rubyData">[\s\S]*?<\/span>)?\s*<\/h2>/);
   let name = nameMatch ? nameMatch[1].replace(/<[^>]+>/g, '').trim() : '';
   if (!name) {
-    const altNameMatch = detailHtml.match(/<dd class="cardDataImgCol"><img[^>]*alt="[^"]*\s+([^"]+)"/);
+    const altNameMatch = detailHtml.match(/<dd class="cardDataImgCol(?: [^"]*)?">\s*<img[^>]*alt="[^"]*\s+([^"]+)"/);
     name = altNameMatch ? altNameMatch[1] : cardNo;
   }
 
   const catMatch = detailHtml.match(/<dl class="cardDataCol categoryData">[\s\S]*?<dd class="cardDataContents">\s*([^<]+)\s*<\/dd>/);
   const catRaw = catMatch ? catMatch[1].trim() : '';
-  let cardType = 'CHARACTER';
-  if (catRaw.includes('イベント') || catRaw.includes('EVENT')) {
-    cardType = 'EVENT';
-  } else if (catRaw.includes('フィールド') || catRaw.includes('FIELD')) {
-    cardType = 'FIELD';
-  } else if (catRaw.includes('アクションポイント') || catRaw.includes('AP') || cardNo.includes('AP')) {
-    cardType = 'ACTION_POINT';
-  }
+  const cardType = inferCardType(catRaw, cardNo);
 
   const needMatch = detailHtml.match(/<dl class="cardDataCol needEnergyData">[\s\S]*?<dd class="cardDataContents">([\s\S]*?)<\/dd>/);
   let color = 'PURPLE';
   let reqEnergy = 0;
+  let reqEnergyColors;
   if (needMatch) {
     const altMatch = needMatch[1].match(/alt="([^"]+)"/);
     if (altMatch) {
       const altText = altMatch[1];
+      reqEnergyColors = parseRequiredEnergyColors(altText);
       if (altText.includes('紫')) color = 'PURPLE';
       else if (altText.includes('緑')) color = 'GREEN';
       else if (altText.includes('赤')) color = 'RED';
@@ -81,16 +81,16 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
       if (numMatch) {
         bp = parseInt(numMatch[0], 10);
       }
-      hasBpPlus = /[+＋]/.test(rawBp);
+      hasBpPlus = /[+＋]|&#(?:43|x2b);|&plus;/i.test(rawBp);
     }
   }
 
   const traitMatch = detailHtml.match(/<dl class="cardDataCol attributeData">[\s\S]*?<dd class="cardDataContents">\s*([\s\S]*?)\s*<\/dd>/);
   let traits = [];
   if (traitMatch) {
-    const rawTraits = traitMatch[1].replace(/<[^>]+>/g, '').trim();
+    const rawTraits = decodeCardText(traitMatch[1].replace(/<[^>]+>/g, '').trim());
     if (rawTraits && rawTraits !== '-') {
-      traits = rawTraits.split(/[/／・]/).map(t => t.trim()).filter(Boolean);
+      traits = rawTraits.split(/[/／]/).map(t => t.trim()).filter(Boolean);
     }
   }
 
@@ -138,7 +138,7 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
     if (/バウンス|bounce/i.test(trg)) triggers.push('BOUNCE');
   }
 
-  const imgMatch = detailHtml.match(/<dd class="cardDataImgCol"><img[^>]*src="([^"]+)"/);
+  const imgMatch = detailHtml.match(/<dd class="cardDataImgCol(?: [^"]*)?">\s*<img[^>]*src="([^"]+)"/);
   let imageUrl = fallbackImgUrl;
   if (imgMatch) {
     imageUrl = imgMatch[1].startsWith('http') ? imgMatch[1] : `https://www.unionarena-tcg.com${imgMatch[1]}`;
@@ -176,8 +176,8 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
   return {
     code: cardNo,
     baseCode,
-    name,
-    title,
+    name: decodeCardText(name),
+    title: decodeCardText(title),
     titleCode,
     cardType,
     color,
@@ -185,11 +185,12 @@ export function parseCardFromDetailHtml(detailHtml, cardNo, fallbackImgUrl) {
     hasBpPlus,
     apCost,
     reqEnergy,
+    ...(reqEnergyColors ? { reqEnergyColors } : {}),
     genEnergy,
     hasGenEnergyPlus,
     traits,
     triggers,
-    effectText,
+    effectText: decodeCardText(effectText),
     imageUrl,
     rarity,
     isParallel,
@@ -240,17 +241,16 @@ async function fetchLatestOfficialSeriesList() {
     console.log(`Discovered ${seriesList.length} total series from official website.`);
     return seriesList;
   } catch (err) {
-    console.warn('Could not fetch latest series list dynamically, falling back to local list:', err.message);
+    console.warn('Could not verify the complete official series list:', err.message);
     return [];
   }
 }
 
-async function syncSeries(series, includeParallel = false, existingCardMap = new Map()) {
+export async function syncSeries(series, includeParallel = false, existingCardMap = new Map(), fetchHtml = async url => (await fetchWithRetry(url, { signal: AbortSignal.timeout(20_000) })).text(), refreshExisting = false) {
   const seriesId = series.id || series.seriesId;
   console.log(`\n=== Checking series: ${series.name} (${seriesId}) ===`);
   const listUrl = `https://www.unionarena-tcg.com/jp/cardlist/?search=true&series=${seriesId}`;
-  const res = await fetchWithRetry(listUrl);
-  const html = await res.text();
+  const html = await fetchHtml(listUrl);
 
   const regex = /href="\.\/detail_iframe\.php\?card_no=([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]+)"[^>]*alt="([^"]+)"/g;
   let match;
@@ -263,12 +263,18 @@ async function syncSeries(series, includeParallel = false, existingCardMap = new
     const imgUrl = rawImg.startsWith('http') ? rawImg : `https://www.unionarena-tcg.com${rawImg}`;
     cardsSummary.push({ cardNo, imgUrl });
   }
+  if (!cardsSummary.length) throw new Error(`No verified card list for series ${seriesId}`);
+  const expectedCodes = new Set(Array.from(html.matchAll(/href=["'][^"']*detail_iframe\.php\?card_no=([^"'&]+)/g), match => match[1]).filter(code => includeParallel || !/_p\d+$/i.test(code)));
+  const parsedCodes = new Set(cardsSummary.map(card => card.cardNo));
+  if (expectedCodes.size !== parsedCodes.size || [...expectedCodes].some(code => !parsedCodes.has(code))) {
+    throw new Error(`Incomplete card list parsing for series ${seriesId}`);
+  }
 
   // 既に取得済みのカードをフィルタリング（増分同期で高速化）
   const needsFetch = cardsSummary.filter(({ cardNo }) => {
     const existing = existingCardMap.get(cardNo);
     return (
-      !existing ||
+      refreshExisting || !existing ||
       !existing.rarity ||
       !existing.name ||
       (existing.cardType === 'CHARACTER' && existing.bp === null)
@@ -288,15 +294,16 @@ async function syncSeries(series, includeParallel = false, existingCardMap = new
       const promises = chunk.map(async ({ cardNo, imgUrl }) => {
         try {
           const detailUrl = `https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(cardNo)}`;
-          const detailRes = await fetchWithRetry(detailUrl);
-          const detailHtml = await detailRes.text();
+          const detailHtml = await fetchHtml(detailUrl);
+          validateOfficialCardDetail(detailHtml, cardNo);
           const card = parseCardFromDetailHtml(detailHtml, cardNo, imgUrl);
+          validateOfficialCardDetail(detailHtml, cardNo, card);
           card.seriesId = seriesId;
           card.seriesName = series.name;
           return card;
         } catch (err) {
           console.error(`Error fetching ${cardNo}:`, err.message);
-          return null;
+          throw err;
         }
       });
 
@@ -318,12 +325,120 @@ export function repairSynchronizedTriggers(cards) {
   );
 }
 
+// Build a complete result before writing. Unknown categories or network failures
+// abort the repair; never infer a stored card's type from BP or its name.
+export async function repairSynchronizedCardTypes(cards, fetchDetail) {
+  const updates = new Map();
+  const targets = cards.filter((card) => card.cardType === 'ACTION_POINT' && !isActionPointCardNumber(card.code));
+  for (let offset = 0; offset < targets.length; offset += 8) {
+    const results = await Promise.all(targets.slice(offset, offset + 8).map(async (card) => {
+      const html = await fetchDetail(card.code);
+      const category = html.match(/<dl class="cardDataCol categoryData">[\s\S]*?<dd class="cardDataContents">\s*([^<]+)\s*<\/dd>/)?.[1] || '';
+      if (!parseCardCategory(category)) throw new Error(`Missing card category for ${card.code}`);
+      const number = html.match(/<span class="cardNumData(?: [^"]*)?">\s*([^<]+)\s*<\/span>/)?.[1].trim();
+      const base = card.code.replace(/_p\d+$/i, '');
+      const image = html.match(/<dd class="cardDataImgCol(?: [^"]*)?">\s*<img[^>]*src="([^"]+)"/)?.[1];
+      if (number !== card.code && (number !== base || !/_p\d+$/i.test(card.code) || image?.split('/').pop()?.split('?')[0] !== `${card.code.replace('/', '_')}.png`)) {
+        throw new Error(`Unverified official identity: ${card.code}`);
+      }
+      const cardType = inferCardType(category, card.code);
+      return [card.code, cardType === card.cardType ? card : { ...card, cardType }];
+    }));
+    results.forEach(([code, card]) => updates.set(code, card));
+  }
+  return cards.map((card) => updates.get(card.code) || card);
+}
+
+// Repair numeric stats from official text; preserve effects, identity and AP assets.
+// A response for another card or an unknown HTML value must never become data.
+export async function repairSynchronizedCardStats(cards, fetchDetail) {
+  const updates = new Map();
+  const targets = cards.filter(card => card.cardType !== 'ACTION_POINT' && !card.isUnrevealed);
+  for (let offset = 0; offset < targets.length; offset += 8) {
+    const results = await Promise.all(targets.slice(offset, offset + 8).map(async card => {
+      const html = await fetchDetail(card.code);
+      const fail = () => { throw new Error(`Unverified printed stats for ${card.code}`); };
+      const number = html.match(/<span class="cardNumData">\s*([^<]+)\s*<\/span>/)?.[1].trim();
+      const baseCode = card.code.replace(/_p\d+$/i, '');
+      if (number !== card.code) {
+        const image = html.match(/<dd class="cardDataImgCol(?: [^"]*)?">\s*<img[^>]*src="([^"]+)"/)?.[1];
+        // Parallel detail headings use the base number; the image identifies the printing.
+        if (number !== baseCode || !/_p\d+$/i.test(card.code) || image?.split('/').pop()?.split('?')[0] !== `${card.code.replace('/', '_')}.png`) fail();
+      }
+      const section = name => html.match(new RegExp(`<dl class="cardDataCol ${name}">[\\s\\S]*?<dd class="cardDataContents">([\\s\\S]*?)<\\/dd>`))?.[1];
+      const plain = value => value?.replace(/<[^>]+>/g, '').trim();
+      const category = plain(section('categoryData')) || '';
+      if (!parseCardCategory(category)) fail();
+      const type = inferCardType(category, card.code);
+      if (type === 'ACTION_POINT') fail();
+      const bp = plain(section('bpData'))?.replace(/&#xB1;|&#177;|&plusmn;/gi, '±').replace(/&#x2B;|&#43;|&plus;/gi, '+');
+      if (type === 'CHARACTER' ? !/^\d+[+＋±-]?$/.test(bp || '') && !(hasReviewedOfficialBpDash(card.code) && bp === '-') : bp !== undefined && bp !== '-') fail();
+      if (!/^\d+$/.test(plain(section('apData')) || '')) fail();
+      const need = section('needEnergyData')?.match(/alt="([^"]+)"/)?.[1];
+      if (!/^[紫緑赤青黄](?:[／/][紫緑赤青黄])*(?:\d+|-)$/.test(need || '')) fail();
+      const energy = section('generatedEnergyData');
+      if (energy === undefined) fail();
+      const icons = energy.match(/<img\b[^>]*>/g) || [];
+      if (icons.some(icon => !/^[紫緑赤青黄]+[+＋]?$/.test(icon.match(/alt="([^"]+)"/)?.[1] || ''))) fail();
+      if (!icons.length && !['', '-'].includes(plain(energy))) fail();
+      const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
+      const fields = ['cardType', 'bp', 'hasBpPlus', 'reqEnergy', 'apCost', 'genEnergy', 'hasGenEnergyPlus', 'reqEnergyColors'];
+      // The current color model cannot represent a choice of colors. Preserve it
+      // rather than turning a multi-color requirement into a guessed single color.
+      if (!/[／/]/.test(need)) fields.push('color');
+      const stats = Object.fromEntries(fields.map(field => [field, parsed[field]]));
+      return [card.code, fields.every(field => (field.startsWith('has') ? card[field] ?? false : card[field]) === stats[field]) ? card : { ...card, ...stats }];
+    }));
+    results.forEach(([code, card]) => updates.set(code, card));
+  }
+  return cards.map(card => updates.get(card.code) || card);
+}
+
+export async function repairSynchronizedCardText(cards, fetchDetail) {
+  const updates = new Map();
+  const targets = cards.filter(card => card.cardType !== 'ACTION_POINT' && !card.isUnrevealed);
+  for (let offset = 0; offset < targets.length; offset += 8) {
+    await Promise.all(targets.slice(offset, offset + 8).map(async card => {
+      const html = await fetchDetail(card.code);
+      validateOfficialCardDetail(html, card.code);
+      const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
+      const fields = ['name', 'title', 'traits', 'effectText'];
+      validateOfficialCardDetail(html, card.code, parsed);
+      const text = Object.fromEntries(fields.map(field => [field, parsed[field]]));
+      updates.set(card.code, fields.every(field => JSON.stringify(card[field]) === JSON.stringify(parsed[field])) ? card : { ...card, ...text });
+    }));
+  }
+  return cards.map(card => updates.get(card.code) || card);
+}
+
+// Validate source and parsed values before a numeric-only repair can be published.
+export async function repairSynchronizedCardEnergy(cards, fetchDetail) {
+  const updates = new Map();
+  const targets = cards.filter(card => card.cardType !== 'EVENT' && card.cardType !== 'ACTION_POINT' && !card.isUnrevealed);
+  for (let offset = 0; offset < targets.length; offset += 8) {
+    const batch = await Promise.all(targets.slice(offset, offset + 8).map(async card => {
+      const html = await fetchDetail(card.code);
+      validateOfficialCardDetail(html, card.code);
+      const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
+      validateOfficialCardDetail(html, card.code, parsed);
+      return [card.code, { ...card, genEnergy: parsed.genEnergy, hasGenEnergyPlus: parsed.hasGenEnergyPlus }];
+    }));
+    batch.forEach(([code, updated]) => updates.set(code, updated));
+  }
+  return cards.map(card => updates.get(card.code) || card);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const syncAll = args.includes('--all');
   const includeParallel = args.includes('--include-parallel');
   const refreshEnergy = args.includes('--refresh-energy');
   const repairTriggers = args.includes('--repair-triggers');
+  const repairCardTypes = args.includes('--repair-card-types');
+  const repairCardStats = args.includes('--repair-card-stats');
+  const repairCardText = args.includes('--repair-card-text');
+  const dryRun = args.includes('--dry-run');
+  const refreshExisting = args.includes('--refresh');
 
   const outputPath = path.resolve(__dirname, '../src/data/officialCards.json');
   let existingCards = [];
@@ -331,48 +446,73 @@ async function main() {
     try {
       existingCards = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
     } catch (e) {
-      console.warn('Could not read existing officialCards.json:', e.message);
+      throw new Error(`Could not read existing officialCards.json: ${e.message}`, { cause: e });
     }
+  }
+
+  if (!Array.isArray(existingCards)) throw new Error('Invalid existing card dataset');
+  const publish = cards => {
+    const report = publishCardData(outputPath, cards, existingCards, { dryRun });
+    console.log(`${dryRun ? 'Dry run (not saved)' : 'Validated update'}: ${report.total} cards, ${report.added} added, ${report.updated} changed.`);
+    console.log(`Existing official text differences requiring official-text/errata review: ${report.pendingPrintingReviews.length}`);
+    for (const change of report.changes) console.log(`${change.code}: ${change.fields.join(', ')}`);
+    return report;
+  };
+
+  if (repairCardText) {
+    const repaired = await repairSynchronizedCardText(existingCards, async code => {
+      const response = await fetchWithRetry(`https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(code)}`, { signal: AbortSignal.timeout(20_000) });
+      return response.text();
+    });
+    publish(repaired);
+    return;
+  }
+
+  if (repairCardStats) {
+    if (!Array.isArray(existingCards) || !existingCards.length) throw new Error('No existing cards to verify');
+    let fetched = 0;
+    const repaired = await repairSynchronizedCardStats(existingCards, async code => {
+      const response = await fetchWithRetry(`https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(code)}`, { signal: AbortSignal.timeout(20_000) });
+      const html = await response.text();
+      if (++fetched % 256 === 0) console.log(`Verified ${fetched} official details...`);
+      return html;
+    });
+    publish(repaired);
+    console.log(`Repaired printed stats for ${repaired.filter((card, index) => card !== existingCards[index]).length} cards; AP and unpublished cards preserved.`);
+    return;
+  }
+
+  if (repairCardTypes) {
+    const repaired = await repairSynchronizedCardTypes(existingCards, async (code) => {
+      const url = `https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(code)}`;
+      const response = await fetchWithRetry(url, { signal: AbortSignal.timeout(20_000) });
+      return response.text();
+    });
+    const changed = repaired.filter((card, index) => card !== existingCards[index]).length;
+    publish(repaired);
+    console.log(`Repaired ${changed} card types from official categories; all other fields preserved.`);
+    return;
   }
 
   if (repairTriggers) {
     const repaired = repairSynchronizedTriggers(existingCards);
     const changed = repaired.filter((card, index) => card !== existingCards[index]).length;
-    fs.writeFileSync(outputPath, JSON.stringify(repaired, null, 2), 'utf-8');
+    publish(repaired);
     console.log(`Repaired ${changed} synchronized trigger entries without network access.`);
     return;
   }
 
   if (refreshEnergy) {
-    // Repair the synchronized card data without changing other card fields or
-    // depending on which series are selected for a normal incremental sync.
-    const refreshed = [];
-    for (let index = 0; index < existingCards.length; index += 16) {
-      const chunk = existingCards.slice(index, index + 16);
-      const results = await Promise.all(chunk.map(async (card) => {
-        if (card.cardType === 'EVENT' || (card.cardType === 'ACTION_POINT' && card.name.includes('アクションポイント'))) return card;
-        const detailUrl = `https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(card.code)}`;
-        const response = await fetchWithRetry(detailUrl);
-        const html = await response.text();
-        if (!html.includes('generatedEnergyData')) {
-          throw new Error(`Missing generated energy for ${card.code}`);
-        }
-        const parsed = parseCardFromDetailHtml(html, card.code, card.imageUrl);
-        const updated = { ...card, genEnergy: parsed.genEnergy };
-        if (parsed.hasGenEnergyPlus) updated.hasGenEnergyPlus = true;
-        else delete updated.hasGenEnergyPlus;
-        return updated;
-      }));
-      refreshed.push(...results);
-      if (refreshed.length % 320 === 0 || refreshed.length === existingCards.length) {
-        console.log(`Energy refresh: ${refreshed.length}/${existingCards.length}`);
-      }
-    }
-    fs.writeFileSync(outputPath, JSON.stringify(refreshed, null, 2), 'utf-8');
-    console.log(`Refreshed generated energy for ${refreshed.length} cards.`);
+    const refreshed = await repairSynchronizedCardEnergy(existingCards, async code => {
+      const detailUrl = `https://www.unionarena-tcg.com/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(code)}`;
+      return (await fetchWithRetry(detailUrl, { signal: AbortSignal.timeout(20_000) })).text();
+    });
+    publish(refreshed);
+    console.log(`Processed ${refreshed.length} cards for generated-energy refresh; AP, events and unpublished cards preserved.`);
     return;
   }
 
+  if (existingCards.length) validateOfficialCardDataset(existingCards);
   const cardMap = new Map();
   existingCards.forEach((c) => cardMap.set(c.code, c));
   console.log(`Existing database has ${cardMap.size} cards.`);
@@ -384,40 +524,26 @@ async function main() {
     if (latestList.length > 0) {
       seriesList = latestList;
     } else {
-      // フォールバック: officialSeriesData.ts から全117シリーズ読み込み
-      const seriesDataFile = fs.readFileSync(path.resolve(__dirname, '../src/data/officialSeriesData.ts'), 'utf-8');
-      const matches = Array.from(seriesDataFile.matchAll(/\{\s*seriesId:\s*"([^"]+)",\s*name:\s*"([^"]+)"\s*\}/g));
-      seriesList = matches.map((m) => ({ id: m[1], name: m[2] }));
+      throw new Error('Cannot verify the complete official series list; no data saved.');
     }
     console.log(`Ready to sync ${seriesList.length} total series.`);
   }
 
-  let totalAdded = 0;
   for (let idx = 0; idx < seriesList.length; idx++) {
     const series = seriesList[idx];
-    try {
-      const { newCards } = await syncSeries(series, includeParallel, cardMap);
-      for (const card of newCards) {
-        cardMap.set(card.code, card);
-        totalAdded++;
-      }
-
-      // 中間セーブ（シリーズごとに定期保存し、途中で中断されても進捗を保護）
-      if (newCards.length > 0) {
-        const allCards = Array.from(cardMap.values());
-        fs.writeFileSync(outputPath, JSON.stringify(allCards, null, 2), 'utf-8');
-      }
-    } catch (err) {
-      console.error(`Failed to sync series ${series.id || series.seriesId}:`, err.message);
+    const { newCards } = await syncSeries(series, includeParallel, cardMap, undefined, refreshExisting);
+    for (const card of newCards) {
+      cardMap.set(card.code, card);
     }
   }
 
   const allCards = Array.from(cardMap.values());
+  const report = publish(allCards);
   console.log(`\n========================================`);
   console.log(`Sync completed!`);
-  console.log(`New cards added: ${totalAdded}`);
+  console.log(`New cards added: ${report.added}; existing cards updated: ${report.updated}`);
   console.log(`Total database size: ${allCards.length} cards.`);
-  console.log(`Saved to: ${outputPath}`);
+  console.log(`${dryRun ? 'Output not written (dry run)' : 'Saved to'}: ${outputPath}`);
   console.log(`========================================`);
 }
 

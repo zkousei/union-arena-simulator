@@ -21,6 +21,7 @@ export interface Card {
   bp: number | null;      // バトルポイント (キャラのみ)
   hasBpPlus?: boolean;    // BPに「+」表記があるカード（例: 4000+）
   apCost: number;         // APコスト (通常1)
+  reqEnergyColors?: CardColor[]; // 公式の必要エナジーに複数色が記載されている場合（掲載順）
   reqEnergy: number;      // 必要エナジー
   genEnergy: number;      // 発生エナジー (通常1〜2)
   hasGenEnergyPlus?: boolean; // 発生エナジーに「+」表記があるカード（例: 1+）

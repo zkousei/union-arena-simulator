@@ -3,6 +3,19 @@ import { expect, it } from 'vitest';
 // @ts-expect-error JavaScript generator is tested directly.
 import { splitCardAssets } from './generate-card-assets.js';
 import cards from '../src/data/officialCards.json';
+import { isActionPointCardNumber } from '../src/data/cardTypeRules.js';
+it('preserves official text BP including the explicitly reviewed dash', () => {
+  expect(cards.filter(card => card.cardType === 'CHARACTER' && !card.isUnrevealed && card.code !== 'UAPR/HTR-1-026').every(card => typeof card.bp === 'number' && Number.isFinite(card.bp))).toBe(true);
+  expect(cards.find(card => card.code === 'UAPB/GIM-2-004')).toMatchObject({ bp: 1000, hasBpPlus: true });
+  expect(cards.find(card => card.code === 'UAPR/HTR-1-026')).toMatchObject({ cardType: 'CHARACTER', bp: null });
+});
+it('keeps genuine AP cards and excludes promo characters from AP classification', () => {
+  expect(cards.filter((card) => card.cardType === 'ACTION_POINT').every((card) => isActionPointCardNumber(card.code))).toBe(true);
+  expect(cards.find((card) => card.code === 'UAPR/IMS_AP04')?.cardType).toBe('ACTION_POINT');
+  expect(cards.find((card) => card.code === 'UAPR/2023-AP01')?.cardType).toBe('ACTION_POINT');
+  expect(cards.find((card) => card.code === 'UAPR/BTR-P-001')?.cardType).toBe('CHARACTER');
+  expect(cards.find((card) => card.code === 'UAPR/MMM-1-002')?.cardType).toBe('CHARACTER');
+});
 it('preserves every field and card exactly once across generated shards', () => {
   const { index, groups } = splitCardAssets(cards);
   const byCode = new Map(Array.from(groups.values()).flat().map((card: { code: string }) => [card.code, card]));

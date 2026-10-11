@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "sync-cards": "node scripts/sync-official-cards.js",
+    "validate-cards": "node scripts/validate-card-data.js",
     "generate-card-assets": "node scripts/generate-card-assets.js",
     "predev": "npm run generate-card-assets",
     "prebuild": "npm run generate-card-assets",

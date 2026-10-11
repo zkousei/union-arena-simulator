@@ -216,3 +216,30 @@ it('still publishes new custom HTML cards and reports their addition', async () 
   expect(screen.getByText(/新規カード.*パースして追加しました/)).toBeTruthy();
   expect(screen.queryByText(/同梱の公式データを使用/)).toBeNull();
 });
+
+it('does not reuse a legacy synthesized card as an official TCG+ match', async () => {
+  const legacy = { ...card, code: 'UAPR/NEW-1-999', name: '旧補完カード', bp: null };
+  vi.spyOn(bandaiService, 'fetchBandaiDeckRecipe').mockResolvedValueOnce({ deckCode: 'fixture123', gameTitleId: 1, mainDeck: [{ id: 1, code: 'fixture', card_number: legacy.code, card_name: legacy.name, card_count: 1, image_url: '', cost: '0', color: '紫', type: 'キャラクター' }] });
+  const props = { isOpen: true, cardPool: [legacy], onClose: vi.fn(), onLoadDeckItems: vi.fn(), onAddCardsToPool: vi.fn() };
+  render(<OfficialImportModal {...props} />);
+  fireEvent.change(screen.getByPlaceholderText(/https:\/\/www\.bandai-tcg-plus/), { target: { value: 'fixture123' } });
+  fireEvent.click(screen.getByRole('button', { name: 'レシピを取得' }));
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(legacy.code));
+  expect(screen.queryByRole('button', { name: 'このデッキを作成' })).toBeNull();
+  expect(props.onLoadDeckItems).not.toHaveBeenCalled();
+});
+it('blocks an unknown TCG+ card without creating a partial deck and allows retry', async () => {
+  const raw = { id: 1, code: 'fixture', card_number: 'UAPR/NEW-1-999', card_name: '未収録', card_count: 1, image_url: '', cost: '0', color: '紫', type: 'キャラクター' };
+  vi.spyOn(bandaiService, 'fetchBandaiDeckRecipe').mockResolvedValueOnce({ deckCode: 'fixture123', gameTitleId: 1, mainDeck: [raw] }).mockResolvedValueOnce({ deckCode: 'fixture123', gameTitleId: 1, mainDeck: [{ ...raw, card_number: card.code }] });
+  const { props } = setup();
+  fireEvent.change(screen.getByPlaceholderText(/https:\/\/www\.bandai-tcg-plus/), { target: { value: 'fixture123' } });
+  fireEvent.click(screen.getByRole('button', { name: 'レシピを取得' }));
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('UAPR/NEW-1-999'));
+  expect(screen.queryByRole('button', { name: 'このデッキを作成' })).toBeNull();
+  expect(props.onAddCardsToPool).not.toHaveBeenCalled();
+  expect(props.onLoadDeckItems).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'レシピを取得' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'このデッキを作成' })).toBeTruthy());
+  fireEvent.click(screen.getByRole('button', { name: 'このデッキを作成' }));
+  expect(props.onLoadDeckItems).toHaveBeenCalledTimes(1);
+});

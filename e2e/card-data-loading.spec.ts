@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+const madokaRecipe = JSON.parse(readFileSync(new URL('../src/services/__tests__/fixtures/tcg-plus-madoka-recipe.json', import.meta.url), 'utf8'));
 const isJsonAsset = (url: URL) => url.pathname.endsWith('.json') && !url.searchParams.has('url') && !url.searchParams.has('import');
 const isIndex = (url: URL) => isJsonAsset(url) && /\/index(?:-[\w-]+)?\.json$/.test(url.pathname);
 const isShard = (id: string) => (url: URL) => isJsonAsset(url) && new RegExp(`/${id}(?:-[\\w-]+)?\\.json$`).test(url.pathname);
@@ -109,6 +111,60 @@ test('a delayed previous title does not replace a newly selected title', async (
   await expect(selector).toHaveValue('HUNTER×HUNTER');
   await expect(page.getByText('扇 要', { exact: true })).toHaveCount(0);
 });
+
+for (const width of [1280, 390]) {
+  test(`repairs cached promo type and printed stats in the library and saved deck at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => localStorage.setItem('UA_CUSTOM_CARDS', JSON.stringify([{
+      code: 'UAPR/BTR-P-001', name: 'ロボコ', title: '僕とロボコ', titleCode: 'BTR',
+      cardType: 'ACTION_POINT', color: 'COLORLESS', bp: 9999, hasBpPlus: true, apCost: 9,
+      reqEnergy: 9, genEnergy: 9, traits: [], triggers: [], effectText: '',
+    }])));
+    await page.goto('/deck-builder');
+    await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: '僕とロボコ' });
+    await page.getByPlaceholder('カード名、特徴、テキスト、レアリティで検索...').fill('UAPR/BTR-P-001');
+    await expect(page.getByRole('button', { name: 'デッキに追加' })).toHaveCount(1);
+    await expect(page.getByText('[ACTION_POINT]', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'デッキに追加' }).click();
+    if (width === 390) await page.getByRole('button', { name: /現在のデッキ/ }).click();
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('union_arena_saved_decks') || '[]'));
+    expect(stored[0].items[0].card.cardType).toBe('CHARACTER');
+    expect(stored[0].items[0].card.color).toBe('YELLOW');
+    expect(stored[0].items[0].card.name).toBe('ロボコ（本格SFアクションの世界線）');
+    expect(stored[0].items[0].card.effectText).toContain('このカードは〈ロボコ〉としても扱う。');
+    expect(stored[0].items[0].card).toMatchObject({ bp: 4000, hasBpPlus: false, apCost: 2, reqEnergy: 5, genEnergy: 1 });
+    await page.screenshot({ path: test.info().outputPath('promo-type-repaired.png') });
+  });
+
+  test(`TCG+ automatically selects regular printings for the Madoka recipe at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.route('**/api/tcg-plus/**', (route) => route.fulfill({ json: route.request().url().includes('/url_code?') ?
+      { success: { code: 0, game_title_id: 1, url_code: 'fixture' } } :
+      { success: { code: 0, main_deck: madokaRecipe } } }));
+    await page.goto('/deck-builder');
+    const original = await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'));
+    await page.getByRole('button', { name: '公式から取得' }).click();
+    const input = page.getByPlaceholder('https://www.bandai-tcg-plus.com/deck_code_recipe/lFv8V8TK9AD3EvVn');
+    await input.fill('fixture123');
+    await page.getByRole('button', { name: 'レシピを取得' }).click();
+    await expect(page.getByText('レシピ取得成功 (コード: fixture123)')).toBeVisible();
+    await expect(page.getByText('合計 50 枚 (15 種)')).toBeVisible();
+    await expect(input).toHaveValue('fixture123');
+    await expect(page.getByRole('button', { name: 'レシピを取得' })).toBeEnabled();
+    expect(await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'))).toBe(original);
+    await page.getByRole('button', { name: 'このデッキを作成', exact: true }).click();
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('union_arena_saved_decks') || '[]'));
+    expect(stored[0].items).toHaveLength(15);
+    expect(stored[0].items.reduce((sum: number, item: { count: number }) => sum + item.count, 0)).toBe(50);
+    const codes = stored[0].items.map((item: { card: { code: string } }) => item.card.code);
+    expect(codes).toContain('UA31BT/MMM-1-002');
+    expect(codes).toContain('UA31BT/MMM-1-007');
+    expect(codes).toContain('EX16BT/MMM-2-003');
+    expect(codes.some((code: string) => code.startsWith('UAPR/'))).toBe(false);
+    await page.screenshot({ path: test.info().outputPath('tcg-deck-created.png') });
+  });
+}
 
 test('TCG+ short card numbers load their official title before fallback mapping', async ({ page }) => {
   const shards: string[] = [];
@@ -226,5 +282,52 @@ for (const width of [1280, 390]) {
       await page.getByRole('button', { name: 'デッキ選択・セット', exact: true }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
     } finally { release(); }
+  });
+}
+
+for (const width of [1280, 390]) {
+  test(`shows and filters official multi-color requirements at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/deck-builder');
+    await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: '怪獣８号' });
+    await page.getByPlaceholder('カード名、特徴、テキスト、レアリティで検索...').fill('UAPR/KJ8-P-001');
+    for (const color of ['RED', 'BLUE', 'YELLOW', 'GREEN', 'PURPLE']) {
+      await page.getByRole('combobox').nth(1).selectOption(color);
+      await expect(page.getByRole('button', { name: 'デッキに追加' })).toHaveCount(1);
+    }
+    const energy = page.getByTitle('必要エナジー: 赤／青／黄／緑／紫 4');
+    await expect(energy).toBeVisible();
+    await energy.click();
+    const dialog = page.getByRole('dialog', { name: 'カード情報詳細' });
+    await expect(dialog).toContainText('必要色: 赤／青／黄／緑／紫');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath('multi-color-requirement.png') });
+    await dialog.getByTitle('閉じる (Esc)').click();
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test(`blocks unknown TCG+ cards and retries without changing a deck at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => localStorage.setItem('UA_CUSTOM_CARDS', JSON.stringify([{
+      code: 'UAPR/NEW-1-999', name: '過去の補完カード', title: '未知の作品', titleCode: 'NEW',
+      cardType: 'CHARACTER', color: 'GREEN', bp: 1000, apCost: 1,
+      reqEnergy: 1, genEnergy: 1, traits: [], triggers: [], effectText: '',
+    }])));
+    let unknown = true;
+    await page.route('**/api/tcg-plus/**', (route) => route.fulfill({ json: route.request().url().includes('/url_code?') ?
+      { success: { code: 0, game_title_id: 1, url_code: 'fixture' } } :
+      { success: { code: 0, main_deck: unknown ? [{ ...madokaRecipe[0], card_number: 'UAPR/NEW-1-999' }] : madokaRecipe } } }));
+    await page.goto('/deck-builder');
+    const original = await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'));
+    await page.getByRole('button', { name: '公式から取得' }).click();
+    await page.getByPlaceholder('https://www.bandai-tcg-plus.com/deck_code_recipe/lFv8V8TK9AD3EvVn').fill('fixture123');
+    await page.getByRole('button', { name: 'レシピを取得' }).click();
+    await expect(page.getByRole('alert')).toContainText('UAPR/NEW-1-999');
+    await expect(page.getByRole('button', { name: 'このデッキを作成' })).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('union_arena_saved_decks'))).toBe(original);
+    unknown = false;
+    await page.getByRole('button', { name: 'レシピを取得' }).click();
+    await expect(page.getByText('合計 50 枚 (15 種)')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'このデッキを作成' })).toBeEnabled();
   });
 }

@@ -62,6 +62,7 @@ describe('deckStorage', () => {
     ['missing title code', JSON.stringify({ name: 'deck', items: [] })],
     ['invalid item count', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: CARD_DATABASE[0], count: 0 }] })],
     ['unknown color', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], color: 'UNKNOWN' }, count: 1 }] })],
+    ['invalid requirement colors', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], reqEnergyColors: ['RED', 'UNKNOWN'] }, count: 1 }] })],
     ['unknown trigger', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], triggers: ['UNKNOWN'] }, count: 1 }] })],
     ['missing card data', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ count: 1 }] })],
     ['invalid generated energy plus flag', JSON.stringify({ name: 'deck', titleCode: 'CGH', items: [{ card: { ...CARD_DATABASE[0], hasGenEnergyPlus: 'yes' }, count: 1 }] })],
@@ -69,6 +70,16 @@ describe('deckStorage', () => {
     expect(() => importDeckFromJson(json)).toThrow('無効なデッキJSONフォーマットです');
   });
 
+  it('loads legacy multi-color cards from the master and clears obsolete color arrays on single-color cards', () => {
+    const multi = CARD_DATABASE.find(card => card.code === 'UAPR/KJ8-P-001')!;
+    const single = CARD_DATABASE[0];
+    const deck = createDeck({ items: [{ card: { ...multi, reqEnergyColors: undefined }, count: 1 }, { card: { ...single, reqEnergyColors: ['RED', 'BLUE'] }, count: 1 }] });
+    saveDeck(deck);
+    for (const restored of [loadSavedDecks()[0], importDeckFromJson(JSON.stringify(deck))]) {
+      expect(restored.items[0].card.reqEnergyColors).toEqual(['RED', 'BLUE', 'YELLOW', 'GREEN', 'PURPLE']);
+      expect(restored.items[1].card.reqEnergyColors).toBeUndefined();
+    }
+  });
   it('returns a stable Japanese error for malformed JSON syntax', () => {
     expect(() => importDeckFromJson('{broken')).toThrow('JSONの解析に失敗しました。');
   });
@@ -86,9 +97,22 @@ describe('deckStorage', () => {
     expect(JSON.parse(store.get(STORAGE_KEY) ?? 'null')).toEqual([]);
   });
 
-  it('refreshes stale printed energy in saved and imported official cards', () => {
+  it('uses the corrected promo type for saved decks and JSON imports while preserving AP cards', () => {
+    const master = CARD_DATABASE.find((card) => card.code === 'UAPR/BTR-P-001')!;
+    const ap = CARD_DATABASE.find((card) => card.code === 'UAPR/IMS_AP04')!;
+    const deck = createDeck({ items: [{ card: { ...master, cardType: 'ACTION_POINT', color: 'COLORLESS' }, count: 1 }], apCards: [ap] });
+    store.set(STORAGE_KEY, JSON.stringify([deck]));
+    expect(loadSavedDecks()[0].items[0].card.cardType).toBe('CHARACTER');
+    const imported = importDeckFromJson(JSON.stringify(deck));
+    expect(imported.items[0].card.cardType).toBe('CHARACTER');
+    expect(imported.items[0].card.color).toBe(master.color);
+    expect(imported.apCards).toEqual([ap]);
+    expect(JSON.parse(store.get(STORAGE_KEY)!)[0].items[0].card.cardType).toBe('ACTION_POINT');
+  });
+
+  it('refreshes stale printed stats in saved and imported official cards', () => {
     const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-001')!;
-    const stale = { ...master, genEnergy: 2, hasGenEnergyPlus: false };
+    const stale = { ...master, name: '古い名前', traits: ['ワン', 'フォー', 'オール'], effectText: '古い効果', triggers: [], bp: 9999, hasBpPlus: true, color: 'RED' as const, apCost: 9, reqEnergy: 9, genEnergy: 2, hasGenEnergyPlus: false };
     const deck = createDeck({ items: [{ card: stale, count: 4 }] });
     store.set(STORAGE_KEY, JSON.stringify([deck]));
 
@@ -96,6 +120,9 @@ describe('deckStorage', () => {
     expect(loadSavedDecks()[0].items[0].card.hasGenEnergyPlus).toBe(true);
     expect(importDeckFromJson(JSON.stringify(deck)).items[0].card.genEnergy).toBe(1);
     expect(importDeckFromJson(JSON.stringify(deck)).items[0].card.hasGenEnergyPlus).toBe(true);
+    for (const card of [loadSavedDecks()[0].items[0].card, importDeckFromJson(JSON.stringify(deck)).items[0].card]) {
+      expect(card).toMatchObject({ name: master.name, traits: master.traits, effectText: master.effectText, triggers: master.triggers, bp: master.bp, hasBpPlus: master.hasBpPlus ?? false, color: master.color, apCost: master.apCost, reqEnergy: master.reqEnergy });
+    }
   });
 
   it('returns an empty list when saved data is malformed', () => {

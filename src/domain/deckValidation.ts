@@ -144,9 +144,9 @@ export function flattenDeckToCards(deck: UserDeck, playerId: string = 'player-1'
     const cardData = master
       ? {
           ...item.card,
-          bp: master.bp ?? item.card.bp,
-          hasBpPlus: master.hasBpPlus ?? item.card.hasBpPlus,
-          genEnergy: master.genEnergy,
+          ...master,
+          reqEnergyColors: master.reqEnergyColors,
+          hasBpPlus: master.hasBpPlus ?? false,
           hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
         }
       : item.card;

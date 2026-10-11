@@ -28,11 +28,10 @@ function mergeWithOfficialCard(card: CardMaster): CardMaster {
   return master
     ? {
         ...card,
-        bp: master.bp ?? card.bp,
-        hasBpPlus: master.hasBpPlus ?? card.hasBpPlus,
-        genEnergy: master.genEnergy,
+        ...master,
+        reqEnergyColors: master.reqEnergyColors,
+        hasBpPlus: master.hasBpPlus ?? false,
         hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
-        triggers: master.triggers,
       }
     : card;
 }

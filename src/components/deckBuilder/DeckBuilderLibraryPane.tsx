@@ -1,3 +1,4 @@
+import { getRequiredEnergyColors } from '../../data/cardEnergyRules.js';
 import { useCardOperation } from '../../hooks/useCardOperation';
 import React, { useState } from 'react';
 import { CARD_DATABASE, AVAILABLE_TITLES, CardMaster, loadTitleCards, loadCardDatabase, cardCatalog } from '../../data/cardDatabase';
@@ -49,7 +50,7 @@ export const DeckBuilderLibraryPane: React.FC<DeckBuilderLibraryPaneProps> = ({
     if (selectedTitle !== 'ALL' && c.title !== selectedTitle && c.titleCode !== selectedTitle) {
       return false;
     }
-    if (selectedColor !== 'ALL' && c.color !== selectedColor) return false;
+    if (selectedColor !== 'ALL' && !getRequiredEnergyColors(c).some(color => color === selectedColor)) return false;
     if (selectedType !== 'ALL' && c.cardType !== selectedType) return false;
 
     // パラレル版フィルター (デフォルト非表示)

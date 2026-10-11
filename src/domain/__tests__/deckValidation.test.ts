@@ -190,18 +190,30 @@ describe('Deck Validation Official Rules Tests', () => {
     expect(cardsP2[0].id).toContain('player-2-');
   });
 
-  it('uses current printed energy when starting a game from an older deck', () => {
+  it('repairs a stale promo card type when starting a game without mutating the deck', () => {
+    const master = CARD_DATABASE.find((card) => card.code === 'UAPR/BTR-P-001')!;
+    const deck: UserDeck = {
+      id: 'old-type', name: 'Old type', titleCode: master.titleCode, updatedAt: 1,
+      items: [{ card: { ...master, cardType: 'ACTION_POINT', color: 'COLORLESS' }, count: 1 }],
+    };
+    expect(flattenDeckToCards(deck)[0].cardType).toBe('CHARACTER');
+    expect(flattenDeckToCards(deck)[0].color).toBe(master.color);
+    expect(deck.items[0].card.cardType).toBe('ACTION_POINT');
+  });
+
+  it('uses current printed stats when starting a game from an older deck', () => {
     const master = CARD_DATABASE.find((card) => card.code === 'UA01BT/CGH-1-001')!;
     const deck: UserDeck = {
       id: 'old-energy',
       name: 'Old energy',
       titleCode: master.titleCode,
-      items: [{ card: { ...master, genEnergy: 2, hasGenEnergyPlus: false }, count: 1 }],
+      items: [{ card: { ...master, name: '古い名前', traits: ['ワン', 'フォー', 'オール'], effectText: '古い効果', triggers: [], bp: 9999, hasBpPlus: true, color: 'RED', apCost: 9, reqEnergy: 9, genEnergy: 2, hasGenEnergyPlus: false }, count: 1 }],
       updatedAt: 1,
     };
 
     expect(flattenDeckToCards(deck)[0].genEnergy).toBe(1);
     expect(flattenDeckToCards(deck)[0].hasGenEnergyPlus).toBe(true);
+    expect(flattenDeckToCards(deck)[0]).toMatchObject({ name: master.name, traits: master.traits, effectText: master.effectText, triggers: master.triggers, bp: master.bp, hasBpPlus: master.hasBpPlus ?? false, color: master.color, apCost: master.apCost, reqEnergy: master.reqEnergy });
   });
 
   it('should not return default-cgh-deck in loadSavedDecks', async () => {

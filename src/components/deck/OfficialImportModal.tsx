@@ -105,9 +105,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
     void tcgOperation.run(async () => {
       const recipe = await fetchBandaiDeckRecipe(deckCode);
       await ensureCardCodes(recipe.mainDeck.map((card) => card.card_number.trim()));
-      const pool = new Map(cardPool.map((card) => [card.code, card]));
-      cardCatalog.getCards().forEach((card) => pool.set(card.code, card));
-      const result = mapBandaiDeckToDeckItems(recipe.mainDeck, Array.from(pool.values()));
+      const result = mapBandaiDeckToDeckItems(recipe.mainDeck, cardCatalog.getCards());
       if (!result.items.length) throw new Error('デッキにカードが見つかりませんでした。');
       return result;
     }, ({ items, newCards }) => {
@@ -322,7 +320,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
 
               {/* エラー表示 */}
               {(tcgPlusError || tcgOperation.error) && (
-                <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
+                <div role="alert" className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>{tcgPlusError || tcgOperation.error}</span>
                 </div>
