@@ -12,6 +12,7 @@ test('connects two browsers, synchronizes a guest action, and hides the guest ha
   const guestPage = await guestContext.newPage();
   const spectatorPage = await spectatorContext.newPage();
 
+  let releasePreset = () => {};
   try {
     await hostPage.addInitScript(() => {
       let copiedText = '';
@@ -50,8 +51,18 @@ test('connects two browsers, synchronizes a guest action, and hides the guest ha
       timeout: 15_000,
     });
 
+    let presetRequested!: () => void;
+    const requested = new Promise<void>((resolve) => { presetRequested = resolve; });
+    const held = new Promise<void>((resolve) => { releasePreset = resolve; });
+    await guestPage.route((url) => /\/CGH(?:-[\w-]+)?\.json$/.test(url.pathname) && !url.searchParams.has('url') && !url.searchParams.has('import'),
+      async (route) => { presetRequested(); await held; await route.continue(); });
     await guestPage.getByRole('button', { name: '① デッキを選択・セット' }).click();
-    await guestPage.getByRole('button', { name: '自分のデッキにセット' }).first().click();
+    const presetButtons = guestPage.getByRole('button', { name: '自分のデッキにセット' });
+    await presetButtons.first().click();
+    await requested;
+    await expect(presetButtons).toHaveCount(3);
+    for (const button of await presetButtons.all()) await expect(button).toBeDisabled();
+    releasePreset();
 
     await expect(guestPage.getByRole('button', { name: /手札カード:/ })).toHaveCount(7);
     await expect(guestPage.getByText(/がデッキをセットアップし、初手7枚をドローしました/)).toBeVisible();
@@ -63,6 +74,7 @@ test('connects two browsers, synchronizes a guest action, and hides the guest ha
     await expect(spectatorPage.getByRole('button', { name: /手札カード:/ })).toHaveCount(7);
     await expect(spectatorPage.getByText('Player 2 の手札 (7枚)')).toBeVisible();
   } finally {
+    releasePreset();
     await hostContext.close();
     await guestContext.close();
     await spectatorContext.close();

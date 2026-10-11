@@ -22,6 +22,10 @@ export default defineConfig({
       include: [
         'src/domain/**/*.ts',
         'src/data/officialCardAsset.ts',
+        'src/data/cardCatalog.ts',
+        'src/data/cardData.ts',
+        'src/hooks/useCardOperation.ts',
+        'src/components/board/GameCardDataStatus.tsx',
         'src/components/CardDataBootstrap.tsx',
         'src/hooks/useGame.ts',
         'src/services/officialCardService.ts',

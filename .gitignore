@@ -31,3 +31,6 @@ dist-ssr
 playwright-report/
 test-results/
 coverage/
+
+# Derived from officialCards.json; generated before dev, tests, and build.
+src/data/generated/

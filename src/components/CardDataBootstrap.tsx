@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { loadCardDatabase } from '../data/cardDatabase';
+import { loadCardIndex } from '../data/cardDatabase';
 
 export function CardDataBootstrap() {
   const [App, setApp] = useState<ComponentType | null>(null);
@@ -9,9 +9,9 @@ export function CardDataBootstrap() {
   useEffect(() => {
     let active = true;
     setFailed(false);
-    // Importing App earlier would initialize storage indexes and preset decks
-    // against an empty database. Keep that module graph behind this gate.
-    loadCardDatabase()
+    // Importing App earlier would initialize the card catalog
+    // against an unavailable index. Keep that module graph behind this gate.
+    loadCardIndex()
       .then(() => import('../App'))
       .then((module) => { if (active) setApp(() => module.default); })
       .catch(() => { if (active) setFailed(true); });
@@ -37,7 +37,7 @@ export function CardDataBootstrap() {
               onClick={() => window.location.reload()}
             >再読み込み</button>
           </>
-        ) : <p role="status">カードデータを読み込み中…</p>}
+        ) : <p role="status">作品一覧を読み込み中…</p>}
       </div>
     </main>
   );

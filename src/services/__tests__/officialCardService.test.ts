@@ -8,6 +8,42 @@ import {
 import { CARD_DATABASE } from '../../data/cardDatabase';
 
 describe('officialCardService Tests', () => {
+  it('uses official text energy without an artwork override', () => {
+    const html = '<dl class="cardDataCol generatedEnergyData"><dd class="cardDataContents">-</dd></dl>';
+    expect(parseCardFromDetailHtml(html, 'UA40BT/REZ-1-086')).toMatchObject({ genEnergy: 0, hasGenEnergyPlus: false });
+  });
+  it('preserves every color of the official multi-color requirement without changing generated energy', () => {
+    const html = '<dl class="cardDataCol categoryData"><dd class="cardDataContents">イベント</dd></dl><dl class="cardDataCol needEnergyData"><dd class="cardDataContents"><img alt="赤／青／黄／緑／紫4"></dd></dl>';
+    expect(parseCardFromDetailHtml(html, 'UAPR/KJ8-P-001')).toMatchObject({ reqEnergy: 4, reqEnergyColors: ['RED', 'BLUE', 'YELLOW', 'GREEN', 'PURPLE'], genEnergy: 0 });
+    expect(parseCardFromDetailHtml(html.replace('赤／青／黄／緑／紫4', '紫4'), 'UAPR/KJ8-P-001').reqEnergyColors).toBeUndefined();
+  });
+  it('preserves middle dots in trait names and decodes printed HTML text', () => {
+    const html = `<h2 class="cardNameCol">名前&quot;別名&quot;</h2>
+      <dl class="cardDataCol attributeData"><dd class="cardDataContents">ワン・フォー・オール／ヒーロー</dd></dl>
+      <dl class="cardDataCol effectData"><dd class="cardDataContents">A&amp;B&lt;条件&gt;&#43;1000</dd></dl>`;
+    expect(parseCardFromDetailHtml(html, 'EX06BT/MHA-2-029')).toMatchObject({ name: '名前"別名"', traits: ['ワン・フォー・オール', 'ヒーロー'], effectText: 'A&B<条件>+1000' });
+  });
+  it.each(['1000+', '1000＋', '1000&#43;', '1000&#x2B;', '1000&plus;'])('reads printed BP plus markers: %s', bp => {
+    const html = `<dl class="cardDataCol bpData"><dd class="cardDataContents">${bp}</dd></dl>`;
+    expect(parseCardFromDetailHtml(html, 'UAPB/GIM-2-004')).toMatchObject({ bp: 1000, hasBpPlus: true });
+  });
+  it.each([
+    ['UAPR/MMM-1-002', 'キャラクター', 'CHARACTER'],
+    ['UAPB/GIM-2-004', 'キャラクター', 'CHARACTER'],
+    ['UAPR/MMM-1-030', 'イベント', 'EVENT'],
+    ['UAPR/HTR-1-026', 'キャラクター', 'CHARACTER'],
+    ['UAPR/CGH-1-050', 'フィールド', 'FIELD'],
+    ['UAPR/2023-AP01', 'アクションポイント', 'ACTION_POINT'],
+    ['UAPR/IMS_AP04', '', 'ACTION_POINT'],
+    ['UAPR/MMM-P-001', '', 'CHARACTER'],
+    ['UA01AP/CGH-1-001', 'キャラクター', 'CHARACTER'],
+  ])('classifies %s from its category without treating the product prefix as AP', (code, category, type) => {
+    const html = `<dl class="cardDataCol categoryData"><dd class="cardDataContents">${category}</dd></dl>
+      <dl class="cardDataCol needEnergyData"><dd class="cardDataContents"><img alt="黄1"></dd></dl>`;
+    const card = parseCardFromDetailHtml(html, code);
+    expect(card.cardType).toBe(type);
+    expect(card.color).toBe(type === 'ACTION_POINT' ? 'COLORLESS' : 'YELLOW');
+  });
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -277,7 +313,7 @@ describe('officialCardService Tests', () => {
     expect(notFound).toEqual([]);
   });
 
-  it('returns structural fallback cards when detail retrieval fails without live network access', async () => {
+  it('rejects failed detail retrieval instead of publishing guessed card data', async () => {
     const listHtml = `
       <ul class="cardListCol">
         <a href="./detail_iframe.php?card_no=UA01BT/CGH-1-001">
@@ -293,18 +329,8 @@ describe('officialCardService Tests', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const onProgress = vi.fn();
 
-    const cards = await fetchSeriesCardsViaProxy('570101', onProgress);
-
-    expect(cards).toHaveLength(1);
-    expect(cards[0]).toMatchObject({
-      code: 'UA01BT/CGH-1-001',
-      name: '扇 要',
-      titleCode: 'CGH',
-      seriesId: '570101',
-      isParallel: false,
-      isUnrevealed: false,
-    });
-    expect(onProgress).toHaveBeenCalledWith(1, 1);
+    await expect(fetchSeriesCardsViaProxy('570101', onProgress)).rejects.toThrow();
+    expect(onProgress).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

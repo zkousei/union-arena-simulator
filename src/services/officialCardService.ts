@@ -1,7 +1,11 @@
+import { parseRequiredEnergyColors } from '../data/cardEnergyRules.js';
+import { decodeCardText } from '../data/officialCardText.js';
+import { validateOfficialCardDetail } from '../data/officialCardValidation.js';
 import { CardMaster } from '../data/cardDatabase';
 import { CardType, CardColor, TriggerType, getBaseCardCode } from '../types/card';
 import { DeckItem } from '../domain/deckValidation';
 import { ALL_OFFICIAL_SERIES, OFFICIAL_TITLES } from '../data/officialSeriesData';
+import { inferCardType } from '../data/cardTypeRules.js';
 
 // 主要な公式シリーズ一覧 (商品コードと名称・作品コード)
 export interface OfficialSeriesInfo {
@@ -66,14 +70,7 @@ export function parseCardFromDetailHtml(
     /<dl class="cardDataCol categoryData">[\s\S]*?<dd class="cardDataContents">\s*([^<]+)\s*<\/dd>/
   );
   const catRaw = catMatch ? catMatch[1].trim() : '';
-  let cardType: CardType = 'CHARACTER';
-  if (catRaw.includes('イベント') || catRaw.includes('EVENT')) {
-    cardType = 'EVENT';
-  } else if (catRaw.includes('フィールド') || catRaw.includes('FIELD')) {
-    cardType = 'FIELD';
-  } else if (catRaw.includes('アクションポイント') || catRaw.includes('AP') || cardNo.includes('AP')) {
-    cardType = 'ACTION_POINT';
-  }
+  const cardType: CardType = inferCardType(catRaw, cardNo);
 
   // 色 & 必要エナジー
   const needMatch = detailHtml.match(
@@ -81,10 +78,12 @@ export function parseCardFromDetailHtml(
   );
   let color: CardColor = 'PURPLE';
   let reqEnergy = 0;
+  let reqEnergyColors: CardColor[] | undefined;
   if (needMatch) {
     const altMatch = needMatch[1].match(/alt="([^"]+)"/);
     if (altMatch) {
       const altText = altMatch[1];
+      reqEnergyColors = parseRequiredEnergyColors(altText);
       if (altText.includes('紫')) color = 'PURPLE';
       else if (altText.includes('緑')) color = 'GREEN';
       else if (altText.includes('赤')) color = 'RED';
@@ -118,7 +117,7 @@ export function parseCardFromDetailHtml(
       if (numMatch) {
         bp = parseInt(numMatch[0], 10);
       }
-      hasBpPlus = /[+＋]/.test(rawBp);
+      hasBpPlus = /[+＋]|&#(?:43|x2b);|&plus;/i.test(rawBp);
     }
   }
 
@@ -128,10 +127,10 @@ export function parseCardFromDetailHtml(
   );
   let traits: string[] = [];
   if (traitMatch) {
-    const rawTraits = traitMatch[1].replace(/<[^>]+>/g, '').trim();
+    const rawTraits = decodeCardText(traitMatch[1].replace(/<[^>]+>/g, '').trim());
     if (rawTraits && rawTraits !== '-') {
       traits = rawTraits
-        .split(/[/／・]/)
+        .split(/[/／]/)
         .map((t) => t.trim())
         .filter(Boolean);
     }
@@ -245,8 +244,8 @@ export function parseCardFromDetailHtml(
   return {
     code: cardNo,
     baseCode,
-    name,
-    title,
+    name: decodeCardText(name),
+    title: decodeCardText(title),
     titleCode,
     cardType,
     color,
@@ -254,11 +253,12 @@ export function parseCardFromDetailHtml(
     hasBpPlus,
     apCost,
     reqEnergy,
+    ...(reqEnergyColors ? { reqEnergyColors } : {}),
     genEnergy,
     hasGenEnergyPlus,
     traits,
     triggers,
-    effectText,
+    effectText: decodeCardText(effectText),
     imageUrl,
     rarity,
     isParallel,
@@ -463,41 +463,17 @@ export async function fetchSeriesCardsViaProxy(
   for (let i = 0; i < summaryList.length; i += concurrency) {
     const chunk = summaryList.slice(i, i + concurrency);
     const chunkPromises = chunk.map(async (item) => {
-      try {
-        const detailPath = `/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(item.cardNo)}`;
-        const detailHtml = await fetchOfficialHtml(detailPath, 6000);
-        return parseCardFromDetailHtml(detailHtml, item.cardNo, item.imgUrl, {
-          seriesId,
-          seriesName: seriesInfo?.name,
-        });
-      } catch (err) {
-        console.warn(`Card detail fallback for ${item.cardNo}:`, err);
-        const titleCodeMatch = item.cardNo.match(/\/([A-Z0-9]+)-/);
-        const titleCode = titleCodeMatch ? titleCodeMatch[1] : 'OTHER';
-        const fallbackCard: CardMaster = {
-          code: item.cardNo,
-          baseCode: getBaseCardCode(item.cardNo),
-          name: item.name,
-          title: seriesInfo?.title || 'UNION ARENA',
-          titleCode,
-          cardType: item.cardNo.includes('AP') ? 'ACTION_POINT' : 'CHARACTER',
-          color: 'PURPLE',
-          bp: null,
-          apCost: 1,
-          reqEnergy: 0,
-          genEnergy: 1,
-          traits: [],
-          triggers: [],
-          effectText: '',
-          imageUrl: item.imgUrl,
-          isParallel: item.isParallel,
-          isUnrevealed: item.isUnrevealed,
-          seriesId,
-          seriesName: seriesInfo?.name,
-        };
-        return fallbackCard;
-      }
+      const detailPath = `/jp/cardlist/detail_iframe.php?card_no=${encodeURIComponent(item.cardNo)}`;
+      const detailHtml = await fetchOfficialHtml(detailPath, 6000);
+      validateOfficialCardDetail(detailHtml, item.cardNo);
+      const parsed = parseCardFromDetailHtml(detailHtml, item.cardNo, item.imgUrl, {
+        seriesId,
+        seriesName: seriesInfo?.name,
+      });
+      validateOfficialCardDetail(detailHtml, item.cardNo, parsed);
+      return parsed;
     });
+
 
     const chunkResults = await Promise.all(chunkPromises);
     results.push(...chunkResults);

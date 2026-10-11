@@ -13,6 +13,7 @@ const expectNoHorizontalOverflow = async (page: import('@playwright/test').Page)
 
 test('switches between the card library and current deck on mobile', async ({ page }) => {
   await page.goto('/deck-builder');
+  await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: 'コードギアス 反逆のルルーシュ' });
 
   await expect(page.getByRole('link', { name: 'デッキ構築' })).toBeVisible();
   await expect(page.getByRole('button', { name: '対戦メニュー' })).toBeVisible();
@@ -38,6 +39,7 @@ test('switches between the card library and current deck on mobile', async ({ pa
 
 test('saves and restores a deck from the mobile deck pane', async ({ page }) => {
   await page.goto('/deck-builder');
+  await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: 'コードギアス 反逆のルルーシュ' });
   await page.getByRole('button', { name: /現在のデッキ/ }).click();
 
   const deckName = page.getByPlaceholder('デッキ名を入力...');
@@ -58,6 +60,7 @@ test('opens with incomplete saved cards and preserves a backup of skipped decks'
     ]));
   });
   await page.goto('/deck-builder');
+  await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: 'コードギアス 反逆のルルーシュ' });
 
   await expect(page.getByRole('alert')).toContainText('保存データの一部を読み込めませんでした');
   await page.getByRole('button', { name: /現在のデッキ/ }).click();
@@ -84,6 +87,7 @@ test('uses corrected official triggers for a previously cached card', async ({ p
     }]));
   });
   await page.goto('/deck-builder');
+  await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: 'コードギアス 反逆のルルーシュ' });
   await page.getByPlaceholder('カード名、特徴、テキスト、レアリティで検索...').fill('UA01BT/CGH-1-003');
 
   await expect(page.getByText('カラー', { exact: true })).toBeVisible();
@@ -92,6 +96,7 @@ test('uses corrected official triggers for a previously cached card', async ({ p
 
 test('rejects invalid JSON and persists a valid imported deck on mobile', async ({ page }) => {
   await page.goto('/deck-builder');
+  await page.getByRole('combobox', { name: '作品を選択' }).selectOption({ label: 'コードギアス 反逆のルルーシュ' });
   await page.getByRole('button', { name: /現在のデッキ/ }).click();
   await page.getByRole('button', { name: '一覧', exact: true }).click();
   await page.getByRole('button', { name: 'JSONインポート' }).click();

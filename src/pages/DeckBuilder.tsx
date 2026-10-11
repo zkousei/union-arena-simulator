@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useCardCatalog } from '../hooks/useCardCatalog';
+import { useCardOperation } from '../hooks/useCardOperation';
+import { ensureCardData } from '../data/cardData';
+import { isCardMaster } from '../data/officialCardAsset';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserDeck, DeckItem } from '../domain/deckValidation';
-import { CARD_DATABASE, CardMaster } from '../data/cardDatabase';
+import { CardMaster, getCardMaster, isOfficialCardCode } from '../data/cardDatabase';
 import { DeckBuilderLibraryPane } from '../components/deckBuilder/DeckBuilderLibraryPane';
 import { DeckBuilderDeckPane } from '../components/deckBuilder/DeckBuilderDeckPane';
 import { DeckBuilderMyDecksModal } from '../components/deckBuilder/DeckBuilderMyDecksModal';
@@ -8,7 +12,9 @@ import { DeckBuilderImportModal } from '../components/deckBuilder/DeckBuilderImp
 import { OfficialImportModal } from '../components/deck/OfficialImportModal';
 import { RevealedCardModal } from '../components/board/RevealedCardModal';
 import {
-  loadSavedDecksWithIssues,
+  loadSavedDeckSummaries,
+  loadSavedDeckById,
+  type SavedDeckSummary,
   saveDeck,
   deleteDeck,
   exportDeckToJson,
@@ -18,15 +24,14 @@ import { Card } from '../types/card';
 const CUSTOM_CARDS_STORAGE_KEY = 'UA_CUSTOM_CARDS';
 
 function mergeWithOfficialCard(card: CardMaster): CardMaster {
-  const master = CARD_DATABASE.find((candidate) => candidate.code === card.code);
+  const master = getCardMaster(card.code);
   return master
     ? {
         ...card,
-        bp: master.bp ?? card.bp,
-        hasBpPlus: master.hasBpPlus ?? card.hasBpPlus,
-        genEnergy: master.genEnergy,
+        ...master,
+        reqEnergyColors: master.reqEnergyColors,
+        hasBpPlus: master.hasBpPlus ?? false,
         hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
-        triggers: master.triggers,
       }
     : card;
 }
@@ -36,30 +41,33 @@ interface DeckBuilderPageProps {
 }
 
 export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck }) => {
-  const [savedDecks, setSavedDecks] = useState<UserDeck[]>([]);
-  const [savedDeckIssue, setSavedDeckIssue] = useState<ReturnType<typeof loadSavedDecksWithIssues> | null>(null);
+  const [savedDecks, setSavedDecks] = useState<SavedDeckSummary[]>([]);
+  const [savedDeckIssue, setSavedDeckIssue] = useState<ReturnType<typeof loadSavedDeckSummaries> | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [requestedDeckId, setRequestedDeckId] = useState<string | null>(null);
   const [activeDeck, setActiveDeck] = useState<UserDeck | null>(null);
   const [mobilePane, setMobilePane] = useState<'library' | 'deck'>('library');
 
-  // カードプール (公式同梱530枚 + ユーザーが動的インポートしたカード)
-  const [cardPool, setCardPool] = useState<CardMaster[]>(() => {
+  const operation = useCardOperation();
+  const { run } = operation;
+  const officialCards = useCardCatalog();
+  const [customCards, setCustomCards] = useState<CardMaster[]>(() => {
     try {
-      const stored = localStorage.getItem(CUSTOM_CARDS_STORAGE_KEY);
-      if (stored) {
-        const extraCards: CardMaster[] = JSON.parse(stored);
-        const map = new Map<string, CardMaster>();
-        CARD_DATABASE.forEach((c) => map.set(c.code, c));
-        extraCards.forEach((c) => {
-          map.set(c.code, mergeWithOfficialCard(c));
-        });
-        return Array.from(map.values());
-      }
-    } catch (e) {
-      console.warn('Failed to load custom cards:', e);
-    }
-    return CARD_DATABASE;
+      const raw: unknown = JSON.parse(localStorage.getItem(CUSTOM_CARDS_STORAGE_KEY) || '[]');
+      return Array.isArray(raw) ? raw.filter(isCardMaster) : [];
+    } catch { return []; }
   });
+  const pool = new Map(officialCards.map((card) => [card.code, card]));
+  for (const card of customCards) if (!isOfficialCardCode(card.code) || getCardMaster(card.code)) pool.set(card.code, mergeWithOfficialCard(card));
+  const cardPool = Array.from(pool.values());
+  const selectSavedDeck = useCallback((id: string) => {
+    void run(async () => {
+      setRequestedDeckId(id);
+      const deck = await loadSavedDeckById(id);
+      if (!deck) throw new Error('デッキを読み込めませんでした。');
+      return deck;
+    }, setActiveDeck);
+  }, [run]);
 
   const [isMyDecksOpen, setIsMyDecksOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -68,7 +76,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
   const [saveToast, setSaveToast] = useState(false);
 
   const refreshSavedDecks = () => {
-    const result = loadSavedDecksWithIssues();
+    const result = loadSavedDeckSummaries();
     setSavedDecks(result.decks);
     setSavedDeckIssue(result.backupJson !== null || result.unreadable ? result : null);
     return result.decks;
@@ -93,18 +101,12 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
 
   // カードプールに新しいカード群を追加（差分のみLocalStorageに保存して5MB容量制限を回避）
   const handleAddCardsToPool = (newCards: CardMaster[]) => {
-    setCardPool((prev) => {
-      const map = new Map<string, CardMaster>();
-      prev.forEach((c) => map.set(c.code, c));
-      newCards.forEach((c) => map.set(c.code, mergeWithOfficialCard(c)));
-      const updated = Array.from(map.values());
-      try {
-        const baseSet = new Set(CARD_DATABASE.map((c) => c.code));
-        const customOnly = updated.filter((c) => !baseSet.has(c.code));
-        localStorage.setItem(CUSTOM_CARDS_STORAGE_KEY, JSON.stringify(customOnly));
-      } catch (e) {
-        console.warn('Failed to persist custom cards to localStorage:', e);
-      }
+    setCustomCards((prev) => {
+      const map = new Map(prev.map((card) => [card.code, card]));
+      for (const card of newCards) if (isCardMaster(card)) map.set(card.code, card);
+      const updated = Array.from(map.values()).filter((card) => !isOfficialCardCode(card.code));
+      try { localStorage.setItem(CUSTOM_CARDS_STORAGE_KEY, JSON.stringify(updated)); }
+      catch (error) { console.warn('Failed to persist custom cards:', error); }
       return updated;
     });
   };
@@ -129,12 +131,12 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
 
   // 初回ロード
   useEffect(() => {
-    const result = loadSavedDecksWithIssues();
+    const result = loadSavedDeckSummaries();
     const decks = result.decks;
     setSavedDecks(decks);
     setSavedDeckIssue(result.backupJson !== null || result.unreadable ? result : null);
     if (decks.length > 0) {
-      setActiveDeck(decks[0]);
+      selectSavedDeck(decks[0].id);
     } else {
       setActiveDeck({
         id: `deck-${Date.now()}`,
@@ -144,7 +146,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         updatedAt: Date.now(),
       });
     }
-  }, []);
+  }, [selectSavedDeck]);
 
   // カード投入枚数マップ
   const deckCardCounts: Record<string, number> = {};
@@ -229,6 +231,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
 
   // 新規デッキ作成
   const handleCreateNewDeck = () => {
+    operation.clearError();
     const newDeck: UserDeck = {
       id: `deck-${Date.now()}`,
       name: '新規デッキ',
@@ -246,7 +249,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
     deleteDeck(deckId);
     const updated = refreshSavedDecks();
     if (activeDeck?.id === deckId && updated.length > 0) {
-      setActiveDeck(updated[0]);
+      selectSavedDeck(updated[0].id);
     }
   };
 
@@ -263,14 +266,60 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
     URL.revokeObjectURL(url);
   };
 
+  const deckManagementDialogs = <>
+    {/* マイデッキモーダル */}
+    <DeckBuilderMyDecksModal
+      isOpen={isMyDecksOpen}
+      decks={savedDecks}
+      activeDeckId={activeDeck?.id || ''}
+      onSelectDeck={(deck) => selectSavedDeck(deck.id)}
+      onCreateNewDeck={handleCreateNewDeck}
+      onDeleteDeck={handleDeleteDeck}
+      onOpenImport={() => {
+        setIsMyDecksOpen(false);
+        setIsImportOpen(true);
+      }}
+      onClose={() => setIsMyDecksOpen(false)}
+    />
+
+    {/* インポートモーダル (JSON) */}
+    <DeckBuilderImportModal
+      isOpen={isImportOpen}
+      onImportSuccess={(deck) => {
+        operation.clearError();
+        persistDeck(deck);
+        refreshSavedDecks();
+        setActiveDeck(deck);
+      }}
+      onClose={() => setIsImportOpen(false)}
+    />
+  </>;
+
   if (!activeDeck) {
-    return <div className="p-8 text-center text-slate-400">読み込み中...</div>;
+    return <div className="p-4 sm:p-8 text-center text-slate-300">
+      {operation.error ? <div role="alert">
+        {operation.error}
+        <button type="button" className="block mx-auto mt-4 underline" onClick={() => {
+          const id = requestedDeckId || savedDecks[0]?.id;
+          if (id) selectSavedDeck(id);
+        }}>デッキ読込を再試行</button>
+        <button type="button" className="block mx-auto mt-4 underline" onClick={() => window.location.reload()}>ページを再読み込み</button>
+      </div> : <p role="status">デッキを読み込み中…</p>}
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <button type="button" disabled={operation.busy} className="rounded-lg bg-indigo-600 p-3 disabled:opacity-40" onClick={() => setIsMyDecksOpen(true)}>別の保存デッキを選択</button>
+        <button type="button" disabled={operation.busy} className="rounded-lg bg-slate-700 p-3 disabled:opacity-40" onClick={handleCreateNewDeck}>新規デッキ作成</button>
+        <button type="button" disabled={operation.busy} className="rounded-lg bg-slate-700 p-3 disabled:opacity-40" onClick={() => setIsImportOpen(true)}>JSONインポート</button>
+      </div>
+      {deckManagementDialogs}
+    </div>;
   }
 
   const totalCards = activeDeck.items.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
+    <fieldset disabled={operation.busy} className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative border-0 p-0 m-0">
+      {operation.busy && <p role="status" className="p-2">デッキのカードデータを読み込み中…</p>}
+      {operation.error && <p role="alert" className="p-2 text-amber-200">{operation.error} デッキを選び直して再試行してください。</p>}
       {/* 保存完了トースト */}
       {saveToast && (
         <div className="absolute top-4 right-4 z-40 bg-emerald-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -361,7 +410,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
             onSave={handleSave}
             onOpenMyDecks={() => setIsMyDecksOpen(true)}
             onExportJson={handleExportJson}
-            onPlayWithDeck={() => onPlayWithDeck(activeDeck)}
+            onPlayWithDeck={() => { void operation.run(() => ensureCardData(activeDeck), () => onPlayWithDeck(activeDeck)); }}
             onInspectCard={(c) => {
               setInspectCard({
                 ...c,
@@ -375,31 +424,7 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         </div>
       </div>
 
-      {/* マイデッキモーダル */}
-      <DeckBuilderMyDecksModal
-        isOpen={isMyDecksOpen}
-        decks={savedDecks}
-        activeDeckId={activeDeck.id}
-        onSelectDeck={setActiveDeck}
-        onCreateNewDeck={handleCreateNewDeck}
-        onDeleteDeck={handleDeleteDeck}
-        onOpenImport={() => {
-          setIsMyDecksOpen(false);
-          setIsImportOpen(true);
-        }}
-        onClose={() => setIsMyDecksOpen(false)}
-      />
-
-      {/* インポートモーダル (JSON) */}
-      <DeckBuilderImportModal
-        isOpen={isImportOpen}
-        onImportSuccess={(deck) => {
-          persistDeck(deck);
-          refreshSavedDecks();
-          setActiveDeck(deck);
-        }}
-        onClose={() => setIsImportOpen(false)}
-      />
+      {deckManagementDialogs}
 
       {/* 公式カードリスト取得 & インポートモーダル */}
       <OfficialImportModal
@@ -416,6 +441,6 @@ export const DeckBuilderPage: React.FC<DeckBuilderPageProps> = ({ onPlayWithDeck
         inspectCard={inspectCard}
         onCloseInspect={() => setInspectCard(null)}
       />
-    </div>
+    </fieldset>
   );
 };

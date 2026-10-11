@@ -1,5 +1,5 @@
 import { Card } from '../types/card';
-import { CARD_DATABASE, CardMaster } from './cardDatabase';
+import { getCardMaster, loadTitleCards, CardMaster } from './cardDatabase';
 import { UserDeck, flattenDeckToCards } from '../domain/deckValidation';
 
 export interface PresetDeckInfo {
@@ -17,7 +17,7 @@ export interface PresetDeckInfo {
 
 // カード検索ヘルパー
 function getCard(code: string): CardMaster {
-  const c = CARD_DATABASE.find((card) => card.code === code);
+  const c = getCardMaster(code);
   if (!c) {
     throw new Error(`Card not found for code: ${code}`);
   }
@@ -39,7 +39,8 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
     leadCardName: 'ガウェイン (レイド)',
     description: 'ゼロやカレンで盤面と手札を整え、強力なレイド「ガウェイン」「紅蓮弐式」で相手フロントラインを制圧するコントロールビート型。',
     keyFeatures: ['ガウェイン全体BPデバフ', '紅蓮弐式インパクト奇襲', '合衆国日本によるAP回復'],
-    deck: {
+    get deck() {
+      return {
       id: 'preset-cgh',
       name: '黒の騎士団 & ガウェイン (レイド) デッキ',
       titleCode: 'CGH',
@@ -59,6 +60,7 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
         { card: getCard('UA01BT/CGH-1-029'), count: 4 }, // 合衆国日本 (FINAL)
         { card: getCard('UA01BT/CGH-1-030'), count: 4 }, // 絶対遵守のギアス (SPECIAL)
       ],
+      };
     },
   },
   {
@@ -71,7 +73,8 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
     leadCardName: 'ゴン＝フリークス (レイド)',
     description: 'キルアやサトツでエナジー基盤を固め、レイド「ゴン＝フリークス」の全体BP強化とクラピカで盤面を制圧するアグロビート型。',
     keyFeatures: ['レイドゴンのBP+1000付与', 'サトツ・ネテロの2個玉加速', '釣り竿による相手除去'],
-    deck: {
+    get deck() {
+      return {
       id: 'preset-htr',
       name: 'ハンター試験 & ゴン (レイド) デッキ',
       titleCode: 'HTR',
@@ -91,6 +94,7 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
         { card: getCard('UA03BT/HTR-1-097'), count: 4 }, // 釣り竿 (SPECIAL)
         { card: getCard('UA03BT/HTR-1-099'), count: 4 }, // ハンターライセンス (FINAL)
       ],
+      };
     },
   },
   {
@@ -103,7 +107,8 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
     leadCardName: '伏黒 恵 (レイド)',
     description: '虎杖・釘崎・真希で序盤を展開し、レイド「伏黒 恵」や玉犬、最強術師「五条 悟」の超火力と「虚式「茈」」で圧倒するパワー型。',
     keyFeatures: ['虎杖悠仁の2個玉加速', '五条悟による攻防制圧', '虚式「茈」による必殺除去'],
-    deck: {
+    get deck() {
+      return {
       id: 'preset-jjk',
       name: '呪術高専 & 伏黒恵 (レイド) デッキ',
       titleCode: 'JJK',
@@ -123,6 +128,7 @@ export const PRESET_DECKS: PresetDeckInfo[] = [
         { card: getCard('UA02BT/JJK-1-029'), count: 4 }, // 虚式「茈」 (SPECIAL)
         { card: getCard('UA02BT/JJK-1-034'), count: 4 }, // 領域展開 (FINAL)
       ],
+      };
     },
   },
 ];
@@ -140,4 +146,12 @@ export function generatePresetDeck(titleCode: string = 'CGH', playerId: string =
  */
 export function generateSampleDeck(playerId: string = 'player-1'): Card[] {
   return generatePresetDeck('CGH', playerId);
+}
+
+/** Metadata is safe to import on the home page; resolve card details only on selection. */
+export async function loadPresetDeck(id: string): Promise<UserDeck> {
+  const preset = PRESET_DECKS.find((p) => p.id === id);
+  if (!preset) throw new Error('プリセットが見つかりませんでした。');
+  await loadTitleCards(preset.titleCode);
+  return preset.deck;
 }

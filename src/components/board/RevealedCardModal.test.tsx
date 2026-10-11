@@ -23,6 +23,11 @@ const dummyCard: Card = {
   underCards: [],
 };
 
+it('shows multi-color requirements without describing them as purple only', () => {
+  render(<RevealedCardModal revealed={null} inspectCard={{ ...dummyCard, reqEnergyColors: ['RED', 'BLUE'] }} onCloseInspect={vi.fn()} />);
+  expect(screen.getByText('赤／青')).toBeTruthy();
+  expect(screen.getByText('必要色:')).toBeTruthy();
+});
 describe('RevealedCardModal', () => {
   it('shows the printed generated energy plus mark in card details', () => {
     render(

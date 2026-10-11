@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -22,6 +24,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate synchronized card data
+        env:
+          CARD_DATA_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}
+        run: npm run validate-cards -- "--baseline-ref=$CARD_DATA_BASE_REF"
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

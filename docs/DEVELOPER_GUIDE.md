@@ -185,6 +185,7 @@ export interface Card {
   color: CardColor;       // 'PURPLE' | 'RED' | 'BLUE' | 'YELLOW' | 'GREEN' | 'COLORLESS'
   bp?: number;            // 基礎BP (キャラのみ)
   apCost: number;         // 必要AP
+  reqEnergyColors?: CardColor[]; // 複数色の必要エナジーを公式掲載順で保持
   reqEnergy: number;      // 必要エナジー
   genEnergy: number;      // 発生エナジー
   traits: string[];       // 特徴 (例: ["アッシュフォード学園", "生徒会"])
@@ -204,8 +205,25 @@ export interface Card {
 ```bash
 npm run sync-cards
 ```
-- `scripts/sync-official-cards.js`: バンダイ公式サイトのカード検索一覧ページを順次フェッチし、HTMLパーサー（`src/services/officialCardService.ts`）でパースして正規化されたJSONを出力します。
+- `scripts/sync-official-cards.js`: 公式HTMLを検証してから解析し、数値・名前・作品名・特徴・効果文・トリガーの解析結果を掲載内容と照合し、全対象の取得・データ検証が成功した場合のみJSONを一括保存します。取得失敗や未知の種類・アイコン、必須項目の欠損はエラー終了し、既存JSONを保持します。
 - ※ユニットテストは外部ネットワークに依存しないよう、ローカルの静的フィクスチャを用いてテストされます。
+
+全商品・パラレル・既存カードの再取得まで含める更新は、まず保存しない試行で確認してください（公式サイトへの通信が必要です）：
+```bash
+npm run sync-cards -- --all --include-parallel --refresh --dry-run
+npm run sync-cards -- --all --include-parallel --refresh
+npm run validate-cards
+git diff -- src/data/officialCards.json
+```
+`--refresh` がない通常同期は既存の取得済みカードを再取得しません。`--all` の商品一覧取得が失敗した場合は、古い固定一覧で代替して成功扱いにせず停止します。差分にはカード番号と変更項目を出力します。保存は一時ファイルからの置換で行います。
+
+`npm run validate-cards -- --baseline-ref=origin/main` は既存カードの削除や公開済みカードの未公開化も検出します。CIでも基準ブランチとの検証を実行し、分割アセット生成・ビルド時にも同じ型・範囲・BPと種類の整合性・AP判定・重複番号の検証を行います。
+
+同じ短縮番号の通常版・再録・パラレル版を横断比較し、新規または内容の変わった不一致もエラーにします。調査時点で残る26組の公式掲載差分は `docs/card-data-audit.json` に画像・詳細URLとともに記録しています。`src/data/officialCardReviewBaseline.js` はこの未解決の差分を既知として検出する基準で、正確性を承認したリストではありません。同期で自動再生成しません。変更には公式テキストや公式エラッタの確認が必要です。画像の記載を根拠にテキストの値を上書きしません。
+
+カード情報の正は公式カード詳細ページのテキスト・アイコンの代替テキストとします。画像の内容が異なっていても画像を根拠に数値・種類を補正せず、各収録版のテキストを保持します。公式テキスト同士の不一致は監査記録で確認対象として管理し、他の版から自動コピーしません。`UAPR/HTR-1-026` の「キャラクター・BPは－」は確認済みの公式テキストとして、この番号だけ `bp: null` を許容します。BP欄の欠落や他のキャラクターのBP欠損は引き続きエラーです。公式テキスト自体の誤記は自動検証だけでは保証できず、公式テキストやエラッタによる訂正を確認する必要があります。複数色の必要エナジーは `reqEnergyColors` に掲載順で保存し、色検索・詳細表示に使用します。既存の `color` は互換性と発生エナジー集計のため保持し、必要エナジーの色を発生エナジーに加算しません。旧デッキは読込・新規ゲーム開始時にマスターから補完します。必要エナジー条件の自動強制は追加しません。`--repair-card-stats` と `--repair-card-text` はAP・未公開カードを保持する限定修復で、両方とも `--dry-run` を利用できます。
+
+要確認リストの再出力は `npm run validate-cards -- --report=docs/card-data-audit.json` で行えます。取得途中で元のJSONが編集された場合も保存を止め、編集を上書きしません。
 
 ### BANDAI TCG+ API 連携 (`src/services/bandaiTcgPlusService.ts`)
 BANDAI TCG+ のデッキコード／レシピURLから直接50枚デッキを構築するサービスです：
@@ -271,3 +289,5 @@ git diff --check      # 空白・インデント・構文異常チェック
 - デフォルトでは PeerJS 公式の無料シグナリングサーバー（`0.peerjs.com`）を使用します。
 - 通信確立後はブラウザ間で P2P Direct DataChannel が開通するため、サーバー負荷はほとんど発生しません。
 - 企業内ネットワークや特定のNAT環境でP2P接続が阻害される場合は、STUN/TURNサーバーを `usePeer.ts` の Peer 設定に追加することで回避可能です。
+
+TCG+の完全番号・短縮番号の照合と通常版の自動選択は維持します。公式マスターに一致しないカードが1枚でもある場合は、番号と更新案内を表示して取り込みを停止し、BP・効果・発生エナジーを推測してカードを作成しません。枚数が不正なレシピも停止します。

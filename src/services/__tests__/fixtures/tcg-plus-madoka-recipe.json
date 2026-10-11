@@ -1,0 +1,167 @@
+[
+  {
+    "id": 79779,
+    "code": "JUZ",
+    "card_number": "MMM-1-002",
+    "card_name": "アルティメットまどか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-002_SR.png",
+    "cost": "7",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79783,
+    "code": "JUd",
+    "card_number": "MMM-1-006",
+    "card_name": "鹿目 まどか",
+    "card_count": 3,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-006_C.png",
+    "cost": "0",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79784,
+    "code": "JUe",
+    "card_number": "MMM-1-007",
+    "card_name": "鹿目 まどか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-007_C.png",
+    "cost": "1",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79785,
+    "code": "JUf",
+    "card_number": "MMM-1-008",
+    "card_name": "鹿目 まどか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-008_SR.png",
+    "cost": "3",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79792,
+    "code": "JUm",
+    "card_number": "MMM-1-015",
+    "card_name": "巴 マミ",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-015_C.png",
+    "cost": "0",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79793,
+    "code": "JUn",
+    "card_number": "MMM-1-016",
+    "card_name": "巴 マミ",
+    "card_count": 1,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-016_U.png",
+    "cost": "1",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79799,
+    "code": "JUt",
+    "card_number": "MMM-1-022",
+    "card_name": "百江 なぎさ",
+    "card_count": 3,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-022_R.png",
+    "cost": "3",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79803,
+    "code": "JUx",
+    "card_number": "MMM-1-026",
+    "card_name": "美樹 さやか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-026_U.png",
+    "cost": "2",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 79805,
+    "code": "JUz",
+    "card_number": "MMM-1-028",
+    "card_name": "円環の理",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-028_R.png",
+    "cost": "5",
+    "color": "黄",
+    "type": "イベント"
+  },
+  {
+    "id": 79807,
+    "code": "JU/",
+    "card_number": "MMM-1-030",
+    "card_name": "ソウルジェム（鹿目 まどか）",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/BT31/UA31BT_MMM-1-030_U.png",
+    "cost": "3",
+    "color": "黄",
+    "type": "イベント"
+  },
+  {
+    "id": 79775,
+    "code": "JUV",
+    "card_number": "MMM-1-111",
+    "card_name": "美樹 さやか",
+    "card_count": 3,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/ST31/UA31ST_MMM-1-111_R.png",
+    "cost": "4",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 121375,
+    "code": "TeV",
+    "card_number": "MMM-2-001",
+    "card_name": "アルティメットまどか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/EXBT16/MMM-2-001_sr.png",
+    "cost": "5",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 121377,
+    "code": "TeX",
+    "card_number": "MMM-2-003",
+    "card_name": "暁美 ほむら",
+    "card_count": 2,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/EXBT16/MMM-2-003_r.png",
+    "cost": "5",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 121378,
+    "code": "TeY",
+    "card_number": "MMM-2-004",
+    "card_name": "鹿目 まどか",
+    "card_count": 4,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/EXBT16/MMM-2-004_u.png",
+    "cost": "2",
+    "color": "黄",
+    "type": "キャラクター"
+  },
+  {
+    "id": 121382,
+    "code": "Tec",
+    "card_number": "MMM-2-008",
+    "card_name": "美樹 さやか",
+    "card_count": 2,
+    "image_url": "https://files.bandai-tcg-plus.com/card_image/UA-JA/EXBT16/MMM-2-008_c.png",
+    "cost": "3",
+    "color": "黄",
+    "type": "キャラクター"
+  }
+]

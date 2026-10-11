@@ -1,8 +1,10 @@
 import { UserDeck } from '../domain/deckValidation';
-import { CARD_DATABASE, CardMaster } from '../data/cardDatabase';
+import { isCardMaster } from '../data/officialCardAsset';
+import { ensureCardData } from '../data/cardData';
+import { CARD_DATABASE, CardMaster, requireCardMaster, isOfficialCardCode } from '../data/cardDatabase';
 
 const STORAGE_KEY = 'union_arena_saved_decks';
-const officialCardsByCode = new Map(CARD_DATABASE.map((card) => [card.code, card]));
+
 
 export interface SavedDeckLoadResult {
   decks: UserDeck[];
@@ -37,6 +39,44 @@ export function createDefaultSampleDeck(): UserDeck {
   };
 }
 
+export interface SavedDeckSummary {
+  id: string; name: string; titleCode: string; totalCards: number; updatedAt: number;
+}
+export interface SavedDeckSummaryResult extends Omit<SavedDeckLoadResult, 'decks'> { decks: SavedDeckSummary[] }
+
+function summarizeStoredDeck(value: unknown): SavedDeckSummary | null {
+  if (!isRecord(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' ||
+    typeof value.titleCode !== 'string' || !Array.isArray(value.items)) return null;
+  const validCard = (card: unknown) => isRecord(card) && typeof card.code === 'string' &&
+    (isOfficialCardCode(card.code) || isValidImportedCard(card));
+  if (!value.items.every((item) => isRecord(item) && Number.isInteger(item.count) && (item.count as number) > 0 && validCard(item.card)) ||
+    (value.apCards !== undefined && (!Array.isArray(value.apCards) || !value.apCards.every(validCard)))) return null;
+  return { id: value.id, name: value.name, titleCode: value.titleCode,
+    totalCards: value.items.reduce((total, item) => total + item.count, 0),
+    updatedAt: typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) ? value.updatedAt : 0 };
+}
+
+export function loadSavedDeckSummaries(): SavedDeckSummaryResult {
+  const { entries, raw } = readStoredDecks();
+  if (!entries) return { decks: [], skippedCount: 0, backupJson: raw, unreadable: true };
+  const decks: SavedDeckSummary[] = [];
+  let skippedCount = 0;
+  for (const entry of entries) {
+    if (isRecord(entry) && entry.id === 'default-cgh-deck') continue;
+    const summary = summarizeStoredDeck(entry);
+    if (summary) decks.push(summary); else skippedCount++;
+  }
+  return { decks, skippedCount, backupJson: skippedCount ? raw : null, unreadable: false };
+}
+
+export async function loadSavedDeckById(id: string): Promise<UserDeck | null> {
+  const { entries } = readStoredDecks();
+  const entry = entries?.find((value) => isRecord(value) && value.id === id && summarizeStoredDeck(value));
+  if (!entry) return null;
+  await ensureCardData(entry);
+  return repairStoredDeck(entry);
+}
+
 // 保存済みデッキ一覧の読み込み
 function readStoredDecks(): { entries: unknown[] | null; raw: string | null } {
   try {
@@ -55,8 +95,8 @@ function readStoredDecks(): { entries: unknown[] | null; raw: string | null } {
 
 function repairStoredCard(value: unknown): CardMaster | null {
   if (!isRecord(value) || typeof value.code !== 'string') return null;
-  const master = officialCardsByCode.get(value.code);
-  const card = master ? { ...value, ...master } : value;
+  const master = requireCardMaster(value.code);
+  const card = master ? { ...value, ...master, reqEnergyColors: master.reqEnergyColors, hasBpPlus: master.hasBpPlus ?? false, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false } : value;
   return isValidImportedCard(card) ? card as unknown as CardMaster : null;
 }
 
@@ -116,7 +156,7 @@ export function saveDeck(deck: UserDeck): boolean {
   try {
     const { entries } = readStoredDecks();
     if (!entries) return false;
-    const index = entries.findIndex((entry) => isRecord(entry) && entry.id === deck.id && repairStoredDeck(entry) !== null);
+    const index = entries.findIndex((entry) => isRecord(entry) && entry.id === deck.id && summarizeStoredDeck(entry) !== null);
     if (index >= 0) {
       entries[index] = { ...deck, updatedAt: Date.now() };
     } else {
@@ -135,7 +175,7 @@ export function deleteDeck(deckId: string): void {
   try {
     const { entries } = readStoredDecks();
     if (!entries) return;
-    const retained = entries.filter((entry) => !isRecord(entry) || entry.id !== deckId || repairStoredDeck(entry) === null);
+    const retained = entries.filter((entry) => !isRecord(entry) || entry.id !== deckId || summarizeStoredDeck(entry) === null);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(retained));
   } catch (e) {
     console.error('Failed to delete deck:', e);
@@ -151,35 +191,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string');
-}
-
 function isValidImportedCard(value: unknown): boolean {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.code === 'string' &&
-    value.code.length > 0 &&
-    typeof value.name === 'string' &&
-    value.name.length > 0 &&
-    typeof value.title === 'string' &&
-    typeof value.titleCode === 'string' &&
-    value.titleCode.length > 0 &&
-    typeof value.cardType === 'string' &&
-    typeof value.color === 'string' &&
-    (typeof value.bp === 'number' || value.bp === null) &&
-    typeof value.apCost === 'number' &&
-    typeof value.reqEnergy === 'number' &&
-    typeof value.genEnergy === 'number' &&
-    (value.hasGenEnergyPlus === undefined || typeof value.hasGenEnergyPlus === 'boolean') &&
-    isStringArray(value.traits) &&
-    isStringArray(value.triggers) &&
-    typeof value.effectText === 'string'
-  );
+  return isCardMaster(value);
 }
 
 // JSONインポート
-export function importDeckFromJson(jsonStr: string): UserDeck {
+function parseImportedDeck(jsonStr: string): Pick<UserDeck, 'name' | 'titleCode' | 'items' | 'apCards'> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonStr);
@@ -205,13 +222,33 @@ export function importDeckFromJson(jsonStr: string): UserDeck {
   ) {
     throw new Error('無効なデッキJSONフォーマットです');
   }
+  return parsed as unknown as Pick<UserDeck, 'name' | 'titleCode' | 'items' | 'apCards'>;
+}
+
+export async function importDeckFromJsonAsync(jsonStr: string): Promise<UserDeck> {
+  const parsed = parseImportedDeck(jsonStr);
+  await ensureCardData(parsed);
+  return importDeckFromJson(jsonStr);
+}
+
+export function importDeckFromJson(jsonStr: string): UserDeck {
+  const parsed = parseImportedDeck(jsonStr);
   return {
     id: `imported-${Date.now()}`,
     name: parsed.name,
     titleCode: parsed.titleCode,
     items: (parsed.items as UserDeck['items']).map((item) => {
-      const master = CARD_DATABASE.find((card) => card.code === item.card.code);
-      return master ? { ...item, card: { ...item.card, genEnergy: master.genEnergy, hasGenEnergyPlus: master.hasGenEnergyPlus ?? false } } : item;
+      const master = requireCardMaster(item.card.code);
+      return master ? {
+        ...item,
+        card: {
+          ...item.card,
+          ...master,
+          reqEnergyColors: master.reqEnergyColors,
+          hasBpPlus: master.hasBpPlus ?? false,
+          hasGenEnergyPlus: master.hasGenEnergyPlus ?? false,
+        },
+      } : item;
     }),
     ...(parsed.apCards !== undefined ? { apCards: parsed.apCards as UserDeck['apCards'] } : {}),
     updatedAt: Date.now(),

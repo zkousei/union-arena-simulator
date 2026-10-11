@@ -1,0 +1,790 @@
+{
+  "status": "needs-official-text-or-errata-review",
+  "conflicts": [
+    {
+      "number": "AOT-1-092",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA23BT/AOT-1-092",
+          "traits": [
+            "104期兵",
+            "リヴァイ班",
+            "巨人継承者"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA23BT%2FAOT-1-092",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA23BT_AOT-1-092.png?v9"
+        },
+        {
+          "code": "UA23BT/AOT-1-092_p1",
+          "traits": [
+            "104期兵",
+            "リヴァイ班",
+            "巨人継承者"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA23BT%2FAOT-1-092_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA23BT_AOT-1-092_p1.png?v9"
+        },
+        {
+          "code": "UA23BT/AOT-1-092_p2",
+          "traits": [
+            "104期兵",
+            "リヴァイ班",
+            "巨人継承者"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA23BT%2FAOT-1-092_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA23BT_AOT-1-092_p2.png?v9"
+        },
+        {
+          "code": "UAPR/AOT-1-092",
+          "traits": [
+            "104期兵",
+            "リヴァイ班",
+            "巨人継承者"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FAOT-1-092",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_AOT-1-092.png?v9"
+        },
+        {
+          "code": "UAPR/AOT-1-092_p1",
+          "traits": [
+            "105期兵",
+            "リヴァイ班",
+            "巨人継承者"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FAOT-1-092_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_AOT-1-092_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "AOT-2-017",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "EX10BT/AOT-2-017",
+          "effectText": "[レイド]〈ファルコ・グライス〉アクティブにし、フロントLに移動できる[ステップ]（自分の移動フェイズにフロントLからエナジーLへ移動できる）[登場時]［特徴：地鳴らし］以外の必要エナジーが3以下の自分の〔場のキャラか場外のキャラカード〕をそれぞれカード名が異なるように合計3枚まで選び、このキャラの下に裏向きで置く。[起動メイン][レストにする]このキャラの下の裏向きのカードを見て、その中から1枚まで手札に加える。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX10BT%2FAOT-2-017",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX10BT_AOT-2-017.png?v9"
+        },
+        {
+          "code": "EX10BT/AOT-2-017_p1",
+          "effectText": "[レイド]〈ファルコ・グライス〉アクティブにし、フロントLに移動できる[ステップ]（自分の移動フェイズにフロントLからエナジーLへ移動できる）[登場時]［特徴：地鳴らし］以外の必要エナジーが3以下の〔自分の場のキャラか場外のキャラカード〕をそれぞれカード名が異なるように合計3枚まで選び、このキャラの下に裏向きで置く。[起動メイン][レストにする]このキャラの下の裏向きのカードを見て、その中から1枚まで手札に加える。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX10BT%2FAOT-2-017_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX10BT_AOT-2-017_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "ARK-1-040",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA30BT/ARK-1-040",
+          "traits": [
+            "ロドス・アイランド製薬"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA30BT%2FARK-1-040",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA30BT_ARK-1-040.png?v9"
+        },
+        {
+          "code": "UAPR/ARK-1-040",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FARK-1-040",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_ARK-1-040.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-1-040",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA01DC/BLC-1-040",
+          "effectText": "[登場時]自分の山札の上から1枚見て、山札の上か場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-040",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-040.png?v9"
+        },
+        {
+          "code": "UA01DC/BLC-1-040_p1",
+          "effectText": "[登場時]自分の山札の上から1枚見て、山札の上か場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-040_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-040_p1.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-040",
+          "effectText": "[登場時]自分の山札の上から1枚見る。そのカードを自分の山札の上か場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-040",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-040.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-040_p1",
+          "effectText": "[登場時]自分の山札の上から1枚見る。そのカードを自分の山札の上か場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-040_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-040_p1.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-1-040",
+          "effectText": "[登場時]自分の山札の上から1枚見て、山札の上か場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-1-040",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-1-040.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-1-041",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA01DC/BLC-1-041",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-041",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-041.png?v9"
+        },
+        {
+          "code": "UA01DC/BLC-1-041_p1",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-041_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-041_p1.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-041",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-041",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-041.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-041_p1",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-041_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-041_p1.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-041_p2",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-041_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-041_p2.png?v9"
+        },
+        {
+          "code": "UA08BT/BLC-1-041_p3",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の山札の上から2枚を場外に置く。自分の場外にあるカードを望む枚数リムーブエリアに置く。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08BT%2FBLC-1-041_p3",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08BT_BLC-1-041_p3.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-1-041",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の場外にあるカードを望む枚数リムーブエリアに置いてもよい。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-1-041",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-1-041.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-1-041_p1",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[登場時]自分の場外にあるカードを望む枚数リムーブエリアに置いてもよい。そうした場合、相手のフロントLのキャラを1枚まで選び、この効果でリムーブエリアに置いたカード1枚につき、このターン中、BP-500。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-1-041_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-1-041_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-1-104",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA01DC/BLC-1-104",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[起動メイン][ターン1]自分の場外にあるカードを4枚リムーブエリアに置く。そうした場合、カードを1枚引き、このキャラはこのターン中、[インパクト（1）]（アタックしてバトルに勝利した時、相手に1ダメージ）を得る。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-104",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-104.png?v9"
+        },
+        {
+          "code": "UA01DC/BLC-1-104_p1",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[起動メイン][ターン1]自分の場外にあるカードを4枚リムーブエリアに置く。そうした場合、カードを1枚引き、このキャラはこのターン中、[インパクト（1）]（アタックしてバトルに勝利した時、相手に1ダメージ）を得る。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-1-104_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-1-104_p1.png?v9"
+        },
+        {
+          "code": "UA08ST/BLC-1-104",
+          "effectText": "[レイド]〈黒崎一護〉アクティブにし、フロントLに移動できる[起動メイン][ターン1]自分の場外にあるカードを4枚リムーブエリアに置く。そうした場合、カードを1枚引き、このキャラはこのターン中、[インパクト（1）]（アタックしてバトルに勝利した時、相手プレイヤーに1ダメージ）を得る。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA08ST%2FBLC-1-104",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA08ST_BLC-1-104.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-2-029",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "EX07BT/BLC-2-029",
+          "traits": [
+            "護廷十三隊"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX07BT%2FBLC-2-029",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX07BT_BLC-2-029.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-2-029",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-2-029",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-2-029.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-2-034",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "EX07BT/BLC-2-034",
+          "effectText": "[レイド]〈朽木ルキア〉アクティブにし、フロントLに移動できる[登場時][フロントLにある場合]相手のフロントLのキャラを1枚まで選び、『レストにする』。自分のターン中で、自分のフロントLに元々の消費APが2以上のキャラがある場合、『レストにし、このキャラがフロントLを離れるまで、選んだキャラはアクティブにならない。』に代わる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX07BT%2FBLC-2-034",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX07BT_BLC-2-034.png?v9"
+        },
+        {
+          "code": "EX07BT/BLC-2-034_p1",
+          "effectText": "[レイド]〈朽木ルキア〉アクティブにし、フロントLに移動できる[登場時][フロントLにある場合]相手のフロントLのキャラを1枚まで選び、『レストにする』。自分のターン中で、自分のフロントLに元々の消費APが2以上のキャラがある場合、『レストにし、このキャラがフロントLを離れるまで、選んだキャラはアクティブにならない。』に代わる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX07BT%2FBLC-2-034_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX07BT_BLC-2-034_p1.png?v9"
+        },
+        {
+          "code": "EX07BT/BLC-2-034_p2",
+          "effectText": "[レイド]〈朽木ルキア〉アクティブにし、フロントLに移動できる[登場時][フロントLにある場合]相手のフロントLのキャラを1枚まで選び、『レストにする』。自分のターン中で、自分のフロントLに元々の消費APが2以上のキャラがある場合、『レストにし、このキャラがフロントLを離れるまで、選んだキャラはアクティブにならない。』に代わる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX07BT%2FBLC-2-034_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX07BT_BLC-2-034_p2.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-2-034",
+          "effectText": "[レイド]〈朽木ルキア〉アクティブにし、フロントLに移動できる[登場時][フロントLにある場合]相手のフロントLのキャラを1枚まで選び、『レストにする』。自分のターン中で、自分のフロントLに元々の消費APが2以上のキャラがある場合、『レストにし、このキャラが移動するか場を離れるまで、そのキャラはアクティブにならない。』に代わる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-2-034",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-2-034.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-2-034_p1",
+          "effectText": "[レイド]〈朽木ルキア〉アクティブにし、フロントLに移動できる[登場時][フロントLにある場合]相手のフロントLのキャラを1枚まで選び、『レストにする』。自分のターン中で、自分のフロントLに元々の消費APが2以上のキャラがある場合、『レストにし、このキャラが移動するか場を離れるまで、そのキャラはアクティブにならない。』に代わる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-2-034_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-2-034_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-2-050",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "EX07BT/BLC-2-050",
+          "effectText": "[登場時]自分の山札の上から5枚見る。その中から特徴を持たず[レイド]を持たないキャラカードを1枚まで公開し手札に加える。残りを望む順で自分の山札の下に置く。手札に加えた場合、自分の手札を1枚場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX07BT%2FBLC-2-050",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX07BT_BLC-2-050.png?v9"
+        },
+        {
+          "code": "UA01DC/BLC-2-050",
+          "effectText": "[登場時]自分の山札の上から5枚見て、特徴を持たず[レイド]を持たないキャラカードを1枚まで公開し手札に加える。残りを望む順で山札の下に置く。手札に加えた場合、自分の手札を1枚場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-2-050",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-2-050.png?v9"
+        },
+        {
+          "code": "UA01DC/BLC-2-050_p1",
+          "effectText": "[登場時]自分の山札の上から5枚見て、特徴を持たず[レイド]を持たないキャラカードを1枚まで公開し手札に加える。残りを望む順で山札の下に置く。手札に加えた場合、自分の手札を1枚場外に置く。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA01DC%2FBLC-2-050_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA01DC_BLC-2-050_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BLC-4-027",
+      "fields": [
+        "triggers"
+      ],
+      "variants": [
+        {
+          "code": "EX15BT/BLC-4-027",
+          "triggers": [
+            "DRAW"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX15BT%2FBLC-4-027",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX15BT_BLC-4-027.png?v9"
+        },
+        {
+          "code": "EX15BT/BLC-4-027_p1",
+          "triggers": [
+            "DRAW"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX15BT%2FBLC-4-027_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX15BT_BLC-4-027_p1.png?v9"
+        },
+        {
+          "code": "EX15BT/BLC-4-027_p2",
+          "triggers": [
+            "DRAW"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX15BT%2FBLC-4-027_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX15BT_BLC-4-027_p2.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-4-027",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-4-027",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-4-027.png?v9"
+        },
+        {
+          "code": "UAPR/BLC-4-027_p1",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FBLC-4-027_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_BLC-4-027_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "BTR-1-057",
+      "fields": [
+        "triggers"
+      ],
+      "variants": [
+        {
+          "code": "UA09BT/BTR-1-057",
+          "triggers": [
+            "ACTIVE"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA09BT%2FBTR-1-057",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA09BT_BTR-1-057.png?v9"
+        },
+        {
+          "code": "UA09BT/BTR-1-057_p1",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA09BT%2FBTR-1-057_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA09BT_BTR-1-057_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "HTR-1-026",
+      "fields": [
+        "cardType"
+      ],
+      "variants": [
+        {
+          "code": "UA03BT/HTR-1-026",
+          "cardType": "FIELD",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA03BT%2FHTR-1-026",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA03BT_HTR-1-026.png?v9"
+        },
+        {
+          "code": "UAPR/HTR-1-026",
+          "cardType": "CHARACTER",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FHTR-1-026",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_HTR-1-026.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "HTR-2-024",
+      "fields": [
+        "triggers"
+      ],
+      "variants": [
+        {
+          "code": "EX01BT/HTR-2-024",
+          "triggers": [
+            "ACTIVE"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX01BT%2FHTR-2-024",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX01BT_HTR-2-024.png?v9"
+        },
+        {
+          "code": "EX01BT/HTR-2-024_p1",
+          "triggers": [
+            "ACTIVE"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX01BT%2FHTR-2-024_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX01BT_HTR-2-024_p1.png?v9"
+        },
+        {
+          "code": "EX01BT/HTR-2-024_p2",
+          "triggers": [
+            "ACTIVE"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX01BT%2FHTR-2-024_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX01BT_HTR-2-024_p2.png?v9"
+        },
+        {
+          "code": "UAPR/HTR-2-024",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FHTR-2-024",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_HTR-2-024.png?v9"
+        },
+        {
+          "code": "UAPR/HTR-2-024_p1",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FHTR-2-024_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_HTR-2-024_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "HTR-2-029",
+      "fields": [
+        "name"
+      ],
+      "variants": [
+        {
+          "code": "EX01BT/HTR-2-029",
+          "name": "キルア＝ゾルディック",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX01BT%2FHTR-2-029",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX01BT_HTR-2-029.png?v9"
+        },
+        {
+          "code": "EX01BT/HTR-2-029_p1",
+          "name": "キルア＝ゾルディック",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX01BT%2FHTR-2-029_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX01BT_HTR-2-029_p1.png?v9"
+        },
+        {
+          "code": "UAPR/HTR-2-029",
+          "name": "キルア・ゾルディック",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FHTR-2-029",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_HTR-2-029.png?v9"
+        },
+        {
+          "code": "UAPR/HTR-2-029_p1",
+          "name": "キルア・ゾルディック",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FHTR-2-029_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_HTR-2-029_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "JJK-3-018",
+      "fields": [
+        "triggers"
+      ],
+      "variants": [
+        {
+          "code": "EX04BT/JJK-3-018",
+          "triggers": [
+            "COLOR"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX04BT%2FJJK-3-018",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX04BT_JJK-3-018.png?v9"
+        },
+        {
+          "code": "UAPR/JJK-3-018",
+          "triggers": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FJJK-3-018",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_JJK-3-018.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "KGD-1-049",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA48BT/KGD-1-049",
+          "effectText": "このキャラはアクティブで登場させる。[登場時]自分の場に［特徴：飛信隊］のカード名が4種類以上ある場合、自分の手札を1枚場外に置いてもよい。そうした場合、自分の場外から必要エナジーが2以下の青のイベントカードを1枚まで手札に加える。[アタック時]自分の手札から必要エナジーが2以下の青のイベントカードをAPを支払わずに1枚使用できる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA48BT%2FKGD-1-049",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA48BT_KGD-1-049.png?v9"
+        },
+        {
+          "code": "UA48BT/KGD-1-049_p1",
+          "effectText": "このキャラはアクティブで登場させる。[登場時]自分の場に［特徴：飛信隊］のカード名が4種類以上ある場合、自分の手札を1枚場外に置いてもよい。そうした場合、自分の場外から必要エナジーが2以下の青のイベントカードを1枚まで手札に加える。[アタック時]自分の手札から必要エナジーが2以下の青のイベントカードをAPを支払わずに1枚使用できる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA48BT%2FKGD-1-049_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA48BT_KGD-1-049_p1.png?v9"
+        },
+        {
+          "code": "UA48ST/KGD-1-049",
+          "effectText": "このキャラはアクティブで登場させる。[登場時]自分の場に［特徴：飛信隊］のカード名が4種類以上ある場合、自分の手札を1枚場外に置いてもよい。そうした場合、自分の場外から必要エナジーが2以下の青のイベントカードを1枚まで手札に加える。[アタック時]自分の手札から必要エナジーが2以下の青のイベントカードを1枚までAPを支払わずに使用する。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA48ST%2FKGD-1-049",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA48ST_KGD-1-049.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "KMR-1-021",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA29BT/KMR-1-021",
+          "traits": [
+            "飛電インテリジェンス"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA29BT%2FKMR-1-021",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA29BT_KMR-1-021.png?v9"
+        },
+        {
+          "code": "UA29BT/KMR-1-021_p1",
+          "traits": [
+            "飛電インテリジェンス"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA29BT%2FKMR-1-021_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA29BT_KMR-1-021_p1.png?v9"
+        },
+        {
+          "code": "UA29BT/KMR-1-021_p2",
+          "traits": [
+            "飛電インテリジェンス"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA29BT%2FKMR-1-021_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA29BT_KMR-1-021_p2.png?v9"
+        },
+        {
+          "code": "UAPR/KMR-1-021",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FKMR-1-021",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_KMR-1-021.png?v9"
+        },
+        {
+          "code": "UAPR/KMR-1-021_p1",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FKMR-1-021_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_KMR-1-021_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "NGR-1-003",
+      "fields": [
+        "hasGenEnergyPlus"
+      ],
+      "variants": [
+        {
+          "code": "UA33BT/NGR-1-003",
+          "hasGenEnergyPlus": true,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA33BT%2FNGR-1-003",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA33BT_NGR-1-003.png?v9"
+        },
+        {
+          "code": "UAPR/NGR-1-003",
+          "hasGenEnergyPlus": false,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FNGR-1-003",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_NGR-1-003.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "NIK-1-092",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA18BT/NIK-1-092",
+          "effectText": "[レイド]〈ラプラス〉アクティブにし、フロントLに移動できる自分のフロントLにBP4000以上の他の［特徴：ミシリス］が2枚以上ある場合、このキャラは[ダメージ（2）]を得る。[登場時]相手のフロントLのキャラを1枚まで選び、エナジーLに移動させる。（移動させる時にエナジーLに空きがない場合、相手はエナジーLのカードを1枚選んでリムーブエリアに置いてから移動させる）",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA18BT%2FNIK-1-092",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA18BT_NIK-1-092.png?v9"
+        },
+        {
+          "code": "UA18BT/NIK-1-092_p1",
+          "effectText": "[レイド]〈ラプラス〉アクティブにし、フロントLに移動できる自分のフロントLにBP4000以上の他の［特徴：ミシリス］が2枚以上ある場合、このキャラは[ダメージ（2）]を得る。[登場時]相手のフロントLのキャラを1枚まで選び、エナジーLに移動させる。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA18BT%2FNIK-1-092_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA18BT_NIK-1-092_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "REZ-1-086",
+      "fields": [
+        "genEnergy",
+        "hasGenEnergyPlus"
+      ],
+      "variants": [
+        {
+          "code": "UA40BT/REZ-1-086",
+          "genEnergy": 0,
+          "hasGenEnergyPlus": false,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA40BT%2FREZ-1-086",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA40BT_REZ-1-086.png?v9"
+        },
+        {
+          "code": "UAPR/REZ-1-086",
+          "genEnergy": 1,
+          "hasGenEnergyPlus": true,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FREZ-1-086",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_REZ-1-086.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "REZ-1-090",
+      "fields": [
+        "genEnergy"
+      ],
+      "variants": [
+        {
+          "code": "UA40BT/REZ-1-090",
+          "genEnergy": 0,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA40BT%2FREZ-1-090",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA40BT_REZ-1-090.png?v9"
+        },
+        {
+          "code": "UA40BT/REZ-1-090_p1",
+          "genEnergy": 0,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA40BT%2FREZ-1-090_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA40BT_REZ-1-090_p1.png?v9"
+        },
+        {
+          "code": "UAPR/REZ-1-090",
+          "genEnergy": 1,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FREZ-1-090",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_REZ-1-090.png?v9"
+        },
+        {
+          "code": "UAPR/REZ-1-090_p1",
+          "genEnergy": 1,
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FREZ-1-090_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_REZ-1-090_p1.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "SMD-1-022",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA43BT/SMD-1-022",
+          "traits": [
+            "坂本商店"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA43BT%2FSMD-1-022",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA43BT_SMD-1-022.png?v9"
+        },
+        {
+          "code": "UAPR/SMD-1-022",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FSMD-1-022",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_SMD-1-022.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "SMD-1-058",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA43BT/SMD-1-058",
+          "traits": [
+            "ORDER"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA43BT%2FSMD-1-058",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA43BT_SMD-1-058.png?v9"
+        },
+        {
+          "code": "UAPR/SMD-1-058",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FSMD-1-058",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_SMD-1-058.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "TKG-1-088",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "UA47BT/TKG-1-088",
+          "traits": [
+            "CCG"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA47BT%2FTKG-1-088",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA47BT_TKG-1-088.png?v9"
+        },
+        {
+          "code": "UAPR/TKG-1-088",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FTKG-1-088",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_TKG-1-088.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "TKN-1-106",
+      "fields": [
+        "effectText"
+      ],
+      "variants": [
+        {
+          "code": "UA13ST/TKN-1-106",
+          "effectText": "このキャラの下に裏向きのカードが2枚以上ある場合、このキャラはBP+500。[登場時]自分の山札の上から1枚を裏向きでこのキャラの下に置いてもよい。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UA13ST%2FTKN-1-106",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UA13ST_TKN-1-106.png?v9"
+        },
+        {
+          "code": "UAPR/TKN-1-106",
+          "effectText": "このキャラの下に裏向きのカードが2枚以上ある場合、このキャラはBP+500。[登場時]自分の山札の上から1枚を裏向きでこのキャラの下に置く。※このカードには、記載内容の訂正があります。",
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FTKN-1-106",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_TKN-1-106.png?v9"
+        }
+      ]
+    },
+    {
+      "number": "TSK-2-044",
+      "fields": [
+        "traits"
+      ],
+      "variants": [
+        {
+          "code": "EX09BT/TSK-2-044",
+          "traits": [
+            "魔王"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX09BT%2FTSK-2-044",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX09BT_TSK-2-044.png?v9"
+        },
+        {
+          "code": "EX09BT/TSK-2-044_p1",
+          "traits": [
+            "魔王"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX09BT%2FTSK-2-044_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX09BT_TSK-2-044_p1.png?v9"
+        },
+        {
+          "code": "EX09BT/TSK-2-044_p2",
+          "traits": [
+            "魔王"
+          ],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=EX09BT%2FTSK-2-044_p2",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/EX09BT_TSK-2-044_p2.png?v9"
+        },
+        {
+          "code": "UAPR/TSK-2-044",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FTSK-2-044",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_TSK-2-044.png?v9"
+        },
+        {
+          "code": "UAPR/TSK-2-044_p1",
+          "traits": [],
+          "detailUrl": "https://www.unionarena-tcg.com/jp/cardlist/detail.php?card_no=UAPR%2FTSK-2-044_p1",
+          "imageUrl": "https://www.unionarena-tcg.com/jp/images/cardlist/card/UAPR_TSK-2-044_p1.png?v9"
+        }
+      ]
+    }
+  ]
+}

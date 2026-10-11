@@ -1,5 +1,4 @@
 import { CardMaster } from '../data/cardDatabase';
-import { CardColor, CardType, getBaseCardCode } from '../types/card';
 import { DeckItem } from '../domain/deckValidation';
 
 export interface BandaiDeckCardRaw {
@@ -150,32 +149,16 @@ export async function fetchBandaiDeckRecipe(deckCode: string): Promise<BandaiDec
   };
 }
 
-/**
- * 日本語の色文字列を CardColor にマッピング
- */
-function mapColor(colorStr: string): CardColor {
-  if (colorStr.includes('青')) return 'BLUE';
-  if (colorStr.includes('緑')) return 'GREEN';
-  if (colorStr.includes('赤')) return 'RED';
-  if (colorStr.includes('黄')) return 'YELLOW';
-  return 'PURPLE';
+/** Prefer regular printings when the API omits the product prefix. */
+function printingPriority(code: string): number {
+  const prefix = code.split('/')[0].toUpperCase();
+  if (/^(?:UA|EX)\d+BT$/.test(prefix)) return 0;
+  if (/^(?:UA|EX)\d+ST$/.test(prefix)) return 1;
+  if (/^(?:UA|EX)\d+DC$/.test(prefix)) return 2;
+  return 3;
 }
 
-/**
- * 日本語の種別文字列を CardType にマッピング
- */
-function mapCardType(typeStr: string, cardNo: string): CardType {
-  if (typeStr.includes('イベント') || typeStr.includes('EVENT')) return 'EVENT';
-  if (typeStr.includes('フィールド') || typeStr.includes('FIELD')) return 'FIELD';
-  if (typeStr.includes('アクションポイント') || typeStr.includes('AP') || cardNo.includes('AP')) {
-    return 'ACTION_POINT';
-  }
-  return 'CHARACTER';
-}
-
-/**
- * BANDAI TCG+ の生カードデータをシミュレータの DeckItem[] に照合・変換
- */
+/** BANDAI TCG+ の生カードデータをシミュレータの DeckItem[] に照合・変換 */
 export function mapBandaiDeckToDeckItems(
   rawCards: BandaiDeckCardRaw[],
   cardPool: CardMaster[]
@@ -186,44 +169,22 @@ export function mapBandaiDeckToDeckItems(
   for (const raw of rawCards) {
     const rawNo = raw.card_number.trim().toUpperCase();
 
-    // 1. 完全一致 または 末尾一致で既存プールを検索 (例: "UA08BT/BLC-2-016" は "BLC-2-016" に一致)
-    let matchedCard = cardPool.find(
-      (c) =>
-        c.code.toUpperCase() === rawNo ||
-        c.code.toUpperCase().endsWith(`/${rawNo}`) ||
-        c.code.toUpperCase().endsWith(`-${rawNo}`) ||
-        c.code.toUpperCase().includes(rawNo)
-    );
-
-    // 2. プールにない場合、API情報からフォールバックカードを動的生成
-    if (!matchedCard) {
-      const titleCodeMatch = rawNo.match(/^([A-Z0-9]+)-/);
-      const titleCode = titleCodeMatch ? titleCodeMatch[1] : 'OTHER';
-      const costNum = parseInt(raw.cost, 10);
-
-      matchedCard = {
-        code: raw.card_number,
-        baseCode: getBaseCardCode(raw.card_number),
-        name: raw.card_name,
-        title: 'BANDAI TCG+ IMPORT',
-        titleCode,
-        cardType: mapCardType(raw.type, raw.card_number),
-        color: mapColor(raw.color),
-        bp: null,
-        apCost: 1,
-        reqEnergy: isNaN(costNum) ? 0 : costNum,
-        genEnergy: 1,
-        traits: [],
-        triggers: [],
-        effectText: '',
-        imageUrl: raw.image_url,
-        isParallel: false,
-        isUnrevealed: false,
-      };
-      newCards.push(matchedCard);
+    // Full numbers always take precedence. Short numbers must match the entire
+    // portion after '/', including any parallel suffix. Equivalent printings
+    // prefer BT, then ST, then DC, then other products, with a stable code tie-break.
+    let matchedCard = cardPool.find((c) => c.code.toUpperCase() === rawNo);
+    if (!matchedCard && !rawNo.includes('/')) {
+      const candidates = cardPool.filter((c) => c.code.split('/').pop()!.toUpperCase() === rawNo);
+      candidates.sort((a, b) => printingPriority(a.code) - printingPriority(b.code)
+        || (a.code.toUpperCase() < b.code.toUpperCase() ? -1 : a.code.toUpperCase() > b.code.toUpperCase() ? 1 : 0));
+      matchedCard = candidates[0];
     }
 
-    const count = raw.card_count || 1;
+    if (!matchedCard) {
+      throw new Error(`公式カードデータに未収録のカードがあります: ${raw.card_number}。カードデータの更新後に再試行してください。`);
+    }
+    const count = raw.card_count;
+    if (!Number.isSafeInteger(count) || count <= 0) throw new Error(`カード枚数が不正です: ${raw.card_number}`);
     const existingItem = items.find((it) => it.card.code === matchedCard!.code);
     if (existingItem) {
       existingItem.count += count;

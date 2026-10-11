@@ -1,6 +1,6 @@
-import { Card, getBaseCardCode } from '../types/card';
-import officialCardsUrl from './officialCards.json?url';
-import { createCardAssetLoader } from './officialCardAsset';
+import { Card } from '../types/card';
+import indexUrl from './generated/index.json?url';
+import { createCardCatalog } from './cardCatalog';
 import { OFFICIAL_TITLES } from './officialSeriesData';
 
 // ユニオンアリーナ カードマスタデータベース
@@ -634,43 +634,19 @@ const BASE_CARD_DATABASE: CardMaster[] = [
   },
 ];
 
-// App modules are imported only after this database is ready (see CardDataBootstrap).
+const assetUrls = import.meta.glob<string>('./generated/*.json', { query: '?url', import: 'default', eager: true });
+const shardUrls = Object.fromEntries(Object.entries(assetUrls).map(([file, url]) => [file.split('/').pop()!.replace('.json', ''), url]));
+export const cardCatalog = createCardCatalog(indexUrl, shardUrls, BASE_CARD_DATABASE);
+// Compatibility view for existing consumers; refreshed only after validated shard loads.
 export const CARD_DATABASE: CardMaster[] = [];
-
-export const loadCardDatabase = createCardAssetLoader(officialCardsUrl, (officialCards) => {
-  // 公式カードとベースカードをマージ（重複コードは優先順位をつけて統合）
-  const mergedCardMap = new Map<string, CardMaster>();
-
-  // まず公式カードを登録（baseCode, isParallel, isUnrevealed を正規化）
-  for (const rawCard of officialCards) {
-    const card: CardMaster = {
-      ...rawCard,
-      baseCode: rawCard.baseCode || getBaseCardCode(rawCard.code),
-      isParallel: rawCard.isParallel ?? /_p\d+$/i.test(rawCard.code),
-      isUnrevealed:
-        rawCard.isUnrevealed ??
-        (/comingsoon/i.test(rawCard.code) ||
-          /comingsoon/i.test(rawCard.name) ||
-          Boolean(rawCard.imageUrl && /comingsoon/i.test(rawCard.imageUrl))),
-    };
-    mergedCardMap.set(card.code, card);
-  }
-
-  // ベースカードの追加（公式カードに存在しないコードのみフォールバック登録）
-  for (const baseCard of BASE_CARD_DATABASE) {
-    if (!mergedCardMap.has(baseCard.code)) {
-      const normalized: CardMaster = {
-        ...baseCard,
-        baseCode: baseCard.baseCode || getBaseCardCode(baseCard.code),
-        isParallel: baseCard.isParallel ?? /_p\d+$/i.test(baseCard.code),
-        isUnrevealed: baseCard.isUnrevealed ?? false,
-      };
-      mergedCardMap.set(baseCard.code, normalized);
-    }
-  }
-
-  CARD_DATABASE.splice(0, CARD_DATABASE.length, ...mergedCardMap.values());
-});
+cardCatalog.subscribe(() => { CARD_DATABASE.splice(0, CARD_DATABASE.length, ...cardCatalog.getCards()); });
+export const loadCardIndex = cardCatalog.loadIndex;
+export const loadCardDatabase = cardCatalog.loadAll;
+export const loadTitleCards = cardCatalog.loadTitle;
+export const ensureCardCodes = cardCatalog.ensureCodes;
+export const getCardMaster = cardCatalog.getCard;
+export const requireCardMaster = cardCatalog.requireCard;
+export const isOfficialCardCode = cardCatalog.isOfficialCode;
 
 // 全作品一覧 (全57作品完全網羅)
 export const AVAILABLE_TITLES = [

@@ -24,6 +24,10 @@ const dummyCard: Card = {
 };
 
 describe('CardView', () => {
+  it('includes the official requirement colors in the energy label', () => {
+    render(<CardView card={{ ...dummyCard, reqEnergyColors: ['RED', 'BLUE'], reqEnergy: 4 }} />);
+    expect(screen.getByTitle('必要エナジー: 赤／青 4').textContent).toBe('⚡4');
+  });
   it('shows base generated energy without an effect-increase plus sign', () => {
     render(<CardView card={{ ...dummyCard, genEnergy: 1, hasGenEnergyPlus: false }} />);
 

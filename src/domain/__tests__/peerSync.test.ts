@@ -29,6 +29,15 @@ describe('authoritative P2P synchronization', () => {
     vi.restoreAllMocks();
   });
 
+  it('preserves optional requirement colors in authoritative snapshots and zone movement', () => {
+    const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
+    state.players.p2.deck = [{ ...createCard(0), reqEnergyColors: ['RED', 'BLUE'] }];
+    const transition = createAuthoritativeTransition(state, { type: 'DRAW_CARD', payload: { playerId: 'p2' } }, 4);
+    const received = JSON.parse(JSON.stringify(transition.snapshot));
+    expect(received.state.players.p2.hand[0].reqEnergyColors).toEqual(['RED', 'BLUE']);
+    expect(received.state.players.p2.deck).toHaveLength(0);
+    expect(state.players.p2.deck).toHaveLength(1);
+  });
   it('commits only the owner-requested manual energy adjustment', () => {
     const state = createInitialGameState('p1', 'Host', 'p2', 'Guest', 'p1');
     state.players.p2.energyLine[0] = createCard(0);

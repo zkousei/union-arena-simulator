@@ -1,6 +1,8 @@
+import { formatRequiredEnergyColors } from '../../data/cardEnergyRules.js';
+import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardColor, TriggerType } from '../../types/card';
-import { CARD_DATABASE } from '../../data/cardDatabase';
+import { getCardMaster } from '../../data/cardDatabase';
 import { CardLocation } from '../../types/game';
 import { DND_MIME_TYPE, DragCardPayload } from '../../types/dnd';
 import { getEffectiveGeneratedEnergy } from '../../domain/energy';
@@ -78,6 +80,7 @@ export const CardView: React.FC<CardViewProps> = ({
   isCompact = false,
   accessibleLabel,
 }) => {
+  useCardCatalog();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -136,11 +139,11 @@ export const CardView: React.FC<CardViewProps> = ({
 
   const masterCard =
     card.bp === null || card.bp === undefined
-      ? CARD_DATABASE.find((c) => c.code === card.code)
+      ? getCardMaster(card.code)
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
-  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? getCardMaster(card.code)?.hasGenEnergyPlus ?? false;
   const currentEnergy = getEffectiveGeneratedEnergy(card);
   const energyModifier = card.genEnergyModifier || 0;
   const frontLineEnergy = card.frontLineGeneratedEnergy || 0;
@@ -419,7 +422,7 @@ export const CardView: React.FC<CardViewProps> = ({
         }`}>
           <div className="flex flex-wrap items-center gap-0.5">
             {card.reqEnergy > 0 && (
-              <span className={`bg-slate-900/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-amber-300 border border-amber-500/40`} title={`必要エナジー: ${card.reqEnergy}`}>
+              <span className={`bg-slate-900/90 ${isCompact ? 'px-0.5 py-0.2 text-[8px]' : 'px-1 py-0.5'} rounded text-amber-300 border border-amber-500/40`} title={`必要エナジー: ${card.reqEnergyColors ? `${formatRequiredEnergyColors(card)} ` : ''}${card.reqEnergy}`}>
                 ⚡{card.reqEnergy}
               </span>
             )}

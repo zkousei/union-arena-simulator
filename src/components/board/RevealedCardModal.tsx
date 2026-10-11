@@ -1,6 +1,8 @@
+import { formatRequiredEnergyColors } from '../../data/cardEnergyRules.js';
+import { useCardCatalog } from '../../hooks/useCardCatalog';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../types/card';
-import { CARD_DATABASE } from '../../data/cardDatabase';
+import { getCardMaster } from '../../data/cardDatabase';
 import { Sparkles, Hand, Trash2, ArrowLeft, X, ShieldAlert } from 'lucide-react';
 
 interface RevealedCardModalProps {
@@ -69,6 +71,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
   onDismissRevealed,
   onCloseInspect,
 }) => {
+  useCardCatalog();
   const [imgError, setImgError] = useState(false);
   const [isEnlargedImage, setIsEnlargedImage] = useState(false);
   const card = revealed ? revealed.card : inspectCard;
@@ -107,11 +110,11 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
 
   const masterCard =
     card.bp === null || card.bp === undefined
-      ? CARD_DATABASE.find((c) => c.code === card.code)
+      ? getCardMaster(card.code)
       : null;
   const effectiveBp = card.bp ?? masterCard?.bp ?? null;
   const effectiveHasBpPlus = card.hasBpPlus ?? masterCard?.hasBpPlus ?? false;
-  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? CARD_DATABASE.find((c) => c.code === card.code)?.hasGenEnergyPlus ?? false;
+  const effectiveHasGenEnergyPlus = card.hasGenEnergyPlus ?? getCardMaster(card.code)?.hasGenEnergyPlus ?? false;
 
   const hasValidImage = !!card.imageUrl && !imgError;
 
@@ -203,7 +206,7 @@ export const RevealedCardModal: React.FC<RevealedCardModalProps> = ({
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span>種別: <strong className="text-slate-200">{card.cardType}</strong></span>
                   <span>•</span>
-                  <span>色: <strong className="text-purple-300">{card.color}</strong></span>
+                  <span>{card.reqEnergyColors ? '必要色:' : '色:'} <strong className="text-purple-300">{card.reqEnergyColors ? formatRequiredEnergyColors(card) : card.color}</strong></span>
                 </div>
               </div>
 

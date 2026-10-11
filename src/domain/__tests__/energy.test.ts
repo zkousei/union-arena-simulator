@@ -21,6 +21,9 @@ const card = (genEnergy: number, isRested = false): Card => ({
 });
 
 describe('calculateGeneratedEnergy', () => {
+  it('does not multiply generated energy when requirement metadata contains multiple colors', () => {
+    expect(calculateGeneratedEnergy([{ ...card(2), reqEnergyColors: ['RED', 'BLUE'] }])).toEqual({ total: 2, byColor: { BLUE: 2 } });
+  });
   it('counts the printed base energy, including an explicit zero', () => {
     expect(calculateGeneratedEnergy([card(0), card(1), card(2)]))
       .toEqual({ total: 3, byColor: { BLUE: 3 } });

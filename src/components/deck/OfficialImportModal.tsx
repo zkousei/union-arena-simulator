@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Globe,
   FileText,
@@ -24,7 +24,8 @@ import {
   fetchBandaiDeckRecipe,
   mapBandaiDeckToDeckItems,
 } from '../../services/bandaiTcgPlusService';
-import { CardMaster } from '../../data/cardDatabase';
+import { CardMaster, ensureCardCodes, cardCatalog, getCardMaster } from '../../data/cardDatabase';
+import { useCardOperation } from '../../hooks/useCardOperation';
 import { DeckItem } from '../../domain/deckValidation';
 import { OFFICIAL_TITLES } from '../../data/officialSeriesData';
 
@@ -45,10 +46,12 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'tcgPlus' | 'series' | 'deckText' | 'html'>('tcgPlus');
 
+  const tcgOperation = useCardOperation(isOpen ? activeTab : 'closed');
+
   // タブ0: BANDAI TCG+ レシピステート
   const [tcgPlusInput, setTcgPlusInput] = useState<string>('');
   const [tcgPlusDeckName, setTcgPlusDeckName] = useState<string>('TCG+ デッキ');
-  const [isFetchingTcgPlus, setIsFetchingTcgPlus] = useState<boolean>(false);
+  const isFetchingTcgPlus = tcgOperation.busy;
   const [tcgPlusError, setTcgPlusError] = useState<string | null>(null);
   const [tcgPlusResult, setTcgPlusResult] = useState<{
     items: DeckItem[];
@@ -61,13 +64,20 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   const [seriesTitleFilter, setSeriesTitleFilter] = useState<string>('ALL');
   const [seriesSearch, setSeriesSearch] = useState<string>('');
   const [includeParallel, setIncludeParallel] = useState<boolean>(false);
-  const [isFetchingSeries, setIsFetchingSeries] = useState(false);
+  const seriesOperation = useCardOperation(isOpen ? activeTab : 'closed');
+  const isFetchingSeries = seriesOperation.busy;
+  const seriesGeneration = useRef(0);
+  useEffect(() => {
+    const generation = ++seriesGeneration.current;
+    return () => { seriesGeneration.current = generation + 1; };
+  }, [isOpen, activeTab]);
   const [fetchProgress, setFetchProgress] = useState<{ current: number; total: number } | null>(null);
   const [fetchSuccessMsg, setFetchSuccessMsg] = useState<string | null>(null);
-  const [fetchErrorMsg, setFetchErrorMsg] = useState<string | null>(null);
+  const fetchErrorMsg = seriesOperation.error ? `取得エラー: ${seriesOperation.error}` : null;
 
   // タブ2: デッキテキストステート
   const [deckText, setDeckText] = useState<string>('');
+  const textOperation = useCardOperation(isOpen ? `${activeTab}:${deckText}` : 'closed');
   const [deckNameInput, setDeckNameInput] = useState<string>('公式インポートデッキ');
   const [parsedItems, setParsedItems] = useState<DeckItem[]>([]);
   const [notFoundCodes, setNotFoundCodes] = useState<string[]>([]);
@@ -77,39 +87,31 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   const [htmlInput, setHtmlInput] = useState<string>('');
   const [htmlCardNoInput, setHtmlCardNoInput] = useState<string>('');
   const [htmlSuccessMsg, setHtmlSuccessMsg] = useState<string | null>(null);
+  const htmlOperation = useCardOperation(isOpen ? activeTab : 'closed');
 
   if (!isOpen) return null;
 
   // BANDAI TCG+ レシピ取得ハンドラー
   const handleFetchTcgPlus = async () => {
-    setIsFetchingTcgPlus(true);
     setTcgPlusError(null);
     setTcgPlusResult(null);
 
     const deckCode = extractDeckCode(tcgPlusInput);
     if (!deckCode) {
       setTcgPlusError('有効な BANDAI TCG+ のデッキURLまたはデッキコードを入力してください。');
-      setIsFetchingTcgPlus(false);
       return;
     }
 
-    try {
+    void tcgOperation.run(async () => {
       const recipe = await fetchBandaiDeckRecipe(deckCode);
-      const { items, newCards } = mapBandaiDeckToDeckItems(recipe.mainDeck, cardPool);
-
-      if (items.length === 0) {
-        setTcgPlusError('デッキにカードが見つかりませんでした。');
-        return;
-      }
-
+      await ensureCardCodes(recipe.mainDeck.map((card) => card.card_number.trim()));
+      const result = mapBandaiDeckToDeckItems(recipe.mainDeck, cardCatalog.getCards());
+      if (!result.items.length) throw new Error('デッキにカードが見つかりませんでした。');
+      return result;
+    }, ({ items, newCards }) => {
       setTcgPlusResult({ items, newCards, deckCode });
       setTcgPlusDeckName(`TCG+ デッキ (${deckCode})`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '通信に失敗しました';
-      setTcgPlusError(`取得エラー: ${message}`);
-    } finally {
-      setIsFetchingTcgPlus(false);
-    }
+    });
   };
 
   // BANDAI TCG+ デッキ適用
@@ -126,47 +128,41 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   };
 
   // シリーズ取得ハンドラー
-  const handleFetchSeries = async () => {
-    setIsFetchingSeries(true);
+  const handleFetchSeries = () => {
     setFetchProgress(null);
     setFetchSuccessMsg(null);
-    setFetchErrorMsg(null);
-
+    const generation = seriesGeneration.current;
     const series = OFFICIAL_SERIES_LIST.find((s) => s.seriesId === selectedSeriesId);
-
-    try {
+    void seriesOperation.run(async () => {
       const cards = await fetchSeriesCardsViaProxy(
         selectedSeriesId,
-        (curr, tot) => {
-          setFetchProgress({ current: curr, total: tot });
+        (current, total) => {
+          if (generation === seriesGeneration.current) setFetchProgress({ current, total });
         },
         { includeParallel }
       );
-
-      if (cards.length > 0) {
-        onAddCardsToPool(cards);
-        setFetchSuccessMsg(
-          `「${series?.name || selectedSeriesId}」から ${cards.length} 枚の公式カード（${
-            includeParallel ? 'パラレル版含む' : '通常版'
-          }）を取得し、カードプールに追加しました！`
-        );
-      } else {
-        setFetchErrorMsg('カードを取得できませんでした。');
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '通信に失敗しました';
-      setFetchErrorMsg(`取得エラー: ${message}`);
-    } finally {
-      setIsFetchingSeries(false);
-    }
+      if (!cards.length) throw new Error('カードを取得できませんでした。');
+      await ensureCardCodes(cards.map((card) => card.code));
+      return cards;
+    }, (cards) => {
+      onAddCardsToPool(cards);
+      const bundledCount = cards.filter((card) => getCardMaster(card.code)).length;
+      setFetchSuccessMsg(
+        `「${series?.name || selectedSeriesId}」を取得しました。同梱の公式データを使用: ${bundledCount}枚。取得データを追加: ${cards.length - bundledCount}枚。` +
+        (bundledCount ? ' 同梱済みカードの名前・効果等は取得内容で上書きしません。' : '')
+      );
+    });
   };
 
   // デッキテキストパース
   const handleParseDeckText = () => {
-    const { items, notFound } = parseDeckListText(deckText, cardPool);
-    setParsedItems(items);
-    setNotFoundCodes(notFound);
-    setHasParsed(true);
+    void textOperation.run(async () => {
+      const codes = deckText.match(/[A-Za-z0-9_]+\/[A-Za-z0-9_]+-[0-9]+-[0-9A-Za-z_]+/g) || [];
+      await ensureCardCodes(codes);
+      const pool = new Map(cardPool.map((card) => [card.code, card]));
+      cardCatalog.getCards().forEach((card) => pool.set(card.code, card));
+      return parseDeckListText(deckText, Array.from(pool.values()));
+    }, ({ items, notFound }) => { setParsedItems(items); setNotFoundCodes(notFound); setHasParsed(true); });
   };
 
   // デッキ適用
@@ -181,18 +177,21 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
   const handleParseHtml = () => {
     setHtmlSuccessMsg(null);
     if (!htmlInput.trim()) return;
-
-    try {
+    void htmlOperation.run(async () => {
       const cardNo = htmlCardNoInput.trim() || 'CUSTOM/CARD-1-001';
       const parsed = parseCardFromDetailHtml(htmlInput, cardNo);
+      await ensureCardCodes([parsed.code]);
+      return parsed;
+    }, (parsed) => {
       onAddCardsToPool([parsed]);
-      setHtmlSuccessMsg(`カード「${parsed.name} (${parsed.code})」をパースして追加しました！`);
+      const bundled = getCardMaster(parsed.code);
+      setHtmlSuccessMsg(bundled
+        ? `カード「${bundled.name} (${bundled.code})」は同梱の公式データを使用します。名前・効果等は貼り付けたHTMLで上書きしません。`
+        : `カード「${parsed.name} (${parsed.code})」をパースして追加しました！`);
+
       setHtmlInput('');
       setHtmlCardNoInput('');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : '不明なエラー';
-      alert(`パースに失敗しました: ${message}`);
-    }
+    });
   };
 
   return (
@@ -217,6 +216,8 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
           </button>
         </div>
 
+        {textOperation.busy && <p role="status" className="p-3">カードデータを読み込み中…</p>}
+        {textOperation.error && <p role="alert" className="p-3 text-amber-200">{textOperation.error} 再試行してください。</p>}
         {/* タブナビゲーション */}
         <div className="flex border-b border-slate-800 bg-slate-950/40 text-xs px-5 pt-2 gap-2 overflow-x-auto">
           <button
@@ -318,10 +319,10 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
               </div>
 
               {/* エラー表示 */}
-              {tcgPlusError && (
-                <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
+              {(tcgPlusError || tcgOperation.error) && (
+                <div role="alert" className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
-                  <span>{tcgPlusError}</span>
+                  <span>{tcgPlusError || tcgOperation.error}</span>
                 </div>
               )}
 
@@ -632,6 +633,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
 
               <div className="flex items-center gap-2">
                 <button
+                  disabled={textOperation.busy}
                   onClick={handleParseDeckText}
                   className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition"
                 >
@@ -688,6 +690,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
                 <label className="font-bold text-slate-300">カード番号 (例: UA01BT/CGH-1-001):</label>
                 <input
                   type="text"
+                  disabled={htmlOperation.busy}
                   value={htmlCardNoInput}
                   onChange={(e) => setHtmlCardNoInput(e.target.value)}
                   placeholder="UA01BT/CGH-1-001"
@@ -699,6 +702,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
                 <label className="font-bold text-slate-300">HTMLソースコード:</label>
                 <textarea
                   rows={6}
+                  disabled={htmlOperation.busy}
                   value={htmlInput}
                   onChange={(e) => setHtmlInput(e.target.value)}
                   placeholder="<div class=&quot;cardDetailCol&quot;>..."
@@ -706,6 +710,8 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
                 />
               </div>
 
+              {htmlOperation.busy && <p role="status">カードデータを読み込み中…</p>}
+              {htmlOperation.error && <p role="alert" className="text-amber-200">{htmlOperation.error} 再試行してください。</p>}
               {htmlSuccessMsg && (
                 <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -715,7 +721,7 @@ export const OfficialImportModal: React.FC<OfficialImportModalProps> = ({
 
               <button
                 onClick={handleParseHtml}
-                disabled={!htmlInput.trim()}
+                disabled={htmlOperation.busy || !htmlInput.trim()}
                 className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 font-bold text-white transition flex items-center justify-center gap-1.5 shadow"
               >
                 <Plus className="w-4 h-4" />

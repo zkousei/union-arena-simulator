@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CardDataBootstrap } from './CardDataBootstrap';
 
 const mocks = vi.hoisted(() => ({ load: vi.fn(), app: vi.fn() }));
-vi.mock('../data/cardDatabase', () => ({ loadCardDatabase: mocks.load }));
+vi.mock('../data/cardDatabase', () => ({ loadCardIndex: mocks.load }));
 vi.mock('../App', () => ({ default: () => { mocks.app(); return <div>アプリ起動済み</div>; } }));
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -20,7 +20,7 @@ describe('CardDataBootstrap', () => {
     let resolve!: () => void;
     mocks.load.mockImplementationOnce(() => new Promise<void>((done) => { resolve = done; }));
     render(<CardDataBootstrap />);
-    expect(screen.getByRole('status').textContent).toContain('カードデータを読み込み中');
+    expect(screen.getByRole('status').textContent).toContain('作品一覧を読み込み中');
     expect(mocks.app).not.toHaveBeenCalled();
     resolve();
     expect(await screen.findByText('アプリ起動済み')).toBeTruthy();
