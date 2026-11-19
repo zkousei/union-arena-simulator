@@ -101,41 +101,7 @@ export const CardView: React.FC<CardViewProps> = ({
 
   // 裏向きの表面確認は所有者側だけに限る。
   const canRevealFaceDown = revealFaceDown && !isOpponent;
-  if (card.isFaceDown && !canRevealFaceDown) {
-    return (
-      <div
-        className={`${cardDimensions} rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105 relative group/facedown`}
-        onClick={onClick}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
-        aria-label={onClick ? accessibleLabel || card.name : undefined}
-        onKeyDown={(event) => {
-          if (onClick && (event.key === 'Enter' || event.key === ' ')) {
-            event.preventDefault();
-            onClick();
-          }
-        }}
-      >
-        <div className={`${isCompact ? 'w-7 h-10' : 'w-12 h-16'} rounded border border-indigo-500/30 flex items-center justify-center`}>
-          <span className={`${isCompact ? 'text-[8px]' : 'text-[10px]'} font-bold text-indigo-400/80 tracking-wider`}>UA</span>
-        </div>
-        {onInspect && !isOpponent && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onInspect(card);
-            }}
-            className={`absolute bottom-0.5 ${isCompact ? 'px-1 py-0 text-[7px]' : 'px-1.5 py-0.5 text-[9px]'} rounded bg-black/80 border border-amber-500/40 text-amber-300 opacity-0 group-hover/facedown:opacity-100 transition-opacity flex items-center gap-0.5 shadow`}
-            title="自分のみ表面を確認"
-          >
-            <Eye className={`${isCompact ? 'w-2 h-2' : 'w-2.5 h-2.5'} text-amber-400`} />
-            確認
-          </button>
-        )}
-      </div>
-    );
-  }
+  const hideFace = !!card.isFaceDown && !canRevealFaceDown;
 
   const masterCard =
     card.bp === null || card.bp === undefined
@@ -183,7 +149,7 @@ export const CardView: React.FC<CardViewProps> = ({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     // 相手手札等はコンテキストメニュー不要だが、相手の盤面カードは操作可能にする
-    if (isOpponent && !isFieldCard) return;
+    if (isOpponent && (hideFace || !isFieldCard)) return;
     e.preventDefault();
     setMenuPos({ x: e.clientX, y: e.clientY });
     setShowMenu(true);
@@ -193,7 +159,67 @@ export const CardView: React.FC<CardViewProps> = ({
 
   return (
     <>
+      {hideFace && (
+      <div
+        ref={cardRef}
+        draggable={canDrag}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onContextMenu={handleContextMenu}
+        className={`${cardDimensions} rounded-lg border-2 border-slate-700 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105 relative group/facedown ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40' : ''}`}
+        onClick={!isOpponent ? onClick : undefined}
+        role={!isOpponent && (onClick || onMoveTo) ? 'button' : undefined}
+        tabIndex={!isOpponent && (onClick || onMoveTo) ? 0 : undefined}
+        aria-label={!isOpponent && (onClick || onMoveTo) ? '裏向きカード' : undefined}
+        onKeyDown={(event) => {
+          if (isOpponent || event.target !== event.currentTarget) return;
+          if (onMoveTo && (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10') || (!onClick && (event.key === 'Enter' || event.key === ' ')))) {
+            event.preventDefault();
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMenuPos({ x: rect.right, y: rect.top });
+            setShowMenu(true);
+          } else if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onClick();
+          }
+        }}
+      >
+        <div className={`${isCompact ? 'w-7 h-10' : 'w-12 h-16'} rounded border border-indigo-500/30 flex items-center justify-center`}>
+          <span className={`${isCompact ? 'text-[8px]' : 'text-[10px]'} font-bold text-indigo-400/80 tracking-wider`}>UA</span>
+        </div>
+        {onMoveTo && !isOpponent && (
+          <button
+            type="button"
+            title="裏向きカードの移動メニュー"
+            className="absolute top-0.5 right-0.5 rounded bg-slate-900/90 p-1 text-sky-300 border border-slate-600"
+            onClick={(event) => {
+              event.stopPropagation();
+              const rect = event.currentTarget.getBoundingClientRect();
+              setMenuPos({ x: rect.right, y: rect.top });
+              setShowMenu(true);
+            }}
+          >
+            <ArrowRightLeft className="w-3 h-3" />
+          </button>
+        )}
+        {onInspect && !isOpponent && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect(card);
+            }}
+            className={`absolute bottom-0.5 ${isCompact ? 'px-1 py-0 text-[7px]' : 'px-1.5 py-0.5 text-[9px]'} rounded bg-black/80 border border-amber-500/40 text-amber-300 opacity-0 group-hover/facedown:opacity-100 transition-opacity flex items-center gap-0.5 shadow`}
+            title="自分のみ表面を確認"
+          >
+            <Eye className={`${isCompact ? 'w-2 h-2' : 'w-2.5 h-2.5'} text-amber-400`} />
+            確認
+          </button>
+        )}
+      </div>
+      )}
       {/* カードスタックコンテナ (重なりカードとレスト回転を一体化) */}
+      {!hideFace && (
       <div
         className={`relative group/card select-none ${cardDimensions} transition-all ${
           card.isRested
@@ -492,8 +518,10 @@ export const CardView: React.FC<CardViewProps> = ({
       </div>
       </div>
 
+      )}
+
       {/* 右クリックコンテキストメニュー */}
-      {showMenu && (
+      {showMenu && (!hideFace || !isOpponent) && (
         <div
           className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-2 w-56 max-w-[92vw] overflow-y-auto scrollbar-thin text-xs text-slate-200 flex flex-col gap-1"
           style={{
@@ -506,7 +534,7 @@ export const CardView: React.FC<CardViewProps> = ({
           {/* ヘッダー */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-0.5 px-0.5">
             <span className={`font-bold truncate text-xs ${isOpponent ? 'text-rose-400' : 'text-indigo-400'}`}>
-              {isOpponent ? `[相手] ${card.name}` : card.name}
+              {hideFace ? '裏向きカード' : isOpponent ? `[相手] ${card.name}` : card.name}
             </span>
             <button
               type="button"
@@ -518,7 +546,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           </div>
 
-          {!isOpponent && !card.isRested && onDirectAttack && card.cardType === 'CHARACTER' && (
+          {!hideFace && !isOpponent && !card.isRested && onDirectAttack && card.cardType === 'CHARACTER' && (
             <button
               onClick={() => {
                 onDirectAttack();
@@ -531,7 +559,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           )}
 
-          {!isOpponent && !card.isRested && onDeclareAttack && card.cardType === 'CHARACTER' && (
+          {!hideFace && !isOpponent && !card.isRested && onDeclareAttack && card.cardType === 'CHARACTER' && (
             <button
               onClick={() => {
                 onDeclareAttack();
@@ -596,7 +624,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </button>
           )}
 
-          {isFieldCard && onModifyBp && effectiveBp !== null && (
+          {!hideFace && isFieldCard && onModifyBp && effectiveBp !== null && (
             <div className="flex flex-col gap-1 p-1.5 bg-slate-800/70 rounded my-0.5 text-xs">
               <div className="flex items-center justify-between text-[11px] font-medium">
                 <span className="text-slate-400">BP修正:</span>
@@ -701,7 +729,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" />
                   エナジーLへ移動
                 </button>
-              ) : card.cardType !== 'FIELD' ? (
+              ) : (hideFace || card.cardType !== 'FIELD') ? (
                 <button
                   onClick={() => {
                     onMoveTo('frontLine');
@@ -722,7 +750,7 @@ export const CardView: React.FC<CardViewProps> = ({
               <span className="text-[10px] font-bold text-slate-400 px-0.5">移動・登場:</span>
 
               {/* 手札カード専用登場アクション */}
-              {location?.zone === 'hand' && !isOpponent && (
+              {!hideFace && location?.zone === 'hand' && !isOpponent && (
                 <div className="flex flex-col gap-1 mb-1">
                   {card.cardType === 'EVENT' ? (
                     <button

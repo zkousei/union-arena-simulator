@@ -4,6 +4,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Card } from '../../types/card';
 import { CardView } from './CardView';
+import { DND_MIME_TYPE } from '../../types/dnd';
 
 const dummyCard: Card = {
   id: 'card-1',
@@ -24,6 +25,82 @@ const dummyCard: Card = {
 };
 
 describe('CardView', () => {
+  it('drags an owned face-down card without revealing its face', () => {
+    const card = { ...dummyCard, isFaceDown: true };
+    const location = { playerId: 'player-1', zone: 'frontLine' as const, slotIndex: 0 as const };
+    const { container } = render(<CardView card={card} location={location} onInspect={vi.fn()} />);
+    const cardEl = container.querySelector('[draggable="true"]');
+    expect(cardEl).not.toBeNull();
+    const dataTransfer = { setData: vi.fn(), effectAllowed: 'none' };
+    fireEvent.dragStart(cardEl!, { dataTransfer });
+    expect(dataTransfer.setData).toHaveBeenCalledWith(DND_MIME_TYPE, JSON.stringify({ cardId: card.id, from: location }));
+    expect(dataTransfer.effectAllowed).toBe('move');
+    expect(screen.queryByText(card.name)).toBeNull();
+    expect(container.querySelector('img')).toBeNull();
+    expect(card.isFaceDown).toBe(true);
+    fireEvent.dragEnd(cardEl!);
+  });
+
+  it.each(['hand', 'graveyard', 'energyLine', 'deckTop', 'deckBottom', 'removed', 'life', 'lifeFaceUp'] as const)(
+    'moves an owned face-down card to %s from its context menu without exposing printed details',
+    (destination) => {
+      const onMoveTo = vi.fn();
+      const { container } = render(
+        <CardView card={{ ...dummyCard, isFaceDown: true }}
+          location={{ playerId: 'player-1', zone: 'frontLine', slotIndex: 0 }}
+          onMoveTo={onMoveTo} onInspect={vi.fn()} onModifyBp={vi.fn()} />
+      );
+      fireEvent.contextMenu(container.querySelector('[draggable="true"]')!);
+      expect(screen.getByText('裏向きカード')).toBeTruthy();
+      expect(screen.queryByText(dummyCard.name)).toBeNull();
+      expect(screen.queryByText('BP修正:')).toBeNull();
+      const labels = { hand: '手札に戻す', graveyard: '場外へ送る', energyLine: 'エナジーLへ移動',
+        deckTop: '山札の上へ戻す', deckBottom: '山札の下へ戻す', removed: '除外する（リムーブ）', life: 'ライフに裏向きで置く', lifeFaceUp: 'ライフに表向きで置く' };
+      fireEvent.click(screen.getByRole('button', { name: labels[destination] }));
+      expect(onMoveTo).toHaveBeenCalledWith(destination);
+      expect(screen.queryByTitle('閉じる')).toBeNull();
+    }
+  );
+
+  it('keeps an opponent face-down card private and inoperable even when callbacks are supplied', () => {
+    const onClick = vi.fn();
+    const onInspect = vi.fn();
+    const onMoveTo = vi.fn();
+    const { container } = render(
+      <CardView card={{ ...dummyCard, isFaceDown: true, imageUrl: '/secret.png' }}
+        location={{ playerId: 'player-2', zone: 'frontLine', slotIndex: 0 }}
+        isOpponent revealFaceDown accessibleLabel={dummyCard.name}
+        onClick={onClick} onInspect={onInspect} onMoveTo={onMoveTo} />
+    );
+    const cardEl = screen.getByText('UA').parentElement!.parentElement!;
+    fireEvent.click(cardEl);
+    fireEvent.contextMenu(cardEl);
+    fireEvent.doubleClick(cardEl);
+    expect(container.querySelector('[draggable="true"]')).toBeNull();
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.innerHTML).not.toContain(dummyCard.name);
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(onClick).not.toHaveBeenCalled();
+    expect(onInspect).not.toHaveBeenCalled();
+    expect(onMoveTo).not.toHaveBeenCalled();
+  });
+
+  it('does not make an owned face-down modal preview draggable without a location', () => {
+    const { container } = render(<CardView card={{ ...dummyCard, isFaceDown: true }} />);
+    expect(container.querySelector('[draggable="true"]')).toBeNull();
+  });
+
+  it('opens a private movement menu for an owned face-down card using the keyboard', () => {
+    const onMoveTo = vi.fn();
+    render(<CardView card={{ ...dummyCard, isFaceDown: true }}
+      location={{ playerId: 'player-1', zone: 'energyLine', slotIndex: 0 }}
+      onMoveTo={onMoveTo} />);
+    const cardButton = screen.getByRole('button', { name: '裏向きカード' });
+    fireEvent.keyDown(cardButton, { key: 'F10', shiftKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'フロントLへ移動' }));
+    expect(onMoveTo).toHaveBeenCalledWith('frontLine');
+    expect(screen.queryByText(dummyCard.name)).toBeNull();
+  });
   it('includes the official requirement colors in the energy label', () => {
     render(<CardView card={{ ...dummyCard, reqEnergyColors: ['RED', 'BLUE'], reqEnergy: 4 }} />);
     expect(screen.getByTitle('必要エナジー: 赤／青 4').textContent).toBe('⚡4');
