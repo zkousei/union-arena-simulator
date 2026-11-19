@@ -5,6 +5,47 @@ const setPresetDeck = async (page: import('@playwright/test').Page, playerName: 
   await page.getByRole('button', { name: `${playerName}にセット` }).first().click();
 };
 
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`moves a face-down marker after separating its parent at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/game?mode=solo');
+    await setPresetDeck(page, 'あなた');
+    const hand = page.getByRole('region', { name: 'あなた の手札' });
+    const characters = hand.getByRole('button', { name: /手札カード: .+ \(キャラクター\)/ });
+    const slot = page.locator('#slot-player-1-energyLine-0');
+    await characters.first().click();
+    await page.getByRole('button', { name: 'あなた: エナジーライン 枠 1' }).click();
+    await characters.first().click();
+    await slot.click();
+    await page.getByRole('button', { name: /【マーカー配置】裏向きで下に置く/ }).click();
+    await slot.getByTitle('クリックで下敷きカード（マーカー）を確認・操作').click();
+    await page.getByTitle('上のカードを手札に戻す').click();
+
+    await expect(slot.getByText('UA', { exact: true })).toBeVisible();
+    await expect(slot.locator('img')).toHaveCount(0);
+    await expect(slot.locator('[draggable="true"]')).toHaveCount(1);
+
+    let movedSlot = slot;
+    if (viewport.width > 390) {
+      movedSlot = page.locator('#slot-player-1-energyLine-1');
+      await slot.locator('[draggable="true"]').dragTo(movedSlot);
+      await expect(slot.locator('[draggable="true"]')).toHaveCount(0);
+      await expect(movedSlot.getByText('UA', { exact: true })).toBeVisible();
+      await expect(movedSlot.locator('img')).toHaveCount(0);
+      await movedSlot.locator('[draggable="true"]').click({ button: 'right' });
+    } else {
+      await movedSlot.getByTitle('裏向きカードの移動メニュー').click();
+    }
+    await expect(page.getByText('裏向きカード', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '手札に戻す', exact: true }).click();
+    await expect(movedSlot.locator('[draggable="true"]')).toHaveCount(0);
+    await expect(hand.locator('[draggable="true"]')).toHaveCount(7);
+  });
+}
+
 test('opens the main SPA routes directly', async ({ page }) => {
   await page.goto('/deck-builder');
   await expect(page).toHaveURL(/\/deck-builder$/);
