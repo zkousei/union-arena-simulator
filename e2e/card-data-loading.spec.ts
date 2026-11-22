@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const madokaRecipe = JSON.parse(readFileSync(new URL('../src/services/__tests__/fixtures/tcg-plus-madoka-recipe.json', import.meta.url), 'utf8'));
+const cardShardCount = JSON.parse(readFileSync(new URL('../src/data/generated/index.json', import.meta.url), 'utf8')).shards.length;
 const isJsonAsset = (url: URL) => url.pathname.endsWith('.json') && !url.searchParams.has('url') && !url.searchParams.has('import');
 const isIndex = (url: URL) => isJsonAsset(url) && /\/index(?:-[\w-]+)?\.json$/.test(url.pathname);
 const isShard = (id: string) => (url: URL) => isJsonAsset(url) && new RegExp(`/${id}(?:-[\\w-]+)?\\.json$`).test(url.pathname);
@@ -91,8 +92,8 @@ test('an incomplete all-title download stays hidden and retries only the failed 
   await page.getByRole('button', { name: '作品データを再試行' }).click();
   await expect(page.getByRole('button', { name: 'デッキに追加' }).first()).toBeVisible();
   expect(jjkRequests).toBe(2);
-  expect(new Set(requested).size).toBe(63);
-  expect(requested).toHaveLength(64);
+  expect(new Set(requested).size).toBe(cardShardCount);
+  expect(requested).toHaveLength(cardShardCount + 1);
 });
 
 test('a delayed previous title does not replace a newly selected title', async ({ page }) => {
